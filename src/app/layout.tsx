@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AITeacher",
-  description: "Support your Exploration for Wisdom with AI",
+  title: "AITeacher — ホーム",
+  description: "AIと共に学び逢おう！",
 };
 
 export default function RootLayout({

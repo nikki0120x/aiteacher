@@ -1,8 +1,31 @@
+"use client";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import React from "react";
 import styles from "./header.module.css";
 
 export default function Header() {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const selectedValue = pathname?.includes("/math")
+    ? "/math"
+    : pathname?.includes("/japanese")
+    ? "/japanese"
+    : pathname?.includes("/english")
+    ? "/english"
+    : "/";
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === "/") {
+      router.push("/app"); // ホームに戻る
+    } else {
+      router.push(`/app${value}`); // 各科目ページへ
+    }
+  };
+
   return (
     <>
       <header className="flex flex-row justify-between items-center relative w-full h-16 backdrop-blur-lg bg-light-3/50 dark:bg-dark-3/10">
@@ -19,9 +42,14 @@ export default function Header() {
         <div className="flex justify-center items-center w-48 h-full p-4! z-10">
           <select
             name="subjects"
+            value={selectedValue}
+            onChange={handleChange}
             className="w-48 h-12 rounded-2xl text-center text-2xl font-medium text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3 hover:bg-light-5 dark:hover:bg-dark-5 active:bg-light-4 dark:active:bg-dark-4 focus:bg-light-5 dark:focus:bg-dark-5"
           >
-            <option value="/math" title="The Mathematics" selected>
+            <option value="/" title="Home">
+              アプリ
+            </option>
+            <option value="/math" title="The Mathematics">
               数学編
             </option>
             <option value="/japanese" title="The Japanese">
