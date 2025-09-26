@@ -1,0 +1,72 @@
+@import "tailwindcss";
+@tailwind utilities;
+
+@theme {
+  --default-font: "Zen Maru Gothic", system-ui;
+  --color-light-1: oklch(98.4% 0.003 247.858);
+  --color-light-2: oklch(96.8% 0.007 247.896);
+  --color-light-3: oklch(92.9% 0.013 255.508);
+  --color-light-4: oklch(86.9% 0.022 252.894);
+  --color-light-5: oklch(70.4% 0.04 256.788);
+  --color-dark-1: oklch(12.9% 0.042 264.695);
+  --color-dark-2: oklch(20.8% 0.042 265.755);
+  --color-dark-3: oklch(27.9% 0.041 260.031);
+  --color-dark-4: oklch(37.2% 0.044 257.287);
+  --color-dark-5: oklch(44.6% 0.043 257.281);
+  --color-gray: oklch(55.4% 0.046 257.417);
+}
+
+*,
+*::before,
+*::after {
+  @apply transition-all duration-500 ease-in-out;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none;
+  -moz-user-drag: none;
+  -ms-user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 2rem;
+  height: auto;
+}
+*::-webkit-scrollbar-thumb {
+  @apply bg-light-3 dark:bg-dark-3;
+}
+*::-webkit-scrollbar-thumb:hover {
+  @apply bg-light-5 dark:bg-dark-5;
+}
+*::-webkit-scrollbar-thumb:active {
+  @apply bg-light-4 dark:bg-dark-4;
+}
+*::-webkit-scrollbar-corner {
+  @apply bg-light-1 dark:bg-dark-1;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply text-dark-1 bg-light-1 dark:text-light-1 dark:bg-dark-1;
+  overflow: hidden;
+  font-style: normal;
+  font-optical-sizing: auto;
+  font-family: var(--default-font);
+}
