@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Providers } from "./components/providers";
 import { Suspense } from "react";
 import TopProgress from "./components/TopProgress";
 import "./globals.css";
@@ -15,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <head>
         <Script
           strategy="afterInteractive"
@@ -42,7 +43,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <TopProgress />
         </Suspense>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

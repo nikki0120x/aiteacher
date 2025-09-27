@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @tailwind utilities;
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --default-font: "Zen Maru Gothic", system-ui;

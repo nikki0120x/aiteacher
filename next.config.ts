@@ -2,20 +2,18 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   webpack(config) {
-    // SVG を React コンポーネントとして扱えるようにする
+    // Webpack で SVG を React コンポーネントとして扱う
     config.module.rules.push({
       test: /\.svg$/,
-      use: ['@svgr/webpack'],
+      use: ["@svgr/webpack"],
     });
     return config;
   },
-  experimental: {
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
       },
     },
   },
