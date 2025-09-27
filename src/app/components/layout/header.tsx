@@ -44,7 +44,7 @@ export default function Header() {
             name="subjects"
             value={selectedValue}
             onChange={handleChange}
-            className="w-48 h-12 rounded-2xl text-center text-2xl font-medium text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3 hover:bg-light-5 dark:hover:bg-dark-5 active:bg-light-4 dark:active:bg-dark-4 focus:bg-light-5 dark:focus:bg-dark-5"
+            className="w-48 h-12 rounded-2xl text-center text-2xl font-medium text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3 hover:bg-light-4 dark:hover:bg-dark-4 focus:bg-light-4 dark:focus:bg-dark-4"
           >
             <option value="/" title="Home">
               アプリ
