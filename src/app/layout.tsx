@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Suspense } from "react";
 import TopProgress from "./components/TopProgress";
 import "./globals.css";
 
@@ -38,7 +39,9 @@ export default function RootLayout({
         />
       </head>
       <body style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}>
-        <TopProgress />
+        <Suspense fallback={null}>
+          <TopProgress />
+        </Suspense>
         {children}
       </body>
     </html>
