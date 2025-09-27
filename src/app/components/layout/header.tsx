@@ -1,4 +1,5 @@
 "use client";
+import { useTopLoader } from "nextjs-toploader";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -7,6 +8,7 @@ import styles from "./header.module.css";
 
 export default function Header() {
   const pathname = usePathname();
+  const topLoader = useTopLoader();
   const router = useRouter();
 
   const selectedValue = pathname?.includes("/math")
@@ -19,11 +21,13 @@ export default function Header() {
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
+    topLoader.start();
     if (value === "/") {
       router.push("/app"); // ホームに戻る
     } else {
       router.push(`/app${value}`); // 各科目ページへ
     }
+    topLoader.done();
   };
 
   return (

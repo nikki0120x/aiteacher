@@ -8,7 +8,7 @@ export default function Sidebar() {
   return (
     <>
       <aside
-        className={`flex flex-col h-dvh bg-light-3 dark:bg-dark-3`}
+        className={`z-1000 flex flex-col h-dvh bg-light-3 dark:bg-dark-3`}
         style={{ width: isOpen ? "16rem" : "4rem" }}
       >
         <button
