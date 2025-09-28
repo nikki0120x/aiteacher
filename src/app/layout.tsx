@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Providers } from "./components/providers";
 import { Suspense } from "react";
 import TopProgress from "./components/TopProgress";
+import BodyTouchListener from "./components/BodyTouchListener";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ export default function RootLayout({
         />
       </head>
       <body style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}>
+        <BodyTouchListener />
         <Suspense fallback={null}>
           <TopProgress />
         </Suspense>

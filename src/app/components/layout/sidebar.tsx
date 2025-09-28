@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect  } from "react";
 import { useTheme } from "next-themes";
 import RoutineIcon from "@/assets/icons/theme/routine.svg";
 import styles from "./sidebar.module.css";
@@ -8,6 +8,11 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false); // Sidebarの開閉状態を管理する状態変数
   const [themeMenu, setThemeMenu] = useState(false);
   const { theme, setTheme } = useTheme();
+  
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
 
   return (
     <>
