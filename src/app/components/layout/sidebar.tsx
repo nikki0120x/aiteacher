@@ -1,7 +1,11 @@
 "use client";
-import { useState, useEffect  } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
+import CheckIcon from "@/assets/icons/symbol/check.svg";
 import RoutineIcon from "@/assets/icons/theme/routine.svg";
+import SystemModeIcon from "@/assets/icons/theme/system-mode.svg";
+import LightModeIcon from "@/assets/icons/theme/light-mode.svg";
+import DarkModeIcon from "@/assets/icons/theme/dark-mode.svg";
 import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
@@ -12,11 +16,36 @@ export default function Sidebar() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const thememenuRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        themeMenu &&
+        thememenuRef.current &&
+        sidebarRef.current &&
+        !thememenuRef.current.contains(event.target as Node) &&
+        !sidebarRef.current.contains(event.target as Node)
+      ) {
+        setThemeMenu(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside, true);
+    };
+  }, [themeMenu, mounted]);
+
   if (!mounted) return null;
 
   return (
     <>
       <aside
+        ref={sidebarRef}
         className={`z-1000 flex flex-col gap-4 p-2 w-auto h-dvh bg-light-3 dark:bg-dark-3`}
         style={{ width: isOpen ? "16rem" : "4rem" }}
       >
@@ -27,7 +56,7 @@ export default function Sidebar() {
           {isOpen ? "Close" : "Open"}
         </button>
         <button
-          className={`mt-auto flex flex-row items-center w-full h-12 rounded-full bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4 ${
+          className={`mt-auto flex flex-row items-center w-full h-12 rounded-full cursor-pointer bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4 ${
             isOpen ? "gap-2" : "gap-0"
           }`}
           onClick={() => setThemeMenu(!themeMenu)}
@@ -40,31 +69,46 @@ export default function Sidebar() {
             テーマ設定
           </span>
         </button>
-        {themeMenu && (
-          <div
-            className={`absolute left-16 bottom-0 m-4 w-64 rounded-2xl text-lg text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3`}
-            style={{ left: isOpen ? "16rem" : "4rem" }}
+        <div
+          ref={thememenuRef}
+          className={`overflow-hidden absolute left-16 bottom-0 m-4 w-64 rounded-2xl text-lg text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3 ${
+            themeMenu
+              ? "opacity-100 translate-x-0 pointer-events-auto"
+              : "opacity-0 -translate-x-4 pointer-events-none"
+          }`}
+          style={{ left: isOpen ? "16rem" : "4rem" }}
+        >
+          <button
+            className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
+            onClick={() => setTheme("system")}
           >
-            <button
-              className="flex items-center rounded-t-2xl p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
-              onClick={() => setTheme("system")}
-            >
-              <span>システム</span>
-            </button>
-            <button
-              className="flex items-center p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
-              onClick={() => setTheme("light")}
-            >
-              <span>ライト</span>
-            </button>
-            <button
-              className="flex items-center rounded-b-2xl p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
-              onClick={() => setTheme("dark")}
-            >
-              <span>ダーク</span>
-            </button>
-          </div>
-        )}
+            <SystemModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
+            <span>システム</span>
+            {theme === "system" && (
+              <CheckIcon className="ml-auto w-auto h-full text-dark-3 dark:text-light-3" />
+            )}
+          </button>
+          <button
+            className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
+            onClick={() => setTheme("light")}
+          >
+            <LightModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
+            <span>ライト</span>
+            {theme === "light" && (
+              <CheckIcon className="ml-auto w-auto h-full text-dark-3 dark:text-light-3" />
+            )}
+          </button>
+          <button
+            className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
+            onClick={() => setTheme("dark")}
+          >
+            <DarkModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
+            <span>ダーク</span>
+            {theme === "dark" && (
+              <CheckIcon className="ml-auto w-auto h-full text-dark-3 dark:text-light-3" />
+            )}
+          </button>
+        </div>
       </aside>
     </>
   );
