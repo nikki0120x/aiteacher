@@ -8,7 +8,7 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false); // Sidebarの開閉状態を管理する状態変数
   const [themeMenu, setThemeMenu] = useState(false);
   const { theme, setTheme } = useTheme();
-  
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -27,7 +27,7 @@ export default function Sidebar() {
           {isOpen ? "Close" : "Open"}
         </button>
         <button
-          className={`mt-auto flex flex-row items-center w-full h-12 rounded-full bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4 ${
+          className={`mt-auto flex flex-row items-center w-full h-12 rounded-full bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4 ${
             isOpen ? "gap-2" : "gap-0"
           }`}
           onClick={() => setThemeMenu(!themeMenu)}
@@ -46,19 +46,19 @@ export default function Sidebar() {
             style={{ left: isOpen ? "16rem" : "4rem" }}
           >
             <button
-              className="flex items-center rounded-t-2xl p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
+              className="flex items-center rounded-t-2xl p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
               onClick={() => setTheme("system")}
             >
               <span>システム</span>
             </button>
             <button
-              className="flex items-center p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
+              className="flex items-center p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
               onClick={() => setTheme("light")}
             >
               <span>ライト</span>
             </button>
             <button
-              className="flex items-center rounded-b-2xl p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
+              className="flex items-center rounded-b-2xl p-4 w-full h-14 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
               onClick={() => setTheme("dark")}
             >
               <span>ダーク</span>
