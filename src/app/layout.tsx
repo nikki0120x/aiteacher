@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Providers } from "./components/providers";
 import { Suspense } from "react";
+import { Analytics } from "@vercel/analytics/next";
 import TopProgress from "./components/TopProgress";
 import BodyTouchListener from "./components/BodyTouchListener";
 import "./globals.css";
@@ -46,6 +47,7 @@ export default function RootLayout({
           <TopProgress />
         </Suspense>
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
