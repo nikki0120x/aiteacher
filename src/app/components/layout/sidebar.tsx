@@ -51,12 +51,14 @@ export default function Sidebar() {
         style={{ width: isOpen ? "16rem" : "4rem" }}
       >
         <button
+          aria-label="Menu Button"
           className="mb-auto flex justify-center items-center w-12 h-12 rounded-full cursor-pointer bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
           onClick={() => setIsOpen(!isOpen)}
         >
           <MenuIcon className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
         </button>
         <button
+          aria-label="Theme Button"
           className={`mt-auto flex flex-row items-center w-full h-12 rounded-full cursor-pointer bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4 ${
             isOpen ? "gap-2" : "gap-0"
           }`}
@@ -80,6 +82,7 @@ export default function Sidebar() {
           style={{ left: isOpen ? "16rem" : "4rem" }}
         >
           <button
+            aria-label="System Theme Button"
             className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
             onClick={() => setTheme("system")}
           >
@@ -92,6 +95,7 @@ export default function Sidebar() {
             )}
           </button>
           <button
+            aria-label="Light Theme Button"
             className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
             onClick={() => setTheme("light")}
           >
@@ -104,6 +108,7 @@ export default function Sidebar() {
             )}
           </button>
           <button
+          aria-label="Dark Theme Button"
             className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
             onClick={() => setTheme("dark")}
           >

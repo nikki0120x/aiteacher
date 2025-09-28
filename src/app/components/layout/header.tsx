@@ -33,7 +33,10 @@ export default function Header() {
   return (
     <>
       <header className="flex flex-row justify-between items-center relative w-full h-16 backdrop-blur-lg bg-light-3/50 dark:bg-dark-3/10">
-        <div className="flex flex-row w-32 h-full p-4 z-10">
+        <button
+          aria-label="Home Button"
+          className="flex flex-row w-32 h-full p-4 z-10"
+        >
           <Link href="/" className="relative w-full h-full group">
             <Image
               src="/logo/logo-light.webp"
@@ -42,7 +45,7 @@ export default function Header() {
               className="object-contain group-hover:scale-120 group-active:scale-110 group-focus:scale-120"
             />
           </Link>
-        </div>
+        </button>
         <div className="flex justify-center items-center w-48 h-full p-4 z-10">
           <select
             name="subjects"
@@ -65,7 +68,10 @@ export default function Header() {
           </select>
         </div>
         <div className="flex flex-row w-16 h-full p-4 z-10">
-          <button className="w-full h-full rounded-full cursor-pointer bg-gray hover:scale-120 active:scale-110 focus:scale-120"></button>
+          <button
+            aria-label="Account Button"
+            className="w-full h-full rounded-full cursor-pointer bg-gray hover:scale-120 active:scale-110 focus:scale-120"
+          ></button>
         </div>
       </header>
     </>
