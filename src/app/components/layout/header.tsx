@@ -33,22 +33,20 @@ export default function Header() {
   return (
     <>
       <header className="flex flex-row justify-between items-center relative w-full h-16 backdrop-blur-lg bg-light-3/50 dark:bg-dark-3/10">
-        <button
-          aria-label="Home Button"
-          className="flex flex-row w-32 h-full p-4 z-10"
-        >
-          <Link href="/" className="relative w-full h-full group">
+        <Link href="/" className="flex flex-row w-32 h-full p-4 z-10 group">
+          <div className="relative w-full h-full">
             <Image
               src="/logo/logo-light.webp"
               alt="Logo Image"
               fill
               className="object-contain group-hover:scale-120 group-active:scale-110 group-focus:scale-120"
             />
-          </Link>
-        </button>
+          </div>
+        </Link>
         <div className="flex justify-center items-center w-48 h-full p-4 z-10">
           <select
             name="subjects"
+            aria-label="Select a Subject"
             value={selectedValue}
             onChange={handleChange}
             className="w-48 h-12 rounded-2xl text-center text-2xl font-medium text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3 hover:bg-light-4 dark:hover:bg-dark-4 active:bg-light-4 dark:active:bg-dark-4 focus:bg-light-4 dark:focus:bg-dark-4"
