@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Providers } from "./components/providers";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import TopProgress from "./components/TopProgress";
 import BodyTouchListener from "./components/BodyTouchListener";
 import "./globals.css";
@@ -48,6 +49,7 @@ export default function RootLayout({
         </Suspense>
         <Providers>{children}</Providers>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
