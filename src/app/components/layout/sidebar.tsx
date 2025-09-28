@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
+import MenuIcon from "@/assets/icons/symbol/menu.svg";
 import CheckIcon from "@/assets/icons/symbol/check.svg";
 import RoutineIcon from "@/assets/icons/theme/routine.svg";
-import SystemModeIcon from "@/assets/icons/theme/system-mode.svg";
-import LightModeIcon from "@/assets/icons/theme/light-mode.svg";
-import DarkModeIcon from "@/assets/icons/theme/dark-mode.svg";
+import SystemModeIcon from "@/assets/icons/theme/system.svg";
+import LightModeIcon from "@/assets/icons/theme/light.svg";
+import DarkModeIcon from "@/assets/icons/theme/dark.svg";
 import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
@@ -50,10 +51,10 @@ export default function Sidebar() {
         style={{ width: isOpen ? "16rem" : "4rem" }}
       >
         <button
-          className="w-full h-12 rounded-full bg-gray"
+          className="mb-auto flex justify-center items-center w-12 h-12 rounded-full cursor-pointer bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
           onClick={() => setIsOpen(!isOpen)}
         >
-          {isOpen ? "Close" : "Open"}
+          <MenuIcon className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
         </button>
         <button
           className={`mt-auto flex flex-row items-center w-full h-12 rounded-full cursor-pointer bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4 ${
@@ -63,7 +64,7 @@ export default function Sidebar() {
         >
           <RoutineIcon className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
           <span
-            className={`overflow-hidden whitespace-nowrap text-left text-lg text-dark-3 dark:text-light-3`}
+            className={`overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3`}
             style={{ width: isOpen ? "10rem" : "0" }}
           >
             テーマ設定
@@ -83,9 +84,11 @@ export default function Sidebar() {
             onClick={() => setTheme("system")}
           >
             <SystemModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
-            <span>システム</span>
+            <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
+              システム
+            </span>
             {theme === "system" && (
-              <CheckIcon className="ml-auto w-auto h-full text-dark-3 dark:text-light-3" />
+              <CheckIcon className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
             )}
           </button>
           <button
@@ -93,9 +96,11 @@ export default function Sidebar() {
             onClick={() => setTheme("light")}
           >
             <LightModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
-            <span>ライト</span>
+            <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
+              ライト
+            </span>
             {theme === "light" && (
-              <CheckIcon className="ml-auto w-auto h-full text-dark-3 dark:text-light-3" />
+              <CheckIcon className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
             )}
           </button>
           <button
@@ -103,9 +108,11 @@ export default function Sidebar() {
             onClick={() => setTheme("dark")}
           >
             <DarkModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
-            <span>ダーク</span>
+            <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
+              ダーク
+            </span>
             {theme === "dark" && (
-              <CheckIcon className="ml-auto w-auto h-full text-dark-3 dark:text-light-3" />
+              <CheckIcon className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
             )}
           </button>
         </div>
