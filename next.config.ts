@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  swcMinify: true, // SWC による高速・軽量ビルド
+
   webpack(config) {
     // Webpack で SVG を React コンポーネントとして扱う
     config.module.rules.push({
@@ -9,6 +11,7 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
+
   turbopack: {
     rules: {
       "*.svg": {
