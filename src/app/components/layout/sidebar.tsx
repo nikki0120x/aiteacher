@@ -74,7 +74,7 @@ export default function Sidebar() {
         </button>
         <div
           ref={thememenuRef}
-          className={`overflow-hidden absolute left-16 bottom-0 m-4 w-64 rounded-2xl text-lg text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3 ${
+          className={`overflow-hidden absolute left-16 bottom-0 m-4 w-64 rounded-2xl text-lg text-dark-3 dark:text-light-3 bg-light-3/50 dark:bg-dark-3/50 backdrop-blur-xs ${
             themeMenu
               ? "opacity-100 translate-x-0 pointer-events-auto"
               : "opacity-0 -translate-x-4 pointer-events-none"

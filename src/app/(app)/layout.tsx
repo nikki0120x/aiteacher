@@ -5,9 +5,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-row w-dvw h-dvh">
       <Sidebar />
-      <main className="flex flex-1 w-full h-dvh flex-col">
+      <main className="flex flex-1 justify-center items-center w-full h-dvh flex-col">
         <Header />
-        <article className="relative flex flex-1 p-4">{children}</article>
+        <article className="flex flex-1 flex-col p-8 w-full max-w-224 h-full">{children}</article>
       </main>
     </div>
   );
