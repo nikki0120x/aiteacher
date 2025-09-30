@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface SubjectPageProps {
   params: { subject: string };
@@ -24,10 +24,49 @@ export default function SubjectPage({ params }: SubjectPageProps) {
   const subjectColor = SUBJECT_COLORS[params.subject] || "text-gray";
 
   const [visible, setVisible] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [subjectInputs, setSubjectInputs] = useState<Record<string, string>>(
+    {}
+  );
+
+  useEffect(() => {
+    const saved = localStorage.getItem("subjectInputs");
+    if (saved) {
+      setSubjectInputs(JSON.parse(saved));
+    }
+  }, []);
 
   useEffect(() => {
     setVisible(true);
   }, [params.subject]);
+
+  const adjustHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto"; // 一旦リセット
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
+    }
+  };
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      adjustHeight();
+      textareaRef.current.addEventListener("input", adjustHeight);
+    }
+    return () => {
+      textareaRef.current?.removeEventListener("input", adjustHeight);
+    };
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setSubjectInputs((prev) => {
+      const updated = { ...prev, [params.subject]: value };
+      localStorage.setItem("subjectInputs", JSON.stringify(updated)); // localStorage に保存
+      return updated;
+    });
+  };
 
   return (
     <>
@@ -40,7 +79,24 @@ export default function SubjectPage({ params }: SubjectPageProps) {
           {subjectLabel}
         </h1>
       </section>
-      <section className="flex w-full h-32 rounded-2xl bg-light-3 dark:bg-dark-3"></section>
+      <section className="flex flex-col w-full rounded-4xl bg-light-3 dark:bg-dark-3">
+        <div className="flex items-center px-6 py-4">
+          <textarea
+            ref={textareaRef}
+            name="question"
+            placeholder="AI に訊きたいことはある？"
+            rows={1}
+            value={subjectInputs[params.subject] || ""} // 現在の科目の内容を表示
+            onChange={handleChange}
+            className="resize-none  w-full max-h-[280px] text-left text-lg font-medium"
+          />
+        </div>
+        <div className="flex items-center">
+          <div className="resize-none px-6 py-4 w-full text-left text-lg font-medium">
+            あああ
+          </div>
+        </div>
+      </section>
     </>
   );
 }
