@@ -38,7 +38,7 @@
 *,
 *::before,
 *::after {
-  @apply transition-all duration-250 ease-in-out;
+  @apply transition-all duration-500 ease-in-out;
   box-sizing: border-box;
   outline: none;
   -webkit-font-smoothing: antialiased;
@@ -60,20 +60,29 @@
 }
 
 *::-webkit-scrollbar {
-  width: 2rem;
+  width: 0.5rem;
   height: auto;
 }
 *::-webkit-scrollbar-thumb {
-  @apply bg-light-3 dark:bg-dark-3;
+  border-radius: 1rem;
+  background: var(--color-light-3);
+}
+.dark *::-webkit-scrollbar-thumb {
+  background: var(--color-dark-3);
 }
 *::-webkit-scrollbar-thumb:hover {
-  @apply bg-light-5 dark:bg-dark-5;
+  border-radius: 1rem;
+  background: var(--color-light-5);
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dark-5);
 }
 *::-webkit-scrollbar-thumb:active {
-  @apply bg-light-4 dark:bg-dark-4;
+  border-radius: 1rem;
+  background: var(--color-light-4);
 }
-*::-webkit-scrollbar-corner {
-  @apply bg-light-1 dark:bg-dark-1;
+.dark *::-webkit-scrollbar-thumb:active {
+  background: var(--color-dark-4);
 }
 
 html {

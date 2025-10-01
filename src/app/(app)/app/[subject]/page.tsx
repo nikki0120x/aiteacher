@@ -79,7 +79,7 @@ export default function SubjectPage({ params }: SubjectPageProps) {
           {subjectLabel}
         </h1>
       </section>
-      <section className="flex flex-col w-full rounded-4xl bg-light-3 dark:bg-dark-3">
+      <section className="flex flex-col w-full border-2 rounded-4xl bg-light-1 dark:bg-dark-1 border-light-3 dark:border-dark-3">
         <div className="flex items-center px-6 py-4">
           <textarea
             ref={textareaRef}
@@ -88,7 +88,7 @@ export default function SubjectPage({ params }: SubjectPageProps) {
             rows={1}
             value={subjectInputs[params.subject] || ""}
             onChange={handleChange}
-            className="resize-none w-full max-h-[280px] text-left text-lg font-medium placeholder-gray text-dark-3 dark:text-light-3"
+            className="resize-none w-full max-h-[140px] text-left text-lg font-medium placeholder-gray text-dark-3 dark:text-light-3"
           />
         </div>
         <div className="flex items-center">
