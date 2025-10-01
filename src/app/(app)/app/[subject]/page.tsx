@@ -86,14 +86,13 @@ export default function SubjectPage({ params }: SubjectPageProps) {
             name="question"
             placeholder="AI に訊きたいことはある？"
             rows={1}
-            value={subjectInputs[params.subject] || ""} // 現在の科目の内容を表示
+            value={subjectInputs[params.subject] || ""}
             onChange={handleChange}
-            className="resize-none  w-full max-h-[280px] text-left text-lg font-medium"
+            className="resize-none w-full max-h-[280px] text-left text-lg font-medium placeholder-gray text-dark-3 dark:text-light-3"
           />
         </div>
         <div className="flex items-center">
           <div className="resize-none px-6 py-4 w-full text-left text-lg font-medium">
-            あああ
           </div>
         </div>
       </section>
