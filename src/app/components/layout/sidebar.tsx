@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
-import { Menu, SunMoon, Orbit, Sun, Moon, Check } from 'lucide-react';
+import { Menu, Settings, SunMoon, Sun, Moon, Check } from 'lucide-react';
 import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
@@ -59,7 +59,7 @@ export default function Sidebar() {
           }`}
           onClick={() => setThemeMenu(!themeMenu)}
         >
-          <SunMoon className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
+          <Settings className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
           <span
             className={`overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3`}
             style={{ width: isOpen ? "10rem" : "0" }}
@@ -81,7 +81,7 @@ export default function Sidebar() {
             className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
             onClick={() => setTheme("system")}
           >
-            <Orbit className="w-auto h-full text-dark-3 dark:text-light-3" />
+            <SunMoon className="w-auto h-full text-dark-3 dark:text-light-3" />
             <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
               システム
             </span>
