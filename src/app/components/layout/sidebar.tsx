@@ -1,12 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
-import MenuIcon from "@/assets/icons/symbol/menu.svg";
-import CheckIcon from "@/assets/icons/symbol/check.svg";
-import RoutineIcon from "@/assets/icons/theme/routine.svg";
-import SystemModeIcon from "@/assets/icons/theme/system.svg";
-import LightModeIcon from "@/assets/icons/theme/light.svg";
-import DarkModeIcon from "@/assets/icons/theme/dark.svg";
+import { Menu, SunMoon, Orbit, Sun, Moon, Check } from 'lucide-react';
 import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
@@ -55,7 +50,7 @@ export default function Sidebar() {
           className="mb-auto flex justify-center items-center w-12 h-12 rounded-full cursor-pointer bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <MenuIcon className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
+          <Menu className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
         </button>
         <button
           aria-label="Theme Button"
@@ -64,7 +59,7 @@ export default function Sidebar() {
           }`}
           onClick={() => setThemeMenu(!themeMenu)}
         >
-          <RoutineIcon className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
+          <SunMoon className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
           <span
             className={`overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3`}
             style={{ width: isOpen ? "10rem" : "0" }}
@@ -86,12 +81,12 @@ export default function Sidebar() {
             className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
             onClick={() => setTheme("system")}
           >
-            <SystemModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
+            <Orbit className="w-auto h-full text-dark-3 dark:text-light-3" />
             <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
               システム
             </span>
             {theme === "system" && (
-              <CheckIcon className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
+              <Check className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
             )}
           </button>
           <button
@@ -99,12 +94,12 @@ export default function Sidebar() {
             className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
             onClick={() => setTheme("light")}
           >
-            <LightModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
+            <Sun className="w-auto h-full text-dark-3 dark:text-light-3" />
             <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
               ライト
             </span>
             {theme === "light" && (
-              <CheckIcon className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
+              <Check className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
             )}
           </button>
           <button
@@ -112,12 +107,12 @@ export default function Sidebar() {
             className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
             onClick={() => setTheme("dark")}
           >
-            <DarkModeIcon className="w-auto h-full text-dark-3 dark:text-light-3" />
+            <Moon className="w-auto h-full text-dark-3 dark:text-light-3" />
             <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
               ダーク
             </span>
             {theme === "dark" && (
-              <CheckIcon className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
+              <Check className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
             )}
           </button>
         </div>

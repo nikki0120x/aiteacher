@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import TopProgress from "./components/TopProgress";
-import BodyTouchListener from "./components/BodyTouchListener";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -49,7 +48,6 @@ export default function RootLayout({
         />
       </head>
       <body style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}>
-        <BodyTouchListener />
         <Suspense fallback={null}>
           <TopProgress />
         </Suspense>
