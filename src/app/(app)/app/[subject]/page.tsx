@@ -78,7 +78,7 @@ export default function SubjectPage({ params }: SubjectPageProps) {
     <>
       <section className="flex flex-1 justify-center items-center">
         <h1
-          className={`text-center text-5xl font-black ${subjectColor} duration-1000! delay-500! ${
+          className={`text-center text-5xl font-black select-none! ${subjectColor} duration-1000! delay-500! ${
             visible ? "opacity-100" : "opacity-0"
           }`}
         >
