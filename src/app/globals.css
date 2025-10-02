@@ -18,7 +18,7 @@
   --color-green-light: oklch(93.8% 0.127 124.321);
   --color-green-middle: oklch(76.8% 0.233 130.85);
   --color-green-dark: oklch(45.3% 0.124 130.933);
-  --color-blue-middle: oklch(68.5% 0.169 237.323);
+  --color-blue-middle: oklch(62.3% 0.214 259.815);
 }
 
 #nprogress {
@@ -57,6 +57,17 @@
   -ms-user-drag: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+  appearance: none;
+}
+
+*::selection {
+  color: var(--color-light-1);
+  background-color: var(--color-blue-middle);
+}
+
+*::-moz-selection {
+  color: var(--color-light-1);
+  background-color: var(--color-blue-middle);
 }
 
 *::-webkit-scrollbar {

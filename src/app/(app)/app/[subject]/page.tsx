@@ -38,6 +38,12 @@ export default function SubjectPage({ params }: SubjectPageProps) {
   }, []);
 
   useEffect(() => {
+    if (textareaRef.current) {
+      adjustHeight();
+    }
+  }, [subjectInputs, params.subject]);
+
+  useEffect(() => {
     setVisible(true);
   }, [params.subject]);
 
@@ -92,8 +98,7 @@ export default function SubjectPage({ params }: SubjectPageProps) {
           />
         </div>
         <div className="flex items-center">
-          <div className="resize-none px-6 py-4 w-full text-left text-lg font-medium">
-          </div>
+          <div className="resize-none px-6 py-4 w-full text-left text-lg font-medium"></div>
         </div>
       </section>
     </>
