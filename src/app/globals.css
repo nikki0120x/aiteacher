@@ -48,8 +48,8 @@
   -webkit-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
-  user-select: none;
-  -webkit-user-select: none;
+  user-select: none !important;
+  -webkit-user-select: none !important;
   -moz-user-select: none;
   -ms-user-select: none;
   -webkit-user-drag: none;
