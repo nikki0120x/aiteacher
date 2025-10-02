@@ -64,7 +64,7 @@ export default function Sidebar() {
             className={`overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3`}
             style={{ width: isOpen ? "10rem" : "0" }}
           >
-            テーマ設定
+            設定
           </span>
         </button>
         <div
