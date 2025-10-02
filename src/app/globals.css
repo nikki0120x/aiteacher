@@ -38,7 +38,7 @@
 *,
 *::before,
 *::after {
-  @apply select-none transition-all duration-500 ease-in-out;
+  @apply transition-all duration-500 ease-in-out;
   box-sizing: border-box;
   outline: none;
   -webkit-font-smoothing: antialiased;
@@ -95,6 +95,9 @@
 
 html {
   scroll-behavior: smooth;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
 }
 
 body {
@@ -103,4 +106,7 @@ body {
   font-style: normal;
   font-optical-sizing: auto;
   font-family: var(--default-font);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
 }
