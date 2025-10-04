@@ -20,7 +20,7 @@ export default function Home() {
               minRows={1}
               maxRows={5}
               size="lg"
-              variant="undefined"
+              variant="underlined"
               validationBehavior="aria"
               placeholder="AI に訊きたいことはある？"
               className="text-dark-1 dark:text-light-1"
