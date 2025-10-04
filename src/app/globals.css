@@ -22,6 +22,10 @@
   --color-blue-middle: oklch(62.3% 0.214 259.815);
 }
 
+.no-transition * {
+  transition: none !important;
+}
+
 #nprogress {
   pointer-events: none;
 }
