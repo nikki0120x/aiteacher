@@ -1,6 +1,7 @@
 @import "tailwindcss";
-@tailwind utilities;
-@custom-variant dark (&:where(.dark, .dark *));
+@plugin './hero.ts';
+@source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --default-font: "Zen Maru Gothic", system-ui;
@@ -40,7 +41,6 @@
 *::after {
   @apply transition-all duration-500 ease-in-out;
   box-sizing: border-box;
-  outline: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -54,7 +54,6 @@
   -moz-user-drag: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
-  appearance: none;
 }
 
 *::selection {

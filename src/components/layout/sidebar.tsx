@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import { Menu, Settings, SunMoon, Sun, Moon, Check } from 'lucide-react';
-import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false); // Sidebarの開閉状態を管理する状態変数
