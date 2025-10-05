@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button, Textarea, Slider } from "@heroui/react";
+import { Button, Textarea, Slider, Divider, Switch } from "@heroui/react";
 import { motion, AnimatePresence } from "motion/react";
 import { Mic, MicOff, Settings2, ImageUp } from "lucide-react";
 
@@ -67,79 +67,70 @@ export default function Home() {
                 className="overflow-hidden overflow-y-auto transition-none!"
               >
                 {activeContent === "sliders" && (
-                  <div className="flex flex-col gap-4 justify-center p-2">
-                    <Slider
-                      className="w-full no-transition"
-                      defaultValue={0.5}
-                      formatOptions={{ style: "percent" }}
-                      label="理解度（どれくらい問題を理解しているか）"
-                      marks={[
-                        {
-                          value: 0.25,
-                          label: "不十分",
-                        },
-                        {
-                          value: 0.5,
-                          label: "普通",
-                        },
-                        {
-                          value: 0.75,
-                          label: "十分",
-                        },
-                      ]}
-                      maxValue={1}
-                      minValue={0}
-                      showTooltip={true}
-                      step={0.05}
-                    />
-                    <Slider
-                      className="w-full no-transition"
-                      defaultValue={0.5}
-                      formatOptions={{ style: "percent" }}
-                      label="丁寧度（どれくらいわかりやすく返答させるか）"
-                      marks={[
-                        {
-                          value: 0.25,
-                          label: "易しい",
-                        },
-                        {
-                          value: 0.5,
-                          label: "普通",
-                        },
-                        {
-                          value: 0.75,
-                          label: "難しい",
-                        },
-                      ]}
-                      maxValue={1}
-                      minValue={0}
-                      showTooltip={true}
-                      step={0.05}
-                    />
-                    <Slider
-                      className="w-full no-transition"
-                      defaultValue={0.5}
-                      formatOptions={{ style: "percent" }}
-                      label="理解度（どれくらい問題を理解しているか）"
-                      marks={[
-                        {
-                          value: 0.25,
-                          label: "不十分",
-                        },
-                        {
-                          value: 0.5,
-                          label: "普通",
-                        },
-                        {
-                          value: 0.75,
-                          label: "十分",
-                        },
-                      ]}
-                      maxValue={1}
-                      minValue={0}
-                      showTooltip={true}
-                      step={0.05}
-                    />
+                  <div className="flex flex-col gap-8 justify-center p-2">
+                    <div className="flex flex-col gap-4">
+                      <Slider
+                        className="w-full no-transition"
+                        defaultValue={0.5}
+                        formatOptions={{ style: "percent" }}
+                        label="理解度"
+                        marks={[
+                          {
+                            value: 0.25,
+                            label: "不十分",
+                          },
+                          {
+                            value: 0.5,
+                            label: "普通",
+                          },
+                          {
+                            value: 0.75,
+                            label: "十分",
+                          },
+                        ]}
+                        maxValue={1}
+                        minValue={0}
+                        showSteps={true}
+                        showTooltip={true}
+                        step={0.05}
+                        size="lg"
+                      />
+                      <Slider
+                        className="w-full no-transition"
+                        defaultValue={0.5}
+                        formatOptions={{ style: "percent" }}
+                        label="丁寧度"
+                        size="lg"
+                        marks={[
+                          {
+                            value: 0.25,
+                            label: "易しい",
+                          },
+                          {
+                            value: 0.5,
+                            label: "普通",
+                          },
+                          {
+                            value: 0.75,
+                            label: "難しい",
+                          },
+                        ]}
+                        maxValue={1}
+                        minValue={0}
+                        showSteps={true}
+                        showTooltip={true}
+                        step={0.05}
+                      />
+                    </div>
+                    <Divider className="bg-gray" />
+                    <div className="flex flex-row flex-wrap gap-4">
+                      <Switch defaultSelected isSelected size="lg">
+                        問題
+                      </Switch>
+                      <Switch size="lg">指針</Switch>
+                      <Switch size="lg">解答</Switch>
+                      <Switch size="lg">自己回答</Switch>
+                    </div>
                   </div>
                 )}
 
