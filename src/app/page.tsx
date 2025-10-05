@@ -255,7 +255,7 @@ export default function Home() {
                                     <img
                                       key={idx}
                                       src={src}
-                                      className="w-32 h-32 object-cover rounded-lg"
+                                      className="w-32 h-32 aspect-square object-cover rounded-lg"
                                     />
                                   ))}
                                 </div>
@@ -295,7 +295,7 @@ export default function Home() {
                                     <img
                                       key={idx}
                                       src={src}
-                                      className="w-32 h-32 object-cover rounded-lg"
+                                      className="w-32 h-32 aspect-square object-cover rounded-lg"
                                     />
                                   ))}
                                 </div>
@@ -335,7 +335,7 @@ export default function Home() {
                                     <img
                                       key={idx}
                                       src={src}
-                                      className="w-32 h-32 object-cover rounded-lg"
+                                      className="w-32 h-32 aspect-square object-cover rounded-lg"
                                     />
                                   ))}
                                 </div>
