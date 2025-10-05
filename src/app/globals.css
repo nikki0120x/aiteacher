@@ -22,10 +22,6 @@
   --color-blue-middle: oklch(62.3% 0.214 259.815);
 }
 
-.no-transition * {
-  transition: none !important;
-}
-
 #nprogress {
   pointer-events: none;
 }
@@ -43,7 +39,6 @@
 *,
 *::before,
 *::after {
-  @apply transition-all duration-500 ease-in-out;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

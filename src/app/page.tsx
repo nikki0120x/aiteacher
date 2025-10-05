@@ -3,17 +3,17 @@
 import React, { useState } from "react";
 import { Button, Textarea, Slider, Divider, Switch } from "@heroui/react";
 import { motion, AnimatePresence } from "motion/react";
-import { Mic, MicOff, Settings2, ImageUp } from "lucide-react";
+import { Mic, MicOff, Settings2, ImageUp, SendHorizontal } from "lucide-react";
 
 export default function Home() {
   const [activeContent, setActiveContent] = useState<
     "sliders" | "images" | null
-  >(null);
+  >("sliders");
 
   return (
     <>
       <div className="flex justify-center relative w-full h-full">
-        <div className="flex flex-col p-2 absolute top-[25dvh] w-full border-2 rounded-2xl border-gray">
+        <div className="flex flex-col p-2 absolute top-[35dvh] w-full border-2 rounded-2xl border-gray">
           <div className="flex flex-row pl-2 pb-2">
             <Textarea
               isRequired
@@ -56,6 +56,13 @@ export default function Home() {
             >
               <ImageUp />
             </Button>
+            <Button
+              isIconOnly
+              radius="full"
+              className="ml-auto text-dark-1 dark:text-light-1 bg-light-3 dark:bg-dark-3"
+            >
+              <SendHorizontal />
+            </Button>
           </div>
           <AnimatePresence>
             {activeContent && (
@@ -64,13 +71,13 @@ export default function Home() {
                 animate={{ height: "25dvh" }}
                 exit={{ height: 0 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="overflow-hidden overflow-y-auto transition-none!"
+                className="overflow-hidden overflow-y-auto"
               >
                 {activeContent === "sliders" && (
                   <div className="flex flex-col gap-8 justify-center p-2">
                     <div className="flex flex-col gap-4">
                       <Slider
-                        className="w-full no-transition"
+                        className="w-full"
                         defaultValue={0.5}
                         formatOptions={{ style: "percent" }}
                         label="理解度"
@@ -135,7 +142,7 @@ export default function Home() {
                 )}
 
                 {activeContent === "images" && (
-                  <div>画像アップロード用のコンテンツがここに入ります</div>
+                  <div className="flex flex-col justify-center p-2"></div>
                 )}
               </motion.div>
             )}
