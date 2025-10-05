@@ -67,7 +67,7 @@
 
 *::-webkit-scrollbar {
   width: 0.5rem;
-  height: auto;
+  height: 0.5rem;
 }
 *::-webkit-scrollbar-thumb {
   border-radius: 1rem;
