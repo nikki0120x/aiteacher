@@ -99,6 +99,7 @@ export default function Home() {
               className="text-dark-1 dark:text-light-1"
             />
             <Button
+              aria-label="Mic Button"
               isIconOnly
               radius="full"
               className="text-dark-1 dark:text-light-1 bg-transparent"
@@ -108,6 +109,7 @@ export default function Home() {
           </div>
           <div className="flex flex-row gap-2 pb-2">
             <Button
+              aria-label="Sliders Button"
               isIconOnly
               radius="full"
               className="text-dark-1 dark:text-light-1 bg-transparent"
@@ -118,6 +120,7 @@ export default function Home() {
               <Settings2 />
             </Button>
             <Button
+              aria-label="Image Button"
               isIconOnly
               radius="full"
               className="text-dark-1 dark:text-light-1 bg-transparent"
@@ -128,6 +131,7 @@ export default function Home() {
               <ImageUp />
             </Button>
             <Button
+              aria-label="Send Button"
               isIconOnly
               radius="full"
               className="ml-auto text-dark-1 dark:text-light-1 bg-light-3 dark:bg-dark-3"
@@ -236,6 +240,7 @@ export default function Home() {
                               {images.question.length === 0 ? (
                                 <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
                                   <Button
+                                    aria-label="Upload Images Button"
                                     size="lg"
                                     radius="full"
                                     className="text-center text-xl font-medium text-light-1 bg-blue-middle"
@@ -276,6 +281,7 @@ export default function Home() {
                               {images.answer.length === 0 ? (
                                 <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
                                   <Button
+                                    aria-label="Upload Images Button"
                                     size="lg"
                                     radius="full"
                                     className="text-center text-xl font-medium text-light-1 bg-blue-middle"
@@ -316,6 +322,7 @@ export default function Home() {
                               {images.selfanswer.length === 0 ? (
                                 <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
                                   <Button
+                                    aria-label="Upload Images Button"
                                     size="lg"
                                     radius="full"
                                     className="text-center text-xl font-medium text-light-1 bg-blue-middle"

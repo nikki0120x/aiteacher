@@ -19,6 +19,7 @@ export default function Sidebar() {
   return (
     <>
       <Button
+        aria-label="Menu Button"
         isIconOnly
         size="lg"
         radius="full"
