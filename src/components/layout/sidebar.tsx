@@ -1,121 +1,65 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import { Menu, Settings, SunMoon, Sun, Moon, Check } from 'lucide-react';
+import { motion, AnimatePresence, easeInOut } from "motion/react";
+import { Button } from "@heroui/react";
+import { Menu } from "lucide-react";
 
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false); // Sidebarの開閉状態を管理する状態変数
-  const [themeMenu, setThemeMenu] = useState(false);
-  const { theme, setTheme } = useTheme();
-
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  const thememenuRef = useRef<HTMLDivElement>(null);
-  const sidebarRef = useRef<HTMLElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (!mounted) return;
-
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        themeMenu &&
-        thememenuRef.current &&
-        sidebarRef.current &&
-        !thememenuRef.current.contains(event.target as Node) &&
-        !sidebarRef.current.contains(event.target as Node)
-      ) {
-        setThemeMenu(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside, true);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside, true);
-    };
-  }, [themeMenu, mounted]);
-
-  if (!mounted) return null;
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   return (
     <>
-      <aside
-        ref={sidebarRef}
-        className={`z-1000 flex flex-col gap-4 p-2 w-auto h-dvh bg-light-3 dark:bg-dark-3`}
-        style={{ width: isOpen ? "16rem" : "4rem" }}
+      <Button
+        isIconOnly
+        size="lg"
+        radius="full"
+        className="fixed z-100 m-2 bg-transparent"
+        onPress={() => setIsOpen(!isOpen)}
       >
-        <button
-          aria-label="Menu Button"
-          className="mb-auto flex justify-center items-center w-12 h-12 rounded-full cursor-pointer bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <Menu className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
-        </button>
-        <button
-          aria-label="Theme Button"
-          className={`mt-auto flex flex-row items-center w-full h-12 rounded-full cursor-pointer bg-light-3 dark:bg-dark-3 hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4 ${
-            isOpen ? "gap-2" : "gap-0"
-          }`}
-          onClick={() => setThemeMenu(!themeMenu)}
-        >
-          <Settings className="p-3 w-12 h-full text-dark-3 dark:text-light-3" />
-          <span
-            className={`overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3`}
-            style={{ width: isOpen ? "10rem" : "0" }}
-          >
-            設定
-          </span>
-        </button>
-        <div
-          ref={thememenuRef}
-          className={`overflow-hidden absolute left-16 bottom-0 m-4 w-64 rounded-2xl text-lg text-dark-3 dark:text-light-3 bg-light-3/50 dark:bg-dark-3/50 backdrop-blur-xs ${
-            themeMenu
-              ? "opacity-100 translate-x-0 pointer-events-auto"
-              : "opacity-0 -translate-x-4 pointer-events-none"
-          }`}
-          style={{ left: isOpen ? "16rem" : "4rem" }}
-        >
-          <button
-            aria-label="System Theme Button"
-            className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
-            onClick={() => setTheme("system")}
-          >
-            <SunMoon className="w-auto h-full text-dark-3 dark:text-light-3" />
-            <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
-              システム
-            </span>
-            {theme === "system" && (
-              <Check className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
+        <Menu />
+      </Button>
+      <AnimatePresence>
+        {(isOpen || !isMobile) && (
+          <>
+            {isMobile && isOpen && (
+              <motion.div
+                key="overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsOpen(false)}
+                className="fixed top-0 left-0 z-40 w-full h-full bg-light-1 dark:bg-dark-1"
+              />
             )}
-          </button>
-          <button
-            aria-label="Light Theme Button"
-            className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
-            onClick={() => setTheme("light")}
-          >
-            <Sun className="w-auto h-full text-dark-3 dark:text-light-3" />
-            <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
-              ライト
-            </span>
-            {theme === "light" && (
-              <Check className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
-            )}
-          </button>
-          <button
-          aria-label="Dark Theme Button"
-            className="flex flex-row items-center gap-4 p-4 w-full h-14 cursor-pointer hover:bg-light-4 hover:dark:bg-dark-4 active:bg-light-4 active:dark:bg-dark-4 focus:bg-light-4 focus:dark:bg-dark-4"
-            onClick={() => setTheme("dark")}
-          >
-            <Moon className="w-auto h-full text-dark-3 dark:text-light-3" />
-            <span className="overflow-hidden whitespace-nowrap text-left text-lg font-medium text-dark-3 dark:text-light-3">
-              ダーク
-            </span>
-            {theme === "dark" && (
-              <Check className="ml-auto w-auto h-full text-green-dark dark:text-green-light" />
-            )}
-          </button>
-        </div>
-      </aside>
+            <motion.aside
+              key="sidebar"
+              initial={{ width: isMobile ? 0 : "4rem" }}
+              animate={{
+                width: isOpen
+                  ? isMobile
+                    ? "calc(100dvw - 8rem)"
+                    : "16rem"
+                  : "4rem",
+              }}
+              exit={{ width: 0 }}
+              transition={{ duration: 0.5, ease: easeInOut }}
+              className={`
+              h-full overflow-hidden bg-light-3 dark:bg-dark-3
+              ${isMobile ? "fixed top-0 left-0 z-50" : "relative"}
+            `}
+            ></motion.aside>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }

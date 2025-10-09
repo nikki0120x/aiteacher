@@ -91,7 +91,7 @@ export default function Home() {
               isClearable
               cacheMeasurements={true}
               minRows={1}
-              maxRows={5}
+              maxRows={3}
               size="lg"
               variant="underlined"
               validationBehavior="aria"

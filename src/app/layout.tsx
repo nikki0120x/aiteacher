@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useEffect } from "react";
-
-import { HeroUIProvider } from "@heroui/react";
+import React, { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ThemeProvider } from "next-themes";
-import { Suspense } from "react";
+import { HeroUIProvider } from "@heroui/react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import NProgress from "nprogress";
 
+import NProgress from "nprogress";
 import Server from "./server";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
@@ -48,9 +46,13 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <TopProgress />
         </Suspense>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <HeroUIProvider>
-            {" "}
             <div className="flex flex-row w-dvw h-dvh">
               <Sidebar />
               <main className="flex flex-1 justify-center items-center w-full h-dvh flex-col overflow-x-hidden overflow-y-auto">

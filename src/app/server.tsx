@@ -1,4 +1,3 @@
-// src/app/server.tsx
 export default function Server() {
   return (
     <>
@@ -21,7 +20,7 @@ export default function Server() {
           `,
         }}
       />
-      
+
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link
         rel="preconnect"
