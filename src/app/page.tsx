@@ -86,7 +86,7 @@ export default function Home() {
   return (
     <>
       <div className="flex flex-col w-full h-full">
-        <div className={`flex transition-all duration-500 ${isSent ? "flex-1 opacity-100" : "flex-0 collapse opacity-0"}`}>AIチャットだよー!</div>
+        <div className={`flex transition-all duration-500 ${isSent ? "flex-1 opacity-100" : "flex-0 collapse opacity-0"}`}>AIチャットだよー!!</div>
         <div
           className={`flex items-center w-full h-full relative transition-all duration-500 ${
             isSent ? "flex-0" : "flex-1"
