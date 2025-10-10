@@ -35,10 +35,10 @@ export default function Sidebar() {
               <motion.div
                 key="overlay"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsOpen(false)}
-                className="fixed top-0 left-0 z-40 w-full h-full bg-light-1 dark:bg-dark-1"
+                className="fixed top-0 left-0 z-40 w-full h-full backdrop-blur-[2px] bg-light-1/50 dark:bg-dark-1/50"
               />
             )}
             <motion.aside

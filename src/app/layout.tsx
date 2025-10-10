@@ -55,7 +55,7 @@ export default function RootLayout({
           <HeroUIProvider>
             <div className="flex flex-row w-dvw h-dvh">
               <Sidebar />
-              <main className="flex flex-1 justify-center items-center w-full h-dvh flex-col overflow-x-hidden overflow-y-auto">
+              <main className="flex flex-1 flex-col justify-center items-center w-full h-full overflow-hidden">
                 <Header />
                 <div className="flex flex-1 flex-col p-4 w-full max-w-3xl h-full">
                   {children}
