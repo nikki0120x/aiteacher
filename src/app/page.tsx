@@ -16,7 +16,14 @@ import {
   Card,
   CardBody,
 } from "@heroui/react";
-import { Mic, MicOff, Settings2, ImageUp, SendHorizontal, Pause } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  Settings2,
+  ImageUp,
+  SendHorizontal,
+  Pause,
+} from "lucide-react";
 
 export default function Home() {
   const [activeContent, setActiveContent] = useState<
@@ -138,6 +145,11 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
+  type Message = { id: number; text: string };
+
+  const [messages, setMessages] = useState<Message[]>([]);
+  const nextId = useRef(0);
+
   return (
     <>
       <motion.div className="flex flex-col w-full h-full">
@@ -153,7 +165,22 @@ export default function Home() {
             ease: "easeInOut",
           }}
         >
-          <ScrollShadow className="w-full h-full"></ScrollShadow>
+          <ScrollShadow className="w-full h-full">
+            {messages.map((msg) => (
+              <Card
+                key={msg.id}
+                shadow="lg"
+                radius="lg"
+                className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+              >
+                <CardBody>
+                  <p className="select-text! text-base font-medium text-dark-3 dark:text-light-3">
+                    {msg.text}
+                  </p>
+                </CardBody>
+              </Card>
+            ))}
+          </ScrollShadow>
         </motion.div>
         <motion.div
           className="flex justify-center items-center w-full h-full relative"
@@ -261,6 +288,13 @@ export default function Home() {
                       radius="full"
                       className="ml-auto text-dark-1 dark:text-light-1 bg-blue-500"
                       onPress={() => {
+                        if (inputText.trim() === "") return;
+
+                        setMessages((prev) => [
+                          ...prev,
+                          { id: nextId.current++, text: inputText },
+                        ]);
+                        setInputText("");
                         setIsSent(true);
                         setIsLoading(true);
                         setActiveContent(null);

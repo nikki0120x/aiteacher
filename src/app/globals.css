@@ -85,18 +85,18 @@ body {
 }
 
 html, body, *, *::before, *::after {
-  box-sizing: border-box !important;
-  -webkit-font-smoothing: antialiased !important;
-  -moz-osx-font-smoothing: grayscale !important;
-  text-rendering: optimizeLegibility !important;
-  text-size-adjust: 100% !important;
-  -webkit-text-size-adjust: 100% !important;
-  -moz-text-size-adjust: 100% !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -webkit-user-drag: none !important;
-  -moz-user-drag: none !important;
-  -webkit-touch-callout: none !important;
-  -webkit-tap-highlight-color: transparent !important;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -webkit-user-drag: none;
+  -moz-user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
