@@ -28,7 +28,7 @@ import {
 export default function Home() {
   const [activeContent, setActiveContent] = useState<
     "sliders" | "images" | null
-  >("sliders");
+  >(null);
   const [images, setImages] = useState<{ [key: string]: string[] }>({
     question: [],
     answer: [],
