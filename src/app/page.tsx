@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { DndContext, useDroppable } from "@dnd-kit/core";
 import {
@@ -16,7 +16,7 @@ import {
   Card,
   CardBody,
 } from "@heroui/react";
-import { Mic, Settings2, ImageUp, SendHorizontal, Pause } from "lucide-react";
+import { Mic, MicOff, Settings2, ImageUp, SendHorizontal, Pause } from "lucide-react";
 
 export default function Home() {
   const [activeContent, setActiveContent] = useState<
@@ -82,6 +82,58 @@ export default function Home() {
     );
   };
 
+  const [isListening, setIsListening] = useState(false);
+  const [inputText, setInputText] = useState("");
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn("このブラウザは音声認識をサポートしていません。");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ja-JP";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      const lastResultIndex = event.results.length - 1;
+      const lastResult = event.results[lastResultIndex];
+
+      if (lastResult.isFinal) {
+        const transcript = lastResult[0].transcript;
+        setInputText((prev) => prev + transcript);
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.error("音声認識エラー:", e);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+  }, []);
+
+  const toggleListening = () => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
+    if (!isListening) {
+      recognition.start();
+      setIsListening(true);
+    } else {
+      recognition.stop();
+      setIsListening(false);
+    }
+  };
+
   const [isSent, setIsSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
@@ -101,9 +153,7 @@ export default function Home() {
             ease: "easeInOut",
           }}
         >
-          <div className="flex flex-col overflow-y-scroll w-full h-full">
-            fasdfasf
-          </div>
+          <ScrollShadow className="w-full h-full"></ScrollShadow>
         </motion.div>
         <motion.div
           className="flex justify-center items-center w-full h-full relative"
@@ -132,7 +182,7 @@ export default function Home() {
                     aria-label="Pause Button"
                     isIconOnly
                     radius="full"
-                    className="ml-auto text-dark-1 dark:text-light-1 bg-light-3 dark:bg-dark-3"
+                    className="ml-auto text-dark-1 dark:text-light-1 bg-red-500"
                     onPress={() => setIsLoading(false)}
                   >
                     <Pause />
@@ -155,7 +205,6 @@ export default function Home() {
                   <div className="flex flex-row pl-2 pb-2">
                     <Textarea
                       isRequired
-                      isClearable
                       cacheMeasurements={true}
                       minRows={1}
                       maxRows={3}
@@ -164,14 +213,19 @@ export default function Home() {
                       validationBehavior="aria"
                       placeholder="AI に訊きたいことはある？"
                       className="text-dark-1 dark:text-light-1"
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
                     />
                     <Button
                       aria-label="Mic Button"
                       isIconOnly
                       radius="full"
-                      className="text-dark-1 dark:text-light-1 bg-transparent"
+                      className={`text-dark-1 dark:text-light-1 ${
+                        isListening ? "bg-red-500" : "bg-transparent"
+                      }`}
+                      onPress={toggleListening}
                     >
-                      <Mic />
+                      {isListening ? <Mic /> : <MicOff />}
                     </Button>
                   </div>
                   <div className="flex flex-row gap-2 pb-2">
@@ -205,7 +259,7 @@ export default function Home() {
                       aria-label="Send Button"
                       isIconOnly
                       radius="full"
-                      className="ml-auto text-dark-1 dark:text-light-1 bg-light-3 dark:bg-dark-3"
+                      className="ml-auto text-dark-1 dark:text-light-1 bg-blue-500"
                       onPress={() => {
                         setIsSent(true);
                         setIsLoading(true);
