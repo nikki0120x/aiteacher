@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
+type AIResponse = {
+  text?: string;
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { prompt } = await req.json();
@@ -11,7 +15,7 @@ export async function POST(req: NextRequest) {
       location: process.env.GOOGLE_CLOUD_LOCATION,
     });
 
-    const response = await ai.models.generateContent({
+    const response: AIResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         {
@@ -33,7 +37,10 @@ export async function POST(req: NextRequest) {
     const text = response.text ?? "応答がありません";
 
     return NextResponse.json({ text });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    // unknown 型なので型ガードでエラーメッセージを取り出す
+    const message =
+      error instanceof Error ? error.message : "不明なエラーが発生しました";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
