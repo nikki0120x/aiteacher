@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
-
-type AIResponse = {
-  text?: string;
-};
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +11,8 @@ export async function POST(req: NextRequest) {
       location: process.env.GOOGLE_CLOUD_LOCATION,
     });
 
-    const response: AIResponse = await ai.models.generateContent({
+    // SDK の型を使って型安全にする
+    const response = (await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         {
@@ -25,22 +22,21 @@ export async function POST(req: NextRequest) {
               text: `
 あなたは説明をするAIです。
 計算式や数式は Markdown のコードブロック (\`\`\`math\`\`\`) で書いてください。
-ユーザーの質問:${prompt}
+ユーザーの質問: ${prompt}
 `,
             },
           ],
         },
       ],
-    });
+    })) as GenerateContentResponse;
 
     // getter プロパティなので () は不要
     const text = response.text ?? "応答がありません";
 
     return NextResponse.json({ text });
   } catch (error: unknown) {
-    // unknown 型なので型ガードでエラーメッセージを取り出す
-    const message =
-      error instanceof Error ? error.message : "不明なエラーが発生しました";
+    // 型安全にエラー処理
+    const message = error instanceof Error ? error.message : "不明なエラーが発生しました";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
