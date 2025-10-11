@@ -55,12 +55,14 @@ export default function RootLayout({
           <HeroUIProvider>
             <div className="flex flex-row w-dvw h-dvh">
               <Sidebar />
-              <main className="flex flex-1 flex-col justify-center items-center w-full h-full overflow-hidden">
+              <div className="flex flex-col w-full h-full">
                 <Header />
-                <div className="flex flex-1 flex-col p-4 w-full max-w-3xl h-full">
-                  {children}
-                </div>
-              </main>
+                <main className="flex flex-col justify-center items-center w-full h-full overflow-hidden">
+                  <div className="flex flex-col p-4 w-full max-w-3xl h-full">
+                    {children}
+                  </div>
+                </main>
+              </div>
             </div>
           </HeroUIProvider>
         </ThemeProvider>

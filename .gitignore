@@ -40,4 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Google Cloud サービスアカウントキー
+gemini-api-key.json
+
+# Next.js 環境変数ファイル
+.env.local
+
 .vercel

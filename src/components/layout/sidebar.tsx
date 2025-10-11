@@ -16,6 +16,19 @@ export default function Sidebar() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false); // Escapeで閉じる
+      } else if (e.altKey && e.key.toLowerCase() === "m") {
+        setIsOpen((prev) => !prev); // Alt + M でトグル
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
   return (
     <>
       <Button
@@ -37,8 +50,9 @@ export default function Sidebar() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                transition={{ duration: 0.5, ease: easeInOut }}
                 onClick={() => setIsOpen(false)}
-                className="fixed top-0 left-0 z-40 w-full h-full backdrop-blur-[2px] bg-light-1/50 dark:bg-dark-1/50"
+                className="fixed top-0 left-0 z-80 w-full h-full backdrop-blur-[2px] bg-light-1/50 dark:bg-dark-1/50"
               />
             )}
             <motion.aside
@@ -55,7 +69,7 @@ export default function Sidebar() {
               transition={{ duration: 0.5, ease: easeInOut }}
               className={`
               h-full overflow-hidden bg-light-3 dark:bg-dark-3
-              ${isMobile ? "fixed top-0 left-0 z-50" : "relative"}
+              ${isMobile ? "fixed top-0 left-0 z-90" : "relative"}
             `}
             ></motion.aside>
           </>

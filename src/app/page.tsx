@@ -28,7 +28,7 @@ import {
 export default function Home() {
   const [activeContent, setActiveContent] = useState<
     "sliders" | "images" | null
-  >(null);
+  >("sliders");
   const [images, setImages] = useState<{ [key: string]: string[] }>({
     question: [],
     answer: [],
@@ -141,6 +141,8 @@ export default function Home() {
     }
   };
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const [isSent, setIsSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
@@ -150,11 +152,62 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const nextId = useRef(0);
 
+  const handleSend = async () => {
+    if (inputText.trim() === "") return;
+
+    setIsLoading(true);
+    setIsSent(true);
+
+    setMessages((prev) => [...prev, { id: nextId.current++, text: inputText }]);
+    setActiveContent(null);
+    setInputText("");
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: inputText }),
+        signal: controller.signal,
+      });
+      const data = await res.json();
+
+      if (data.text) {
+        setMessages((prev) => [
+          ...prev,
+          { id: nextId.current++, text: data.text },
+        ]);
+      } else if (data.error) {
+        setMessages((prev) => [
+          ...prev,
+          { id: nextId.current++, text: `Error: ${data.error}` },
+        ]);
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        setMessages((prev) => [
+          ...prev,
+          { id: nextId.current++, text: "AIの返答を中止しました" },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { id: nextId.current++, text: `Fetch error: ${err.message}` },
+        ]);
+      }
+    } finally {
+      setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
   return (
     <>
-      <motion.div className="flex flex-col w-full h-full">
+      <motion.div className="flex flex-col gap-4 w-full h-full">
         <motion.div
-          className="flex flex-col w-full h-full relative"
+          className="flex flex-col w-full h-full overflow-hidden"
           initial={{ flex: 0, opacity: 0 }}
           animate={{
             flex: isSent ? 1 : 0,
@@ -166,24 +219,25 @@ export default function Home() {
           }}
         >
           <ScrollShadow className="w-full h-full">
-            {messages.map((msg) => (
-              <Card
-                key={msg.id}
-                shadow="lg"
-                radius="lg"
-                className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
-              >
-                <CardBody>
-                  <p className="select-text! text-base font-medium text-dark-3 dark:text-light-3">
-                    {msg.text}
-                  </p>
-                </CardBody>
-              </Card>
-            ))}
+            <div className="flex flex-col">
+              {messages.map((msg) => (
+                <Card
+                  key={msg.id}
+                  radius="lg"
+                  className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+                >
+                  <CardBody>
+                    <p className="select-text! text-base font-medium text-dark-3 dark:text-light-3">
+                      {msg.text}
+                    </p>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
           </ScrollShadow>
         </motion.div>
         <motion.div
-          className="flex justify-center items-center w-full h-full relative"
+          className="flex justify-center items-center w-full h-full"
           initial={{ flex: 1 }}
           animate={{
             flex: isSent ? 0 : 1,
@@ -193,7 +247,7 @@ export default function Home() {
             ease: "easeInOut",
           }}
         >
-          <div className="flex flex-col justify-center p-2 w-full border-2 rounded-2xl border-gray">
+          <div className="flex flex-col justify-center p-2 w-full border-2 rounded-2xl border-light-5 dark:border-dark-5">
             <AnimatePresence>
               {isLoading ? (
                 <motion.div
@@ -209,8 +263,13 @@ export default function Home() {
                     aria-label="Pause Button"
                     isIconOnly
                     radius="full"
-                    className="ml-auto text-dark-1 dark:text-light-1 bg-red-500"
-                    onPress={() => setIsLoading(false)}
+                    className="ml-auto text-light-3 bg-red-500"
+                    onPress={() => {
+                      if (abortControllerRef.current) {
+                        abortControllerRef.current.abort();
+                      }
+                      setIsLoading(false);
+                    }}
                   >
                     <Pause />
                   </Button>
@@ -242,13 +301,21 @@ export default function Home() {
                       className="text-dark-1 dark:text-light-1"
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
                     />
                     <Button
                       aria-label="Mic Button"
                       isIconOnly
                       radius="full"
-                      className={`text-dark-1 dark:text-light-1 ${
-                        isListening ? "bg-red-500" : "bg-transparent"
+                      className={`${
+                        isListening
+                          ? "text-light-3 bg-red-500"
+                          : "text-dark-3 dark:text-light-3 bg-transparent"
                       }`}
                       onPress={toggleListening}
                     >
@@ -260,7 +327,11 @@ export default function Home() {
                       aria-label="Sliders Button"
                       isIconOnly
                       radius="full"
-                      className="text-dark-1 dark:text-light-1 bg-transparent"
+                      className={`text-dark-3 dark:text-light-3 ${
+                        activeContent === "sliders"
+                          ? "bg-light-3 dark:bg-dark-3"
+                          : "bg-transparent"
+                      }`}
                       onPress={() =>
                         setActiveContent(
                           activeContent === "sliders" ? null : "sliders"
@@ -273,7 +344,11 @@ export default function Home() {
                       aria-label="Image Button"
                       isIconOnly
                       radius="full"
-                      className="text-dark-1 dark:text-light-1 bg-transparent"
+                      className={`text-dark-3 dark:text-light-3 ${
+                        activeContent === "images"
+                          ? "bg-light-3 dark:bg-dark-3"
+                          : "bg-transparent"
+                      }`}
                       onPress={() =>
                         setActiveContent(
                           activeContent === "images" ? null : "images"
@@ -286,19 +361,13 @@ export default function Home() {
                       aria-label="Send Button"
                       isIconOnly
                       radius="full"
-                      className="ml-auto text-dark-1 dark:text-light-1 bg-blue-500"
-                      onPress={() => {
-                        if (inputText.trim() === "") return;
-
-                        setMessages((prev) => [
-                          ...prev,
-                          { id: nextId.current++, text: inputText },
-                        ]);
-                        setInputText("");
-                        setIsSent(true);
-                        setIsLoading(true);
-                        setActiveContent(null);
-                      }}
+                      className={`ml-auto ${
+                        inputText.trim() === ""
+                          ? "text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3"
+                          : "text-light-3 bg-blue-500"
+                      }`}
+                      onPress={handleSend}
+                      disabled={inputText.trim() === ""}
                     >
                       <SendHorizontal />
                     </Button>
