@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { DndContext, useDroppable } from "@dnd-kit/core";
 import {
@@ -490,10 +491,13 @@ export default function Home() {
                                       ) : (
                                         <div className="flex flex-row gap-2 overflow-x-scroll">
                                           {images.question.map((src, idx) => (
-                                            <img
+                                            <Image
                                               key={idx}
                                               src={src}
-                                              className="w-32 h-32 aspect-square object-cover rounded-lg"
+                                              alt={`uploaded-question-${idx}`} // tabKey を文字列に置き換え
+                                              width={128}
+                                              height={128}
+                                              className="rounded-lg object-cover"
                                             />
                                           ))}
                                         </div>
@@ -531,10 +535,13 @@ export default function Home() {
                                       ) : (
                                         <div className="flex flex-row gap-2 overflow-x-scroll">
                                           {images.answer.map((src, idx) => (
-                                            <img
+                                            <Image
                                               key={idx}
                                               src={src}
-                                              className="w-32 h-32 aspect-square object-cover rounded-lg"
+                                              alt={`uploaded-answer-${idx}`} // tabKey を文字列に置き換え
+                                              width={128}
+                                              height={128}
+                                              className="rounded-lg object-cover"
                                             />
                                           ))}
                                         </div>
@@ -572,10 +579,13 @@ export default function Home() {
                                       ) : (
                                         <div className="flex flex-row gap-2 overflow-x-scroll">
                                           {images.selfanswer.map((src, idx) => (
-                                            <img
+                                            <Image
                                               key={idx}
                                               src={src}
-                                              className="w-32 h-32 aspect-square object-cover rounded-lg"
+                                              alt={`uploaded-selfanswer-${idx}`} // tabKey を文字列に置き換え
+                                              width={128}
+                                              height={128}
+                                              className="rounded-lg object-cover"
                                             />
                                           ))}
                                         </div>
