@@ -97,7 +97,7 @@ export default function Home() {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      console.warn("このブラウザは音声認識をサポートしていません。");
+      console.warn("このブラウザは音声認識をサポートしていません！");
       return;
     }
 
