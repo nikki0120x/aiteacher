@@ -727,22 +727,10 @@ export default function Home() {
                 transition={{ duration: 0.5, ease: "easeInOut" }}
                 className="flex flex-row justify-center items-end gap-4 absolute left-0 bottom-0 w-full"
               >
-                <span className="flex-1 text-left text-sm font-medium text-dark-5 dark:text-light-5">
+                <span className="text-left text-sm font-medium text-dark-5 dark:text-light-5">
                   AI
                   は不正確な情報を表示することがあるため、生成された回答を再確認するようにしてください。
                 </span>
-                <Divider
-                  orientation="vertical"
-                  className="h-10 bg-dark-5 dark:bg-light-5"
-                />
-                <div className="flex flex-col flex-0">
-                  <span className="text-right text-sm font-medium text-dark-5 dark:text-light-5">
-                    AITeacher
-                  </span>
-                  <span className="text-right text-sm font-medium text-dark-5 dark:text-light-5">
-                    FoCalrina
-                  </span>
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
