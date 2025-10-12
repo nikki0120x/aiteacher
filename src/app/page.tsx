@@ -717,23 +717,6 @@ export default function Home() {
                 ))}
             </AnimatePresence>
           </div>
-          <AnimatePresence>
-            {!isSent && (
-              <motion.div
-                key="heading"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="flex flex-row justify-center items-end gap-4 absolute left-0 bottom-0 w-full"
-              >
-                <span className="text-left text-sm font-medium text-dark-5 dark:text-light-5">
-                  AI
-                  は不正確な情報を表示することがあるため、生成された回答を再確認するようにしてください。
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
       </motion.div>
     </>
