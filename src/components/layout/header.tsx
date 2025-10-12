@@ -23,7 +23,7 @@ export default function Header() {
 
   return (
     <>
-      <div className="flex flex-row items-center z-70 w-full h-20 backdrop-blur-xs bg-transparent">
+      <div className="flex flex-row items-center z-70 w-full h-16 backdrop-blur-xs bg-transparent">
         {loading && (
           <Progress
             isIndeterminate
