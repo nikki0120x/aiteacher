@@ -148,6 +148,7 @@ export default function Home() {
 
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const [isSent, setIsSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
@@ -359,7 +360,7 @@ export default function Home() {
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
+                          if (!isMobile && e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             handleSend();
                           }
