@@ -2,10 +2,25 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence, easeInOut } from "motion/react";
+import { useChatStore } from "@/stores/useChatStore";
 import { Button } from "@heroui/react";
 import { Menu, SquarePen } from "lucide-react";
 
 export default function Sidebar() {
+  // ---------- 共通状態管理 ---------- //
+
+  const {
+    abortController,
+    setIsSent,
+    setIsLoading,
+    setIsPanelOpen,
+    setActiveContent,
+    clearMessage,
+    setAbortController,
+  } = useChatStore();
+
+  // ---------- メニュー ---------- //
+
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -29,6 +44,22 @@ export default function Sidebar() {
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
+  // ---------- 新規チャット ---------- //
+
+  const handleNewChat = () => {
+    setIsSent(false);
+    setIsLoading(false);
+    setIsPanelOpen(true);
+    setActiveContent(null);
+    clearMessage();
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+  };
+
+  // ---------- フロントエンド ---------- //
+
   return (
     <>
       <Button
@@ -41,15 +72,18 @@ export default function Sidebar() {
       >
         <Menu />
       </Button>
+
       <Button
         aria-label="New Chat Button"
         isIconOnly
         size="lg"
         radius="full"
         className="absolute top-0 right-0 z-100 m-2 text-dark-3 dark:text-light-3 bg-transparent"
+        onPress={handleNewChat}
       >
         <SquarePen />
       </Button>
+
       <AnimatePresence>
         {(isOpen || !isMobile) && (
           <>

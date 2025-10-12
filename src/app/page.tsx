@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
+import { useChatStore } from "@/stores/useChatStore";
 import { DndContext, useDroppable } from "@dnd-kit/core";
 import {
   ScrollShadow,
@@ -29,9 +30,24 @@ import {
 } from "lucide-react";
 
 export default function Home() {
-  const [activeContent, setActiveContent] = useState<
-    "sliders" | "images" | null
-  >("sliders");
+  // ---------- 共通状態管理 ---------- //
+
+  const {
+    isSent,
+    isLoading,
+    isPanelOpen,
+    activeContent,
+    message,
+    abortController,
+    setIsSent,
+    setIsLoading,
+    setIsPanelOpen,
+    togglePanel,
+    setActiveContent,
+    addMessage,
+    setAbortController,
+  } = useChatStore();
+
   const [images, setImages] = useState<{ [key: string]: string[] }>({
     question: [],
     answer: [],
@@ -144,33 +160,23 @@ export default function Home() {
     }
   };
 
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
-
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const [isSent, setIsSent] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
-  type Message = { id: number; text: string };
+  // ---------- 送信と応答 ---------- //
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const nextId = useRef(0);
-
-  const handleSend = async () => {
+  const handleSend = async (showAbortMessage = false) => {
     if (inputText.trim() === "") return;
 
     setIsLoading(true);
     setIsSent(true);
 
-    // 自分のメッセージを追加
-    setMessages((prev) => [...prev, { id: nextId.current++, text: inputText }]);
+    addMessage(inputText);
     setActiveContent(null);
     setInputText("");
 
     const controller = new AbortController();
-    abortControllerRef.current = controller;
+    useChatStore.getState().setAbortController(controller);
 
     try {
       const res = await fetch("/api/gemini", {
@@ -182,39 +188,26 @@ export default function Home() {
 
       const data: { text?: string; error?: string } = await res.json();
 
-      if (data.text) {
-        setMessages((prev) => [
-          ...prev,
-          { id: nextId.current++, text: data.text ?? "" },
-        ]);
+      if (!controller.signal.aborted) {
+        if (data.text) addMessage(data.text);
       } else if (data.error) {
-        setMessages((prev) => [
-          ...prev,
-          { id: nextId.current++, text: `Error: ${data.error}` },
-        ]);
+        addMessage(`Error: ${data.error}`);
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        setMessages((prev) => [
-          ...prev,
-          { id: nextId.current++, text: "AIの返答を中止しました" },
-        ]);
+        if (showAbortMessage) addMessage("AIの返答を中止しました");
       } else if (err instanceof Error) {
-        setMessages((prev) => [
-          ...prev,
-          { id: nextId.current++, text: `Fetch error: ${err.message}` },
-        ]);
+        addMessage(`Fetch error: ${err.message}`);
       } else {
-        setMessages((prev) => [
-          ...prev,
-          { id: nextId.current++, text: "Fetch error: 不明なエラー" },
-        ]);
+        addMessage("Fetch error: 不明なエラー");
       }
     } finally {
       setIsLoading(false);
-      abortControllerRef.current = null;
+      setAbortController(null);
     }
   };
+
+  // ---------- フロントエンド ---------- //
 
   return (
     <>
@@ -256,7 +249,7 @@ export default function Home() {
           </AnimatePresence>
           <ScrollShadow className="w-full h-full">
             <div className="flex flex-col">
-              {messages.map((msg) => (
+              {message.map((msg) => (
                 <Card
                   key={msg.id}
                   shadow="none"
@@ -318,7 +311,7 @@ export default function Home() {
                   orientation="vertical"
                   className="bg-dark-5 dark:bg-light-5"
                 />
-                <span className="text-center underline underline-offset-5 text-xl font-medium text-dark-3 dark:text-light-5">
+                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center underline underline-offset-5 text-xl font-medium text-dark-3 dark:text-light-5">
                   Ver. 1.0.0
                 </span>
                 <Divider
@@ -351,7 +344,7 @@ export default function Home() {
                           radius="full"
                           className="text-dark-3 dark:text-light-3 bg-transparent"
                           onPress={() => {
-                            setIsPanelOpen((prev) => !prev);
+                            togglePanel();
                             setActiveContent(null);
                           }}
                         >
@@ -364,8 +357,9 @@ export default function Home() {
                         radius="full"
                         className="ml-auto text-light-3 bg-red-500"
                         onPress={() => {
-                          if (abortControllerRef.current) {
-                            abortControllerRef.current.abort();
+                          if (abortController) {
+                            abortController.abort();
+                            handleSend(true);
                           }
                           setIsLoading(false);
                         }}
@@ -467,7 +461,7 @@ export default function Home() {
                             radius="full"
                             className="text-dark-3 dark:text-light-3 bg-transparent"
                             onPress={() => {
-                              setIsPanelOpen((prev) => !prev);
+                              togglePanel();
                               setActiveContent(null);
                             }}
                           >
@@ -483,7 +477,7 @@ export default function Home() {
                               ? "text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3"
                               : "text-light-3 bg-blue-500"
                           }`}
-                          onPress={handleSend}
+                          onPress={() => handleSend()}
                           disabled={inputText.trim() === ""}
                         >
                           <SendHorizontal />
