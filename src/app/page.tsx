@@ -284,8 +284,50 @@ export default function Home() {
             duration: 0.5,
             ease: "easeInOut",
           }}
-          className="flex justify-center items-center w-full h-full"
+          className="flex flex-col justify-center items-center w-full h-full"
         >
+          <AnimatePresence>
+            {!isSent && (
+              <motion.div
+                key="heading"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="flex flex-row justify-center items-center gap-4 relative bottom-10 w-full"
+              >
+                <Divider
+                  orientation="horizontal"
+                  className="flex-1 mr-8 bg-dark-5 dark:bg-light-5"
+                />
+                <Image
+                  src="/logos/dark.webp"
+                  alt="Logo (Dark)"
+                  width={128}
+                  height={128}
+                  className="object-contain dark:hidden"
+                />
+                <Image
+                  src="/logos/light.webp"
+                  alt="Logo (Light)"
+                  width={128}
+                  height={128}
+                  className="object-contain hidden dark:block"
+                />
+                <Divider
+                  orientation="vertical"
+                  className="bg-dark-5 dark:bg-light-5"
+                />
+                <span className="text-center underline underline-offset-5 text-xl font-medium text-dark-3 dark:text-light-5">
+                  Ver. 1.0.0
+                </span>
+                <Divider
+                  orientation="horizontal"
+                  className="flex-1 ml-8 bg-dark-5 dark:bg-light-5"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
           <div className="flex flex-col justify-center p-2 w-full border-2 rounded-2xl border-light-5 dark:border-dark-5">
             <AnimatePresence>
               {isPanelOpen &&
