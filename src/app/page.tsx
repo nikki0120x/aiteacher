@@ -258,6 +258,7 @@ export default function Home() {
               {messages.map((msg) => (
                 <Card
                   key={msg.id}
+                  shadow="none"
                   radius="lg"
                   className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
                 >
