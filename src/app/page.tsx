@@ -4,6 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { useChatStore } from "@/stores/useChatStore";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeMathjax from "rehype-mathjax";
+import { MathJax, MathJaxContext } from "better-react-mathjax";
 import { DndContext, useDroppable } from "@dnd-kit/core";
 import {
   ScrollShadow,
@@ -30,6 +35,11 @@ import {
 } from "lucide-react";
 
 export default function Home() {
+  const mathJaxConfig = {
+    loader: { load: ["input/tex", "output/svg"] }, // SVG出力モード
+    svg: { fontCache: "global" },
+  };
+
   // ---------- 共通状態管理 ---------- //
 
   const {
@@ -248,22 +258,60 @@ export default function Home() {
             )}
           </AnimatePresence>
           <ScrollShadow className="w-full h-full">
-            <div className="flex flex-col">
-              {message.map((msg) => (
-                <Card
-                  key={msg.id}
-                  shadow="none"
-                  radius="lg"
-                  className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
-                >
-                  <CardBody>
-                    <p className="select-text! text-base font-medium text-dark-3 dark:text-light-3">
-                      {msg.text}
-                    </p>
-                  </CardBody>
-                </Card>
-              ))}
-            </div>
+            <MathJaxContext version={3} config={mathJaxConfig}>
+              <motion.div className="flex flex-col">
+                {message.map((msg) => (
+                  <Card
+                    key={msg.id}
+                    shadow="none"
+                    radius="lg"
+                    className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+                  >
+                    <CardBody>
+                      <div className="overflow-x-hidden select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkMath]}
+                          rehypePlugins={[rehypeMathjax]}
+                          components={{
+                            // 段落内の文字列だけハイライト
+                            p: ({ children, ...props }) => {
+                              const processedChildren = React.Children.map(
+                                children,
+                                (child) => {
+                                  if (typeof child === "string") {
+                                    // ==ハイライト== を <mark> に変換
+                                    return child
+                                      .split(/(==.*?==)/g)
+                                      .map((part, i) =>
+                                        part.startsWith("==") &&
+                                        part.endsWith("==") ? (
+                                          <mark
+                                            key={i}
+                                            className="bg-red-500 text-light-3"
+                                          >
+                                            {part.slice(2, -2)}
+                                          </mark>
+                                        ) : (
+                                          part
+                                        )
+                                      );
+                                  }
+                                  // 数式ノードはそのまま返す
+                                  return child;
+                                }
+                              );
+                              return <p {...props}>{processedChildren}</p>;
+                            },
+                          }}
+                        >
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
+                    </CardBody>
+                  </Card>
+                ))}
+              </motion.div>
+            </MathJaxContext>
           </ScrollShadow>
         </motion.div>
         <motion.div

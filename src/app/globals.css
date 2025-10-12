@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @plugin './hero.ts';
 @source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
 @custom-variant dark (&:is(.dark *));
@@ -70,7 +71,11 @@ body {
   font-family: var(--default-font);
 }
 
-html, body, *, *::before, *::after {
+html,
+body,
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -78,11 +83,15 @@ html, body, *, *::before, *::after {
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
   -webkit-user-drag: none;
   -moz-user-drag: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 全ての MathJax SVG を横並びに */
+mjx-container svg {
+  display: inline-block; /* ← これが肝 */
+  vertical-align: middle; /* テキストと高さを揃える */
+  margin: 0 0.1em; /* 数式間の隙間 */
 }
