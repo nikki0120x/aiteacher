@@ -22,20 +22,6 @@
   --color-blue-middle: oklch(62.3% 0.214 259.815);
 }
 
-#nprogress {
-  pointer-events: none;
-}
-
-#nprogress .bar {
-  position: fixed;
-  z-index: 500;
-  top: 4rem;
-  left: 0;
-  width: 100%;
-  height: 0.25rem;
-  background: var(--color-blue-middle);
-}
-
 *::selection {
   color: var(--color-light-1);
   background-color: var(--color-blue-middle);

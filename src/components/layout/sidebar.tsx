@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence, easeInOut } from "motion/react";
 import { Button } from "@heroui/react";
-import { Menu } from "lucide-react";
+import { Menu, SquarePen } from "lucide-react";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,10 +36,19 @@ export default function Sidebar() {
         isIconOnly
         size="lg"
         radius="full"
-        className="fixed z-100 m-2 bg-transparent"
+        className="fixed top-0 left-0 z-100 m-2 text-dark-3 dark:text-light-3 bg-transparent"
         onPress={() => setIsOpen(!isOpen)}
       >
         <Menu />
+      </Button>
+      <Button
+        aria-label="New Chat Button"
+        isIconOnly
+        size="lg"
+        radius="full"
+        className="absolute top-0 right-0 z-100 m-2 text-dark-3 dark:text-light-3 bg-transparent"
+      >
+        <SquarePen />
       </Button>
       <AnimatePresence>
         {(isOpen || !isMobile) && (
