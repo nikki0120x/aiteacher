@@ -268,35 +268,16 @@ export default function Home() {
                     className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
                   >
                     <CardBody>
-                      <div className="overflow-x-hidden select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
+                      <div className="overflow-x-scroll select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm, remarkMath]}
                           rehypePlugins={[rehypeMathjax]}
                           components={{
-                            // 段落内の文字列だけハイライト
                             p: ({ children, ...props }) => {
                               const processedChildren = React.Children.map(
                                 children,
                                 (child) => {
-                                  if (typeof child === "string") {
-                                    // ==ハイライト== を <mark> に変換
-                                    return child
-                                      .split(/(==.*?==)/g)
-                                      .map((part, i) =>
-                                        part.startsWith("==") &&
-                                        part.endsWith("==") ? (
-                                          <mark
-                                            key={i}
-                                            className="bg-red-500 text-light-3"
-                                          >
-                                            {part.slice(2, -2)}
-                                          </mark>
-                                        ) : (
-                                          part
-                                        )
-                                      );
-                                  }
-                                  // 数式ノードはそのまま返す
+                                  // 文字列や数式ノードをそのまま表示
                                   return child;
                                 }
                               );
@@ -339,7 +320,7 @@ export default function Home() {
               >
                 <Divider
                   orientation="horizontal"
-                  className="flex-1 mr-8 bg-dark-5 dark:bg-light-5"
+                  className="hidden lg:flex flex-1 mr-8 bg-dark-5 dark:bg-light-5"
                 />
                 <Image
                   src="/logos/dark.webp"
@@ -357,14 +338,14 @@ export default function Home() {
                 />
                 <Divider
                   orientation="vertical"
-                  className="bg-dark-5 dark:bg-light-5"
+                  className="max-h-10 bg-dark-5 dark:bg-light-5"
                 />
-                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center underline underline-offset-5 text-xl font-medium text-dark-5 dark:text-light-5">
+                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5">
                   Ver. 1.0.0
                 </span>
                 <Divider
                   orientation="horizontal"
-                  className="flex-1 ml-8 bg-dark-5 dark:bg-light-5"
+                  className="hidden lg:flex flex-1 ml-8 bg-dark-5 dark:bg-light-5"
                 />
               </motion.div>
             )}
