@@ -83,6 +83,9 @@ body,
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
   -webkit-user-drag: none;
   -moz-user-drag: none;
   -webkit-touch-callout: none;

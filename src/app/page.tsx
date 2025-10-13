@@ -35,10 +35,17 @@ import {
 } from "lucide-react";
 
 export default function Home() {
-  const mathJaxConfig = {
-    loader: { load: ["input/tex", "output/svg"] }, // SVG出力モード
-    svg: { fontCache: "global" },
-  };
+  const [switchState, setSwitchState] = useState({
+    question: true,
+    guidance: false,
+    explanation: false,
+    answer: false,
+  });
+
+  const [sliders, setSliders] = useState({
+    understanding: 0.5, // 理解度
+    politeness: 0.5, // 丁寧度
+  });
 
   // ---------- 共通状態管理 ---------- //
 
@@ -60,13 +67,13 @@ export default function Home() {
 
   const [images, setImages] = useState<{ [key: string]: string[] }>({
     question: [],
+    explanation: [],
     answer: [],
-    selfanswer: [],
   });
 
   const questionInputRef = useRef<HTMLInputElement>(null);
+  const explanationInputRef = useRef<HTMLInputElement>(null);
   const answerInputRef = useRef<HTMLInputElement>(null);
-  const selfanswerInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = (tabKey: string, files: FileList | null) => {
     if (!files) return;
@@ -192,7 +199,11 @@ export default function Home() {
       const res = await fetch("/api/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: inputText }),
+        body: JSON.stringify({
+          prompt: inputText,
+          options: switchState,
+          sliders,
+        }),
         signal: controller.signal,
       });
 
@@ -258,7 +269,18 @@ export default function Home() {
             )}
           </AnimatePresence>
           <ScrollShadow className="w-full h-full">
-            <MathJaxContext version={3} config={mathJaxConfig}>
+            <MathJaxContext
+              version={3}
+              config={{
+                loader: { load: ["input/tex", "output/chtml"] },
+                tex: {
+                  inlineMath: [
+                    ["$", "$"],
+                    ["\\(", "\\)"],
+                  ],
+                },
+              }}
+            >
               <motion.div className="flex flex-col">
                 {message.map((msg) => (
                   <Card
@@ -268,7 +290,7 @@ export default function Home() {
                     className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
                   >
                     <CardBody>
-                      <div className="overflow-x-scroll select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
+                      <div className="overflow-x-auto select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm, remarkMath]}
                           rehypePlugins={[rehypeMathjax]}
@@ -532,61 +554,116 @@ export default function Home() {
                                     formatOptions={{ style: "percent" }}
                                     label="理解度"
                                     marks={[
-                                      {
-                                        value: 0.25,
-                                        label: "不十分",
-                                      },
-                                      {
-                                        value: 0.5,
-                                        label: "普通",
-                                      },
-                                      {
-                                        value: 0.75,
-                                        label: "十分",
-                                      },
+                                      { value: 0.25, label: "不十分" },
+                                      { value: 0.5, label: "普通" },
+                                      { value: 0.75, label: "十分" },
                                     ]}
                                     maxValue={1}
                                     minValue={0}
-                                    showSteps={true}
-                                    showTooltip={true}
+                                    showSteps
+                                    showTooltip
                                     step={0.25}
                                     size="lg"
+                                    onChange={(value: number | number[]) => {
+                                      // 配列で返る場合があるので number に変換
+                                      const numValue = Array.isArray(value)
+                                        ? value[0]
+                                        : value;
+                                      setSliders((prev) => ({
+                                        ...prev,
+                                        understanding: numValue,
+                                      }));
+                                    }}
                                   />
+
                                   <Slider
-                                    className="w-full no-transition"
+                                    className="w-full"
                                     defaultValue={0.5}
                                     formatOptions={{ style: "percent" }}
                                     label="丁寧度"
-                                    size="lg"
                                     marks={[
-                                      {
-                                        value: 0.25,
-                                        label: "難しい",
-                                      },
-                                      {
-                                        value: 0.5,
-                                        label: "普通",
-                                      },
-                                      {
-                                        value: 0.75,
-                                        label: "易しい",
-                                      },
+                                      { value: 0.25, label: "難しい" },
+                                      { value: 0.5, label: "普通" },
+                                      { value: 0.75, label: "易しい" },
                                     ]}
                                     maxValue={1}
                                     minValue={0}
-                                    showSteps={true}
-                                    showTooltip={true}
+                                    showSteps
+                                    showTooltip
                                     step={0.25}
+                                    size="lg"
+                                    onChange={(value: number | number[]) => {
+                                      const numValue = Array.isArray(value)
+                                        ? value[0]
+                                        : value;
+                                      setSliders((prev) => ({
+                                        ...prev,
+                                        politeness: numValue,
+                                      }));
+                                    }}
                                   />
                                 </div>
                                 <Divider className="bg-gray" />
                                 <div className="flex flex-row flex-wrap gap-4">
-                                  <Switch defaultSelected isSelected size="lg">
+                                  <Switch
+                                    size="lg"
+                                    isSelected
+                                    onChange={(
+                                      event: React.ChangeEvent<HTMLInputElement>
+                                    ) =>
+                                      setSwitchState((prev) => ({
+                                        ...prev,
+                                        question: event.target.checked,
+                                      }))
+                                    }
+                                  >
                                     問題
                                   </Switch>
-                                  <Switch size="lg">指針</Switch>
-                                  <Switch size="lg">解答</Switch>
-                                  <Switch size="lg">自己回答</Switch>
+
+                                  <Switch
+                                    size="lg"
+                                    isSelected={switchState.guidance}
+                                    onChange={(
+                                      event: React.ChangeEvent<HTMLInputElement>
+                                    ) =>
+                                      setSwitchState((prev) => ({
+                                        ...prev,
+                                        guidance: event.target.checked,
+                                      }))
+                                    }
+                                  >
+                                    指針
+                                  </Switch>
+
+                                  <Switch
+                                    size="lg"
+                                    isSelected={switchState.explanation}
+                                    onChange={(
+                                      event: React.ChangeEvent<HTMLInputElement>
+                                    ) =>
+                                      setSwitchState((prev) => ({
+                                        ...prev,
+                                        explanation: event.target.checked,
+                                      }))
+                                    }
+                                  >
+                                    解説
+                                  </Switch>
+
+                                  <Switch
+                                    size="lg"
+                                    isSelected={switchState.answer}
+                                    onChange={(
+                                      event: React.ChangeEvent<HTMLInputElement>
+                                    ) =>
+                                      setSwitchState((prev) => ({
+                                        ...prev,
+                                        answer: event.target.checked,
+                                      }))
+                                    }
+                                  >
+                                    解答
+                                  </Switch>
                                 </div>
                               </div>
                             )}
@@ -601,7 +678,6 @@ export default function Home() {
                                     radius="full"
                                     fullWidth
                                   >
-                                    {/* 問題タブ */}
                                     <Tab
                                       key="question"
                                       title="問題"
@@ -645,7 +721,51 @@ export default function Home() {
                                       </DroppableArea>
                                     </Tab>
 
-                                    {/* 解答タブ */}
+                                    <Tab
+                                      key="explanation"
+                                      title="解説"
+                                      className="w-full h-full"
+                                    >
+                                      <DroppableArea
+                                        tabKey="selfanswer"
+                                        inputRef={explanationInputRef}
+                                      >
+                                        {images.explanation.length === 0 ? (
+                                          <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
+                                            <Button
+                                              aria-label="Upload Images Button"
+                                              size="lg"
+                                              radius="full"
+                                              className="text-center text-xl font-medium text-light-1 bg-blue-middle"
+                                              onPress={() =>
+                                                explanationInputRef.current?.click()
+                                              }
+                                            >
+                                              画像アップロード
+                                            </Button>
+                                            <span className="text-lg font-medium text-gray">
+                                              ファイルをドラッグ&ドロップ
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <div className="flex flex-row gap-2 overflow-x-scroll">
+                                            {images.explanation.map(
+                                              (src, idx) => (
+                                                <Image
+                                                  key={idx}
+                                                  src={src}
+                                                  alt={`uploaded-explanation-${idx}`} // tabKey を文字列に置き換え
+                                                  width={128}
+                                                  height={128}
+                                                  className="rounded-lg object-cover"
+                                                />
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+                                      </DroppableArea>
+                                    </Tab>
+
                                     <Tab
                                       key="answer"
                                       title="解答"
@@ -684,52 +804,6 @@ export default function Home() {
                                                 className="rounded-lg object-cover"
                                               />
                                             ))}
-                                          </div>
-                                        )}
-                                      </DroppableArea>
-                                    </Tab>
-
-                                    {/* 自己回答タブ */}
-                                    <Tab
-                                      key="selfanswer"
-                                      title="自己回答"
-                                      className="w-full h-full"
-                                    >
-                                      <DroppableArea
-                                        tabKey="selfanswer"
-                                        inputRef={selfanswerInputRef}
-                                      >
-                                        {images.selfanswer.length === 0 ? (
-                                          <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
-                                            <Button
-                                              aria-label="Upload Images Button"
-                                              size="lg"
-                                              radius="full"
-                                              className="text-center text-xl font-medium text-light-1 bg-blue-middle"
-                                              onPress={() =>
-                                                selfanswerInputRef.current?.click()
-                                              }
-                                            >
-                                              画像アップロード
-                                            </Button>
-                                            <span className="text-lg font-medium text-gray">
-                                              ファイルをドラッグ&ドロップ
-                                            </span>
-                                          </div>
-                                        ) : (
-                                          <div className="flex flex-row gap-2 overflow-x-scroll">
-                                            {images.selfanswer.map(
-                                              (src, idx) => (
-                                                <Image
-                                                  key={idx}
-                                                  src={src}
-                                                  alt={`uploaded-selfanswer-${idx}`} // tabKey を文字列に置き換え
-                                                  width={128}
-                                                  height={128}
-                                                  className="rounded-lg object-cover"
-                                                />
-                                              )
-                                            )}
                                           </div>
                                         )}
                                       </DroppableArea>

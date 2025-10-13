@@ -3,12 +3,53 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import fs from "fs";
 import path from "path";
 
+type SwitchOptions = {
+  question?: boolean;
+  guidance?: boolean;
+  answer?: boolean;
+  explanation?: boolean;
+};
+
+type SliderOptions = {
+  understanding?: number; // 0〜1
+  politeness?: number;    // 0〜1
+};
+
 export async function POST(req: NextRequest) {
   try {
-    const { prompt } = await req.json();
+    const { prompt, options, sliders } = (await req.json()) as {
+      prompt: string;
+      options?: SwitchOptions;
+      sliders?: SliderOptions;
+    };
+
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ error: "prompt が無効です" }, { status: 400 });
     }
+
+    // スイッチ設定
+    const switchOptions: Required<SwitchOptions> = {
+      question: true,
+      guidance: options?.guidance ?? false,
+      answer: options?.answer ?? false,
+      explanation: options?.explanation ?? false,
+    };
+
+    // スライダー設定
+    const understanding = sliders?.understanding ?? 0.5;
+    const politeness = sliders?.politeness ?? 0.5;
+
+    // 理解度の指示
+    let understandingText = "";
+    if (understanding <= 0.33) understandingText = "ユーザーは問題への理解が浅いことを考慮してください。";
+    else if (understanding <= 0.66) understandingText = "ユーザーは問題への理解が普通なことを考慮してください。";
+    else understandingText = "ユーザーは問題への理解が深いことを考慮してください。";
+
+    // 丁寧度の指示
+    let politenessText = "";
+    if (politeness <= 0.33) politenessText = "簡潔に無駄な言葉は使わずテストや入試のような返答をしてください。";
+    else if (politeness <= 0.66) politenessText = "一般的な普通のわかりやすい、公式を用いる際はそれも記述して返答をしてください。";
+    else politenessText = "誰でもわかりやすいようとても丁寧に詳しく、公式を用いる際は公式と公式の説明をして返答してください。";
 
     // 一時認証設定（Vercel対応）
     if (
@@ -29,10 +70,9 @@ export async function POST(req: NextRequest) {
       location: process.env.GOOGLE_CLOUD_LOCATION,
     });
 
-    // Step 1: 教科分類
-    // Step 1: 教科分類
+    // 教科分類
     const classify = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-pro",
       contents: [
         {
           role: "user",
@@ -40,18 +80,16 @@ export async function POST(req: NextRequest) {
             {
               text: `
 次の質問がどの教科に属するかを判断してください。
-候補は "math"（数学）, "physics"（物理）, "chemistry"（化学）, 
-"biology"（生物）, "earth_science"（地学）, "english"（英語）, "other"（その他） のいずれかです。
-出力はその7つのうち1つだけにしてください。
+候補: "math","physics","chemistry","biology","earth_science","english","other"
+出力はその7つのうち1つだけ
 質問: ${prompt}
-          `,
+              `,
             },
           ],
         },
       ],
     });
 
-    // 教科分類結果の抽出
     const rawCategory = classify.text?.toLowerCase() ?? "other";
     let category:
       | "math"
@@ -70,148 +108,55 @@ export async function POST(req: NextRequest) {
       category = "earth_science";
     else if (rawCategory.includes("eng")) category = "english";
 
-    // Step 2: 教科別プロンプト生成
-    const mathInstruction = `
-あなたは高校数学の教師です。
-ユーザーから提供された数学の問題について、以下の形式で答えてください：
+    const baseInstructions: Record<string, string> = {
+      math: "あなたは高校数学の教師です。",
+      physics: "あなたは高校物理の教師です。",
+      chemistry: "あなたは高校化学の教師です。",
+      biology: "あなたは高校生物の教師です。",
+      earth_science: "あなたは高校地学の教師です。",
+      english: "あなたは高校英語の教師です。",
+      other: "あなたは高校生向けのやさしい先生です。",
+    };
 
----
+    // プロンプトに理解度と丁寧度の指示を追加
+    let finalPrompt = `${baseInstructions[category]}
+${understandingText}
+${politenessText}
+以下の形式で回答してください:
+`;
+
+    if (switchOptions.question) {
+      finalPrompt += `
 ### 要約
-問題の要点を簡潔にまとめる。
+問題の要点を簡潔にまとめて、それ以外の指針、解説、解答はしない。
+`;
+    }
 
+    if (switchOptions.guidance) {
+      finalPrompt += `
+### 指針
+問題解決の方針や考え方を丁寧に示し、それ以外の問題の要約、解説、解答はしない。
+`;
+    }
+
+    if (switchOptions.answer) {
+      finalPrompt += `
 ### 解説
-解答の手順を丁寧に説明。
+解答までの手順を丁寧に説明。
 数式は LaTeX で書き、MathJax で表示できるように。
 高校レベルの知識で説明する。
-
-### 解答
-テストで書くための簡潔な答え。
----
-
-ユーザーの質問: ${prompt}
-    `;
-
-    const physicsInstruction = `
-あなたは高校物理の教師です。
-以下の物理の問題について、わかりやすく説明してください。
-
----
-### 要約
-物理現象や問題の設定を簡潔にまとめる。
-
-### 解説
-公式の導出や考え方を丁寧に説明。
-数式は LaTeX で書き、物理量の意味も補足する。
-高校物理の範囲を超えないように。
-
-### 解答
-テストで書くための簡潔な答え。
----
-
-ユーザーの質問: ${prompt}
-    `;
-
-    const chemistryInstruction = `
-あなたは高校化学の教師です。
-次の化学の質問に対して、化学反応や理論を高校範囲で説明してください。
-
----
-### 要約
-問題のテーマと目的を簡潔にまとめる。
-
-### 解説
-化学反応式や理論を使いながら、手順を丁寧に説明。
-数式や化学式は LaTeX で書き、MathJax で表示できるように。
-必要があれば注意点や例も加える。
-
-### 解答
-テストで書くための簡潔な答え。
----
-
-ユーザーの質問: ${prompt}
-    `;
-
-    const biologyInstruction = `
-あなたは高校生物の教師です。
-次の生物の質問に対して、高校範囲の知識で丁寧に説明してください。
-
----
-### 要約
-生物現象や仕組みの概要を簡潔にまとめる。
-
-### 解説
-関連する生体反応、構造、メカニズムを説明。
-必要に応じて図や例を言葉で表現。
-数式や化学式は LaTeX で書いてもよい。
-
-### 解答
-テストで書くための簡潔な答え。
----
-
-ユーザーの質問: ${prompt}
 `;
+    }
 
-    const earthScienceInstruction = `
-あなたは高校地学の教師です。
-次の地学に関する質問に対して、わかりやすく高校範囲で説明してください。
-
----
-### 要約
-地球現象や観測対象の概要を簡潔にまとめる。
-
-### 解説
-プレートテクトニクス、気象、天文、地質など関連する理論を整理して説明。
-必要に応じて数値や式は LaTeX 形式で記述。
-
+    if (switchOptions.explanation) {
+      finalPrompt += `
 ### 解答
-テストで書くための簡潔な答え。
----
-
-ユーザーの質問: ${prompt}
+テストや入試などの筆記等で記述するための解答をする。生徒が実際に解答として書くのを意識して返答して。
 `;
+    }
 
-    const englishInstruction = `
-あなたは高校英語の教師です。
-次の英語の質問に対して、文法・語彙・読解の観点から高校レベルで説明してください。
+    finalPrompt += `\nユーザーの質問: ${prompt}\n`;
 
----
-### 要約
-質問のテーマや文法項目を簡潔にまとめる。
-
-### 解説
-文構造・意味・用法を丁寧に解説。
-例文を示して理解を助ける。
-
-### 解答
-テストで書くための簡潔な答え。
----
-
-ユーザーの質問: ${prompt}
-`;
-
-    const otherInstruction = `
-あなたは高校生向けのやさしい先生です。
-以下の質問に対して、わかりやすく、丁寧に、かつ簡潔に説明してください。
-専門用語が出る場合は短く補足を加えて。
-ユーザーの質問: ${prompt}
-    `;
-
-    const finalPrompt =
-      category === "math"
-        ? mathInstruction
-        : category === "physics"
-        ? physicsInstruction
-        : category === "chemistry"
-        ? chemistryInstruction
-        : category === "biology"
-        ? biologyInstruction
-        : category === "earth_science"
-        ? earthScienceInstruction
-        : category === "english"
-        ? englishInstruction
-        : otherInstruction;
-
-    // Step 3: 実際の回答生成
     const response = (await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [{ role: "user", parts: [{ text: finalPrompt }] }],
