@@ -22,6 +22,8 @@ import {
   Tab,
   Card,
   CardBody,
+  Accordion,
+  AccordionItem,
 } from "@heroui/react";
 import {
   Mic,
@@ -36,7 +38,7 @@ import {
 
 export default function Home() {
   const [switchState, setSwitchState] = useState({
-    question: true,
+    summary: true,
     guidance: false,
     explanation: false,
     answer: false,
@@ -66,12 +68,12 @@ export default function Home() {
   } = useChatStore();
 
   const [images, setImages] = useState<{ [key: string]: string[] }>({
-    question: [],
+    summary: [],
     explanation: [],
     answer: [],
   });
 
-  const questionInputRef = useRef<HTMLInputElement>(null);
+  const summaryInputRef = useRef<HTMLInputElement>(null);
   const explanationInputRef = useRef<HTMLInputElement>(null);
   const answerInputRef = useRef<HTMLInputElement>(null);
 
@@ -188,12 +190,13 @@ export default function Home() {
     setIsLoading(true);
     setIsSent(true);
 
-    addMessage(inputText);
+    // ユーザーメッセージは単純に追加
+    addMessage(inputText, "user");
     setActiveContent(null);
     setInputText("");
 
     const controller = new AbortController();
-    useChatStore.getState().setAbortController(controller);
+    setAbortController(controller);
 
     try {
       const res = await fetch("/api/gemini", {
@@ -210,17 +213,21 @@ export default function Home() {
       const data: { text?: string; error?: string } = await res.json();
 
       if (!controller.signal.aborted) {
-        if (data.text) addMessage(data.text);
+        if (data.text) {
+          // AI メッセージを追加、ここでその時点の switchState を sectionsState として渡す
+          addMessage(data.text, "ai", switchState);
+        }
       } else if (data.error) {
-        addMessage(`Error: ${data.error}`);
+        addMessage(`Error: ${data.error}`, "ai", switchState);
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        if (showAbortMessage) addMessage("AIの返答を中止しました");
+        if (showAbortMessage)
+          addMessage("AIの返答を中止しました", "ai", switchState);
       } else if (err instanceof Error) {
-        addMessage(`Fetch error: ${err.message}`);
+        addMessage(`Fetch error: ${err.message}`, "ai", switchState);
       } else {
-        addMessage("Fetch error: 不明なエラー");
+        addMessage("Fetch error: 不明なエラー", "ai", switchState);
       }
     } finally {
       setIsLoading(false);
@@ -282,37 +289,85 @@ export default function Home() {
               }}
             >
               <motion.div className="flex flex-col">
-                {message.map((msg) => (
-                  <Card
-                    key={msg.id}
-                    shadow="none"
-                    radius="lg"
-                    className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
-                  >
-                    <CardBody>
-                      <div className="overflow-x-auto select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm, remarkMath]}
-                          rehypePlugins={[rehypeMathjax]}
-                          components={{
-                            p: ({ children, ...props }) => {
-                              const processedChildren = React.Children.map(
-                                children,
-                                (child) => {
-                                  // 文字列や数式ノードをそのまま表示
-                                  return child;
-                                }
-                              );
-                              return <p {...props}>{processedChildren}</p>;
-                            },
-                          }}
-                        >
-                          {msg.text}
-                        </ReactMarkdown>
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
+                {message.map((msg, idx) => {
+                  if (msg.role === "user") {
+                    return (
+                      <Card
+                        key={msg.id}
+                        shadow="none"
+                        radius="lg"
+                        className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+                      >
+                        <CardBody>
+                          <div className="overflow-x-auto select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkMath]}
+                              rehypePlugins={[rehypeMathjax]}
+                            >
+                              {msg.text}
+                            </ReactMarkdown>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    );
+                  } else if (msg.role === "ai") {
+                    const state = msg.sectionsState ?? switchState; // 保存されていればそれを使う
+                    const sections: { title: string; text: string }[] = [];
+
+                    if (state.summary) {
+                      const text = msg.text
+                        .match(/###\s*要約\s*([\s\S]*?)(?=###|$)/i)?.[1]
+                        ?.trim();
+                      if (text) sections.push({ title: "要約", text });
+                    }
+
+                    if (state.guidance) {
+                      const text = msg.text
+                        .match(/###\s*指針\s*([\s\S]*?)(?=###|$)/i)?.[1]
+                        ?.trim();
+                      if (text) sections.push({ title: "指針", text });
+                    }
+
+                    if (state.explanation) {
+                      const text = msg.text
+                        .match(/###\s*解説\s*([\s\S]*?)(?=###|$)/i)?.[1]
+                        ?.trim();
+                      if (text) sections.push({ title: "解説", text });
+                    }
+
+                    if (state.answer) {
+                      const text = msg.text
+                        .match(/###\s*解答\s*([\s\S]*?)(?=###|$)/i)?.[1]
+                        ?.trim();
+                      if (text) sections.push({ title: "解答", text });
+                    }
+
+                    if (sections.length === 0) return null;
+
+                    return (
+                      <Accordion
+                        key={msg.id}
+                        defaultExpandedKeys={["1"]}
+                        selectionMode="multiple"
+                        variant="bordered"
+                        className="mb-4 border-light-5 dark:border-dark-5 font-medium text-dark-3 dark:text-light-3"
+                      >
+                        {sections.map((sec, i) => (
+                          <AccordionItem key={i} aria-label={sec.title} title={sec.title}>
+                            <div className="overflow-x-auto overflow-y-scroll select-text prose dark:prose-invert max-w-full break-words text-lg text-dark-3 dark:text-light-3">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[rehypeMathjax]}
+                              >
+                                {sec.text}
+                              </ReactMarkdown>
+                            </div>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    );
+                  }
+                })}
               </motion.div>
             </MathJaxContext>
           </ScrollShadow>
@@ -539,7 +594,7 @@ export default function Home() {
                       {activeContent && (
                         <motion.div
                           initial={{ height: 0 }}
-                          animate={{ height: 256 }}
+                          animate={{ height: "auto" }}
                           exit={{ height: 0 }}
                           transition={{ duration: 0.5, ease: "easeInOut" }}
                           className="overflow-hidden"
@@ -608,16 +663,9 @@ export default function Home() {
                                   <Switch
                                     size="lg"
                                     isSelected
-                                    onChange={(
-                                      event: React.ChangeEvent<HTMLInputElement>
-                                    ) =>
-                                      setSwitchState((prev) => ({
-                                        ...prev,
-                                        question: event.target.checked,
-                                      }))
-                                    }
+                                    onChange={() => {}}
                                   >
-                                    問題
+                                    要約
                                   </Switch>
 
                                   <Switch
@@ -679,15 +727,15 @@ export default function Home() {
                                     fullWidth
                                   >
                                     <Tab
-                                      key="question"
-                                      title="問題"
+                                      key="summary"
+                                      title="要約"
                                       className="w-full h-full"
                                     >
                                       <DroppableArea
-                                        tabKey="question"
-                                        inputRef={questionInputRef}
+                                        tabKey="summary"
+                                        inputRef={summaryInputRef}
                                       >
-                                        {images.question.length === 0 ? (
+                                        {images.summary.length === 0 ? (
                                           <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
                                             <Button
                                               aria-label="Upload Images Button"
@@ -695,7 +743,7 @@ export default function Home() {
                                               radius="full"
                                               className="text-center text-xl font-medium text-light-1 bg-blue-middle"
                                               onPress={() =>
-                                                questionInputRef.current?.click()
+                                                summaryInputRef.current?.click()
                                               }
                                             >
                                               画像アップロード
@@ -706,11 +754,11 @@ export default function Home() {
                                           </div>
                                         ) : (
                                           <div className="flex flex-row gap-2 overflow-x-scroll">
-                                            {images.question.map((src, idx) => (
+                                            {images.summary.map((src, idx) => (
                                               <Image
                                                 key={idx}
                                                 src={src}
-                                                alt={`uploaded-question-${idx}`} // tabKey を文字列に置き換え
+                                                alt={`uploaded-summary-${idx}`} // tabKey を文字列に置き換え
                                                 width={128}
                                                 height={128}
                                                 className="rounded-lg object-cover"

@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 
 type SwitchOptions = {
-  question?: boolean;
+  summary?: boolean;
   guidance?: boolean;
   answer?: boolean;
   explanation?: boolean;
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     // スイッチ設定
     const switchOptions: Required<SwitchOptions> = {
-      question: true,
+      summary: true,
       guidance: options?.guidance ?? false,
       answer: options?.answer ?? false,
       explanation: options?.explanation ?? false,
@@ -125,7 +125,7 @@ ${politenessText}
 以下の形式で回答してください:
 `;
 
-    if (switchOptions.question) {
+    if (switchOptions.summary) {
       finalPrompt += `
 ### 要約
 問題の要点を簡潔にまとめて、それ以外の指針、解説、解答はしない。

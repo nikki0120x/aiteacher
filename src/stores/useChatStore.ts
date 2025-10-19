@@ -1,6 +1,16 @@
 import { create } from "zustand";
 
-type Message = { id: number; text: string };
+type Message = {
+  id: number;
+  text: string;
+  role: "user" | "ai";
+  sectionsState?: {
+    summary: boolean;
+    guidance: boolean;
+    explanation: boolean;
+    answer: boolean;
+  };
+};
 
 interface ChatState {
   isSent: boolean;
@@ -15,7 +25,16 @@ interface ChatState {
   setIsPanelOpen: (open: boolean) => void;
   togglePanel: () => void;
   setActiveContent: (content: "sliders" | "images" | null) => void;
-  addMessage: (text: string) => void;
+  addMessage: (
+    text: string,
+    role?: "user" | "ai",
+    sectionsState?: {
+      summary: boolean;
+      guidance: boolean;
+      explanation: boolean;
+      answer: boolean;
+    }
+  ) => void;
   clearMessage: () => void;
   setAbortController: (controller: AbortController | null) => void;
 }
@@ -33,14 +52,26 @@ export const useChatStore = create<ChatState>((set) => ({
   setIsPanelOpen: (open) => set({ isPanelOpen: open }),
   togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
   setActiveContent: (content) => set({ activeContent: content }),
-  addMessage: (text: string) =>
+  addMessage: (
+    text: string,
+    role: "user" | "ai" = "user",
+    sectionsState?: {
+      summary: boolean;
+      guidance: boolean;
+      explanation: boolean;
+      answer: boolean;
+    }
+  ) =>
     set((state) => {
-      const newMessage = { id: state.nextId, text };
+      const newMessage: Message = { id: state.nextId, text, role };
+      if (role === "ai" && sectionsState)
+        newMessage.sectionsState = sectionsState;
       return {
         message: [...state.message, newMessage],
         nextId: state.nextId + 1,
       };
     }),
+
   clearMessage: () => set({ message: [], nextId: 0 }),
   setAbortController: (controller) => set({ abortController: controller }),
 }));
