@@ -11,8 +11,7 @@ type SwitchOptions = {
 };
 
 type SliderOptions = {
-  understanding?: number; // 0〜1
-  politeness?: number;    // 0〜1
+  politeness?: number;
 };
 
 export async function POST(req: NextRequest) {
@@ -36,20 +35,27 @@ export async function POST(req: NextRequest) {
     };
 
     // スライダー設定
-    const understanding = sliders?.understanding ?? 0.5;
     const politeness = sliders?.politeness ?? 0.5;
-
-    // 理解度の指示
-    let understandingText = "";
-    if (understanding <= 0.33) understandingText = "ユーザーは問題への理解が浅いことを考慮してください。";
-    else if (understanding <= 0.66) understandingText = "ユーザーは問題への理解が普通なことを考慮してください。";
-    else understandingText = "ユーザーは問題への理解が深いことを考慮してください。";
 
     // 丁寧度の指示
     let politenessText = "";
-    if (politeness <= 0.33) politenessText = "簡潔に無駄な言葉は使わずテストや入試のような返答をしてください。";
-    else if (politeness <= 0.66) politenessText = "一般的な普通のわかりやすい、公式を用いる際はそれも記述して返答をしてください。";
-    else politenessText = "誰でもわかりやすいようとても丁寧に詳しく、公式を用いる際は公式と公式の説明をして返答してください。";
+
+    if (politeness === 0) {
+      politenessText =
+        "簡潔に無駄な言葉は使わずテストや入試のような簡単明瞭な返答をして";
+    } else if (politeness <= 0.25) {
+      politenessText =
+        "簡単にわかりやすく必要最低限の説明で返答して";
+    } else if (politeness <= 0.5) {
+      politenessText =
+        "一般的にわかりやすくなるように返答して。";
+    } else if (politeness <= 0.75) {
+      politenessText =
+        "見やすくわかりやすく丁寧に返答して。";
+    } else if (politeness <= 1) {
+      politenessText =
+        "誰でも理解できるよう非常に丁寧かつ詳しく返答して。";
+    }
 
     // 一時認証設定（Vercel対応）
     if (
@@ -120,7 +126,6 @@ export async function POST(req: NextRequest) {
 
     // プロンプトに理解度と丁寧度の指示を追加
     let finalPrompt = `${baseInstructions[category]}
-${understandingText}
 ${politenessText}
 以下の形式で回答してください:
 `;
@@ -129,6 +134,7 @@ ${politenessText}
       finalPrompt += `
 ### 要約
 問題の要点を簡潔にまとめて、それ以外の指針、解説、解答はしない。
+数式は LaTeX で書き、MathJax で表示できるように、コードブロックで書かないように。
 `;
     }
 
@@ -136,6 +142,7 @@ ${politenessText}
       finalPrompt += `
 ### 指針
 問題解決の方針や考え方を丁寧に示し、それ以外の問題の要約、解説、解答はしない。
+数式は LaTeX で書き、MathJax で表示できるように、コードブロックで書かないように。
 `;
     }
 
@@ -143,8 +150,8 @@ ${politenessText}
       finalPrompt += `
 ### 解説
 解答までの手順を説明するように。
-数式は LaTeX で書き、MathJax で表示できるように。
-最後にリスト形式で使用した定義や公式をまとめること | 左部: 名前, 中部: 定義や公式, 右部: 記号や単位
+数式は LaTeX で書き、MathJax で表示できるように、コードブロックで書かないように。
+最後にはリスト形式で使用した定義や公式をまとめること | 左部: 名前, 中部: 定義や公式, 右部: 記号や単位
 `;
     }
 
@@ -152,6 +159,7 @@ ${politenessText}
       finalPrompt += `
 ### 解答
 テストや入試などの筆記等で記述するための解答をする。生徒が実際に解答として書くのを意識して返答して。
+数式は LaTeX で書き、MathJax で表示できるように、コードブロックで書かないように。
 `;
     }
 

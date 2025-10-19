@@ -49,7 +49,6 @@ export default function Home() {
   });
 
   const [sliders, setSliders] = useState({
-    understanding: 0.5, // 理解度
     politeness: 0.5, // 丁寧度
   });
 
@@ -382,11 +381,9 @@ export default function Home() {
                               title={
                                 <span
                                   className={`
-                                    text-xl font-medium
+                                    text-2xl font-medium
                                     ${
-                                      sec.title === "要約"
-                                        ? "text-sky-500"
-                                        : ""
+                                      sec.title === "要約" ? "text-sky-500" : ""
                                     }
                                     ${
                                       sec.title === "指針"
@@ -410,11 +407,10 @@ export default function Home() {
                               }
                               startContent={icon}
                               classNames={{
-                                trigger:
-                                  "my-2 cursor-pointer",
+                                trigger: "my-2 cursor-pointer",
                               }}
                             >
-                              <div className="overflow-x-auto prose dark:prose-invert max-w-full break-words text-lg font-normal text-dark-3 dark:text-light-3">
+                              <div className="overflow-x-auto prose dark:prose-invert max-w-full break-words leading-9 text-xl font-normal text-dark-3 dark:text-light-3">
                                 <ReactMarkdown
                                   remarkPlugins={[remarkGfm, remarkMath]}
                                   rehypePlugins={[rehypeMathjax]}
@@ -663,62 +659,32 @@ export default function Home() {
                           <ScrollShadow className="w-full h-full">
                             {activeContent === "sliders" && (
                               <div className="flex flex-col gap-8 justify-center p-2">
-                                <div className="flex flex-col gap-4">
-                                  <Slider
-                                    className="w-full"
-                                    defaultValue={0.5}
-                                    formatOptions={{ style: "percent" }}
-                                    label="理解度"
-                                    marks={[
-                                      { value: 0.25, label: "不十分" },
-                                      { value: 0.5, label: "普通" },
-                                      { value: 0.75, label: "十分" },
-                                    ]}
-                                    maxValue={1}
-                                    minValue={0}
-                                    showSteps
-                                    showTooltip
-                                    step={0.25}
-                                    size="lg"
-                                    onChange={(value: number | number[]) => {
-                                      // 配列で返る場合があるので number に変換
-                                      const numValue = Array.isArray(value)
-                                        ? value[0]
-                                        : value;
-                                      setSliders((prev) => ({
-                                        ...prev,
-                                        understanding: numValue,
-                                      }));
-                                    }}
-                                  />
-
-                                  <Slider
-                                    className="w-full"
-                                    defaultValue={0.5}
-                                    formatOptions={{ style: "percent" }}
-                                    label="丁寧度"
-                                    marks={[
-                                      { value: 0.25, label: "難しい" },
-                                      { value: 0.5, label: "普通" },
-                                      { value: 0.75, label: "易しい" },
-                                    ]}
-                                    maxValue={1}
-                                    minValue={0}
-                                    showSteps
-                                    showTooltip
-                                    step={0.25}
-                                    size="lg"
-                                    onChange={(value: number | number[]) => {
-                                      const numValue = Array.isArray(value)
-                                        ? value[0]
-                                        : value;
-                                      setSliders((prev) => ({
-                                        ...prev,
-                                        politeness: numValue,
-                                      }));
-                                    }}
-                                  />
-                                </div>
+                                <Slider
+                                  className="w-full"
+                                  defaultValue={0.5}
+                                  formatOptions={{ style: "percent" }}
+                                  label="丁寧度"
+                                  marks={[
+                                    { value: 0.25, label: "難しい" },
+                                    { value: 0.5, label: "普通" },
+                                    { value: 0.75, label: "易しい" },
+                                  ]}
+                                  maxValue={1}
+                                  minValue={0}
+                                  showSteps
+                                  showTooltip
+                                  step={0.25}
+                                  size="lg"
+                                  onChange={(value: number | number[]) => {
+                                    const numValue = Array.isArray(value)
+                                      ? value[0]
+                                      : value;
+                                    setSliders((prev) => ({
+                                      ...prev,
+                                      politeness: numValue,
+                                    }));
+                                  }}
+                                />
                                 <Divider className="bg-gray" />
                                 <div className="flex flex-row flex-wrap gap-4">
                                   <Switch
