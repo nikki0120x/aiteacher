@@ -142,9 +142,9 @@ ${politenessText}
     if (switchOptions.answer) {
       finalPrompt += `
 ### 解説
-解答までの手順を丁寧に説明。
+解答までの手順を説明するように。
 数式は LaTeX で書き、MathJax で表示できるように。
-高校レベルの知識で説明する。
+最後にリスト形式で使用した定義や公式をまとめること | 左部: 名前, 中部: 定義や公式, 右部: 記号や単位
 `;
     }
 
@@ -158,7 +158,7 @@ ${politenessText}
     finalPrompt += `\nユーザーの質問: ${prompt}\n`;
 
     const response = (await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-pro",
       contents: [{ role: "user", parts: [{ text: finalPrompt }] }],
     })) as GenerateContentResponse;
 

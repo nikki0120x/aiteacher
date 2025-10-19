@@ -34,6 +34,10 @@ import {
   PanelTopClose,
   SendHorizontal,
   Pause,
+  ScrollText,
+  BowArrow,
+  BookText,
+  BookCheck,
 } from "lucide-react";
 
 export default function Home() {
@@ -275,7 +279,7 @@ export default function Home() {
               </motion.div>
             )}
           </AnimatePresence>
-          <ScrollShadow className="w-full h-full">
+          <ScrollShadow className="w-full h-full overflow-y-scroll">
             <MathJaxContext
               version={3}
               config={{
@@ -347,23 +351,80 @@ export default function Home() {
                     return (
                       <Accordion
                         key={msg.id}
-                        defaultExpandedKeys={["1"]}
+                        defaultExpandedKeys={["0"]}
                         selectionMode="multiple"
                         variant="bordered"
                         className="mb-4 border-light-5 dark:border-dark-5 font-medium text-dark-3 dark:text-light-3"
                       >
-                        {sections.map((sec, i) => (
-                          <AccordionItem key={i} aria-label={sec.title} title={sec.title}>
-                            <div className="overflow-x-auto overflow-y-scroll select-text prose dark:prose-invert max-w-full break-words text-lg text-dark-3 dark:text-light-3">
-                              <ReactMarkdown
-                                remarkPlugins={[remarkGfm, remarkMath]}
-                                rehypePlugins={[rehypeMathjax]}
-                              >
-                                {sec.text}
-                              </ReactMarkdown>
-                            </div>
-                          </AccordionItem>
-                        ))}
+                        {sections.map((sec, i) => {
+                          let icon = null;
+                          switch (sec.title) {
+                            case "要約":
+                              icon = <ScrollText className="text-sky-500" />;
+                              break;
+                            case "指針":
+                              icon = <BowArrow className="text-orange-500" />;
+                              break;
+                            case "解説":
+                              icon = <BookText className="text-rose-500" />;
+                              break;
+                            case "解答":
+                              icon = <BookCheck className="text-lime-500" />;
+                              break;
+                            default:
+                              break;
+                          }
+
+                          return (
+                            <AccordionItem
+                              key={i}
+                              aria-label={sec.title}
+                              title={
+                                <span
+                                  className={`
+                                    text-xl font-medium
+                                    ${
+                                      sec.title === "要約"
+                                        ? "text-sky-500"
+                                        : ""
+                                    }
+                                    ${
+                                      sec.title === "指針"
+                                        ? "text-orange-500"
+                                        : ""
+                                    }
+                                    ${
+                                      sec.title === "解説"
+                                        ? "text-rose-500"
+                                        : ""
+                                    }
+                                    ${
+                                      sec.title === "解答"
+                                        ? "text-lime-500"
+                                        : ""
+                                    }
+                                  `}
+                                >
+                                  {sec.title}
+                                </span>
+                              }
+                              startContent={icon}
+                              classNames={{
+                                trigger:
+                                  "my-2 cursor-pointer",
+                              }}
+                            >
+                              <div className="overflow-x-auto prose dark:prose-invert max-w-full break-words text-lg font-normal text-dark-3 dark:text-light-3">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm, remarkMath]}
+                                  rehypePlugins={[rehypeMathjax]}
+                                >
+                                  {sec.text}
+                                </ReactMarkdown>
+                              </div>
+                            </AccordionItem>
+                          );
+                        })}
                       </Accordion>
                     );
                   }
