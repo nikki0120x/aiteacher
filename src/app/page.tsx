@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeMathjax from "rehype-mathjax";
-import { MathJax, MathJaxContext } from "better-react-mathjax";
+import { MathJaxContext } from "better-react-mathjax";
 import { DndContext, useDroppable } from "@dnd-kit/core";
 import {
   ScrollShadow,
@@ -33,7 +33,6 @@ import {
   PanelBottomClose,
   PanelTopClose,
   SendHorizontal,
-  CircleQuestionMark,
   Pause,
   ScrollText,
   BowArrow,
@@ -200,7 +199,7 @@ export default function Home() {
 
   // ---------- 送信と応答 ---------- //
 
-  const handleSend = async (showAbortMessage = false) => {
+  const handleSend = async () => {
     if (
       inputText.trim() === "" &&
       images.problem.length === 0 &&
@@ -325,7 +324,7 @@ export default function Home() {
               }}
             >
               <motion.div className="flex flex-col">
-                {message.map((msg, idx) => {
+                {message.map((msg) => {
                   if (msg.role === "user") {
                     return (
                       <Card
