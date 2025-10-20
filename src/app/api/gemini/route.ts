@@ -3,6 +3,14 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import fs from "fs";
 import path from "path";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};
+
 type SwitchOptions = {
   summary?: boolean;
   guidance?: boolean;

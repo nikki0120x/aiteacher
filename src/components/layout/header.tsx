@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Progress, Button } from "@heroui/react";
-import {} from "lucide-react";
+import { Progress } from "@heroui/react";
 
 export default function Header() {
   const [loading, setLoading] = useState(false);

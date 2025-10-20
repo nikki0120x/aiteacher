@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useTheme } from "next-themes";
 import { motion, AnimatePresence, easeInOut } from "motion/react";
 import { useChatStore } from "@/stores/useChatStore";
 import { Button } from "@heroui/react";
