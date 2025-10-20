@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
 
     // 教科分類
     const classify = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.5-flash",
       contents: [
         {
           role: "user",
@@ -220,7 +220,7 @@ ${politenessText}
 
     // これで generateContent を呼ぶ
     const response = (await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.5-flash",
       contents: [{ role: "user", parts }],
     })) as GenerateContentResponse;
 
