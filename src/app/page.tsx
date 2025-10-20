@@ -51,7 +51,7 @@ export default function Home() {
   });
 
   const [sliders, setSliders] = useState({
-    politeness: 0.5, // 丁寧度
+    politeness: 0.5,
   });
 
   // ---------- 共通状態管理 ---------- //
