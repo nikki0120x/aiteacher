@@ -33,19 +33,21 @@ import {
   PanelBottomClose,
   PanelTopClose,
   SendHorizontal,
+  CircleQuestionMark,
   Pause,
   ScrollText,
   BowArrow,
   BookText,
   BookCheck,
 } from "lucide-react";
+import packageJson from "../../package.json";
 
 export default function Home() {
   const [switchState, setSwitchState] = useState({
     summary: true,
     guidance: false,
     explanation: false,
-    answer: false,
+    answer: true,
   });
 
   const [sliders, setSliders] = useState({
@@ -225,8 +227,7 @@ export default function Home() {
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        if (showAbortMessage)
-          addMessage("AIの返答を中止しました", "ai", switchState);
+        addMessage("AIの返答を中止しました", "ai", switchState);
       } else if (err instanceof Error) {
         addMessage(`Fetch error: ${err.message}`, "ai", switchState);
       } else {
@@ -236,6 +237,19 @@ export default function Home() {
       setIsLoading(false);
       setAbortController(null);
     }
+  };
+
+  // ---------- スイッチの状態管理 ---------- //
+
+  const handleSwitchChange = (key: keyof typeof switchState) => {
+    const currentlyTrueCount =
+      Object.values(switchState).filter(Boolean).length;
+
+    setSwitchState((prev) => {
+      // 唯一の true を false にしようとしていたら無視
+      if (prev[key] && currentlyTrueCount === 1) return prev;
+      return { ...prev, [key]: !prev[key] };
+    });
   };
 
   // ---------- フロントエンド ---------- //
@@ -302,7 +316,13 @@ export default function Home() {
                         className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
                       >
                         <CardBody>
-                          <div className="overflow-x-auto select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
+                          <div
+                            className="overflow-x-auto select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3"
+                            style={{
+                              maxHeight: "calc(1.75rem * 3)",
+                              overflowY: "auto",
+                            }}
+                          >
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm, remarkMath]}
                               rehypePlugins={[rehypeMathjax]}
@@ -314,43 +334,61 @@ export default function Home() {
                       </Card>
                     );
                   } else if (msg.role === "ai") {
-                    const state = msg.sectionsState ?? switchState; // 保存されていればそれを使う
+                    const state = msg.sectionsState ?? switchState;
                     const sections: { title: string; text: string }[] = [];
 
+                    const extractSection = (header: string) => {
+                      const regex = new RegExp(
+                        `###\\s*${header}\\s*([\\s\\S]*?)(?=\\n###|$)`,
+                        "i"
+                      );
+                      return msg.text.match(regex)?.[1]?.trim();
+                    };
+
                     if (state.summary) {
-                      const text = msg.text
-                        .match(/###\s*要約\s*([\s\S]*?)(?=###|$)/i)?.[1]
-                        ?.trim();
+                      const text = extractSection("要約");
                       if (text) sections.push({ title: "要約", text });
                     }
 
                     if (state.guidance) {
-                      const text = msg.text
-                        .match(/###\s*指針\s*([\s\S]*?)(?=###|$)/i)?.[1]
-                        ?.trim();
+                      const text = extractSection("指針");
                       if (text) sections.push({ title: "指針", text });
                     }
 
                     if (state.explanation) {
-                      const text = msg.text
-                        .match(/###\s*解説\s*([\s\S]*?)(?=###|$)/i)?.[1]
-                        ?.trim();
+                      const text = extractSection("解説");
                       if (text) sections.push({ title: "解説", text });
                     }
 
                     if (state.answer) {
-                      const text = msg.text
-                        .match(/###\s*解答\s*([\s\S]*?)(?=###|$)/i)?.[1]
-                        ?.trim();
+                      const text = extractSection("解答");
                       if (text) sections.push({ title: "解答", text });
                     }
 
-                    if (sections.length === 0) return null;
+                    if (sections.length === 0) {
+                      sections.push({ title: "内容", text: msg.text });
+                    }
+
+                    if (sections.length === 0) {
+                      return (
+                        <Card
+                          key={msg.id}
+                          shadow="none"
+                          radius="lg"
+                          className="rounded-tl-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+                        >
+                          <CardBody>
+                            <div className="overflow-x-auto select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
+                              <ReactMarkdown>{msg.text}</ReactMarkdown>
+                            </div>
+                          </CardBody>
+                        </Card>
+                      );
+                    }
 
                     return (
                       <Accordion
                         key={msg.id}
-                        defaultExpandedKeys={["0"]}
                         selectionMode="multiple"
                         variant="bordered"
                         className="mb-4 border-light-5 dark:border-dark-5 font-medium text-dark-3 dark:text-light-3"
@@ -475,7 +513,7 @@ export default function Home() {
                   className="max-h-10 bg-dark-5 dark:bg-light-5"
                 />
                 <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5">
-                  Ver. 1.0.0
+                  Ver. {packageJson.version}
                 </span>
                 <Divider
                   orientation="horizontal"
@@ -522,9 +560,12 @@ export default function Home() {
                         onPress={() => {
                           if (abortController) {
                             abortController.abort();
-                            handleSend(true);
+
+                            setTimeout(() => {
+                              setIsLoading(false);
+                              setAbortController(null);
+                            }, 250);
                           }
-                          setIsLoading(false);
                         }}
                       >
                         <Pause />
@@ -689,8 +730,10 @@ export default function Home() {
                                 <div className="flex flex-row flex-wrap gap-4">
                                   <Switch
                                     size="lg"
-                                    isSelected
-                                    onChange={() => {}}
+                                    isSelected={switchState.summary}
+                                    onChange={() =>
+                                      handleSwitchChange("summary")
+                                    }
                                   >
                                     要約
                                   </Switch>
@@ -698,13 +741,8 @@ export default function Home() {
                                   <Switch
                                     size="lg"
                                     isSelected={switchState.guidance}
-                                    onChange={(
-                                      event: React.ChangeEvent<HTMLInputElement>
-                                    ) =>
-                                      setSwitchState((prev) => ({
-                                        ...prev,
-                                        guidance: event.target.checked,
-                                      }))
+                                    onChange={() =>
+                                      handleSwitchChange("guidance")
                                     }
                                   >
                                     指針
@@ -713,13 +751,8 @@ export default function Home() {
                                   <Switch
                                     size="lg"
                                     isSelected={switchState.explanation}
-                                    onChange={(
-                                      event: React.ChangeEvent<HTMLInputElement>
-                                    ) =>
-                                      setSwitchState((prev) => ({
-                                        ...prev,
-                                        explanation: event.target.checked,
-                                      }))
+                                    onChange={() =>
+                                      handleSwitchChange("explanation")
                                     }
                                   >
                                     解説
@@ -728,13 +761,8 @@ export default function Home() {
                                   <Switch
                                     size="lg"
                                     isSelected={switchState.answer}
-                                    onChange={(
-                                      event: React.ChangeEvent<HTMLInputElement>
-                                    ) =>
-                                      setSwitchState((prev) => ({
-                                        ...prev,
-                                        answer: event.target.checked,
-                                      }))
+                                    onChange={() =>
+                                      handleSwitchChange("answer")
                                     }
                                   >
                                     解答

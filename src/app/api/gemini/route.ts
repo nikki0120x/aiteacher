@@ -6,8 +6,8 @@ import path from "path";
 type SwitchOptions = {
   summary?: boolean;
   guidance?: boolean;
-  answer?: boolean;
   explanation?: boolean;
+  answer?: boolean;
 };
 
 type SliderOptions = {
@@ -28,11 +28,21 @@ export async function POST(req: NextRequest) {
 
     // スイッチ設定
     const switchOptions: Required<SwitchOptions> = {
-      summary: true,
+      summary: options?.summary ?? true,
       guidance: options?.guidance ?? false,
-      answer: options?.answer ?? false,
       explanation: options?.explanation ?? false,
+      answer: options?.answer ?? true,
     };
+
+    if (
+      !switchOptions.summary &&
+      !switchOptions.guidance &&
+      !switchOptions.explanation &&
+      !switchOptions.answer
+    ) {
+      switchOptions.summary = true;
+      switchOptions.explanation = true;
+    }
 
     // スライダー設定
     const politeness = sliders?.politeness ?? 0.5;
@@ -44,17 +54,13 @@ export async function POST(req: NextRequest) {
       politenessText =
         "簡潔に無駄な言葉は使わずテストや入試のような簡単明瞭な返答をして";
     } else if (politeness <= 0.25) {
-      politenessText =
-        "簡単にわかりやすく必要最低限の説明で返答して";
+      politenessText = "簡単にわかりやすく必要最低限の説明で返答して";
     } else if (politeness <= 0.5) {
-      politenessText =
-        "一般的にわかりやすくなるように返答して。";
+      politenessText = "一般的にわかりやすくなるように返答して。";
     } else if (politeness <= 0.75) {
-      politenessText =
-        "見やすくわかりやすく丁寧に返答して。";
+      politenessText = "見やすくわかりやすく丁寧に返答して。";
     } else if (politeness <= 1) {
-      politenessText =
-        "誰でも理解できるよう非常に丁寧かつ詳しく返答して。";
+      politenessText = "誰でも理解できるよう非常に丁寧かつ詳しく返答して。";
     }
 
     // 一時認証設定（Vercel対応）
@@ -146,7 +152,7 @@ ${politenessText}
 `;
     }
 
-    if (switchOptions.answer) {
+    if (switchOptions.explanation) {
       finalPrompt += `
 ### 解説
 解答までの手順を説明するように。
@@ -155,7 +161,7 @@ ${politenessText}
 `;
     }
 
-    if (switchOptions.explanation) {
+    if (switchOptions.answer) {
       finalPrompt += `
 ### 解答
 テストや入試などの筆記等で記述するための解答をする。生徒が実際に解答として書くのを意識して返答して。
