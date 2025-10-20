@@ -14,6 +14,29 @@ type SliderOptions = {
   politeness?: number;
 };
 
+async function safeGenerate(
+  ai: GoogleGenAI,
+  contents: any
+): Promise<GenerateContentResponse> {
+  try {
+    return (await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents,
+    })) as GenerateContentResponse;
+  } catch (err: any) {
+    console.error("Vertex AI 生成エラー:", err);
+
+    // unknown を経由して GenerateContentResponse にキャスト
+    return {
+      text: err?.message ?? "不明なエラー",
+      data: [],
+      functionCalls: undefined,
+      executableCode: undefined,
+      codeExecutionResult: undefined,
+    } as unknown as GenerateContentResponse;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { prompt, options, sliders, images } = (await req.json()) as {

@@ -200,6 +200,15 @@ export default function Home() {
 
   // ---------- 送信と応答 ---------- //
 
+  type AIResponse = {
+    text?: string;
+    data?: string[]; // 必要なら
+    functionCalls?: unknown[];
+    executableCode?: unknown[];
+    codeExecutionResult?: unknown[];
+    error?: string;
+  };
+
   const handleSend = async (showAbortMessage = false) => {
     if (
       inputText.trim() === "" &&
@@ -234,14 +243,16 @@ export default function Home() {
         signal: controller.signal,
       });
 
-      const data: { text?: string; error?: string } = await res.json();
+      const data: AIResponse = await res.json();
 
       if (!controller.signal.aborted) {
         if (data.text) {
           addMessage(data.text, "ai", switchState);
+        } else if (data.error) {
+          addMessage(`Error: ${data.error}`, "ai", switchState);
+        } else {
+          addMessage("AIからの返答が不正です", "ai", switchState);
         }
-      } else if (data.error) {
-        addMessage(`Error: ${data.error}`, "ai", switchState);
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
