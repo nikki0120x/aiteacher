@@ -40,7 +40,6 @@ import {
   BookText,
   BookCheck,
 } from "lucide-react";
-import packageJson from "../../package.json";
 
 export default function Home() {
   const [switchState, setSwitchState] = useState({
@@ -513,7 +512,6 @@ export default function Home() {
                   className="max-h-10 bg-dark-5 dark:bg-light-5"
                 />
                 <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5">
-                  Ver. {packageJson.version}
                 </span>
                 <Divider
                   orientation="horizontal"
