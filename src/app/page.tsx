@@ -40,6 +40,7 @@ import {
   BookText,
   BookCheck,
 } from "lucide-react";
+import packageJson from "../../package.json";
 
 export default function Home() {
   const [switchState, setSwitchState] = useState({
@@ -72,24 +73,32 @@ export default function Home() {
   } = useChatStore();
 
   const [images, setImages] = useState<{ [key: string]: string[] }>({
-    summary: [],
-    explanation: [],
-    answer: [],
+    problem: [],
+    solution: [],
   });
 
-  const summaryInputRef = useRef<HTMLInputElement>(null);
-  const explanationInputRef = useRef<HTMLInputElement>(null);
-  const answerInputRef = useRef<HTMLInputElement>(null);
+  const problemInputRef = useRef<HTMLInputElement>(null);
+  const solutionInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = (tabKey: string, files: FileList | null) => {
     if (!files) return;
-    const fileArray = Array.from(files)
-      .filter((file) => file.type.startsWith("image/"))
-      .map((file) => URL.createObjectURL(file));
-    setImages((prev) => ({
-      ...prev,
-      [tabKey]: [...prev[tabKey], ...fileArray],
-    }));
+    const fileArray = Array.from(files).filter((file) =>
+      file.type.startsWith("image/")
+    );
+
+    fileArray.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result?.toString();
+        if (base64) {
+          setImages((prev) => ({
+            ...prev,
+            [tabKey]: [...prev[tabKey], base64],
+          }));
+        }
+      };
+      reader.readAsDataURL(file); // ここで Base64 に変換
+    });
   };
 
   const handleDrop = (
@@ -136,8 +145,10 @@ export default function Home() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
+    // ブラウザの音声認識サポートチェック
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
       console.warn("このブラウザは音声認識をサポートしていません！");
       return;
@@ -149,17 +160,14 @@ export default function Home() {
     recognition.continuous = true;
 
     recognition.onresult = (event) => {
-      const lastResultIndex = event.results.length - 1;
-      const lastResult = event.results[lastResultIndex];
-
-      if (lastResult.isFinal) {
-        const transcript = lastResult[0].transcript;
-        setInputText((prev) => prev + transcript);
-      }
+      const transcript = Array.from(event.results)
+        .map((result) => result[0].transcript)
+        .join("");
+      setInputText(transcript);
     };
 
-    recognition.onerror = (e) => {
-      console.error("音声認識エラー:", e);
+    recognition.onerror = (event) => {
+      console.error("音声認識エラー:", event);
       setIsListening(false);
     };
 
@@ -168,18 +176,22 @@ export default function Home() {
     };
 
     recognitionRef.current = recognition;
+
+    // クリーンアップ
+    return () => recognition.stop();
   }, []);
 
+  // 音声認識のトグル
   const toggleListening = () => {
     const recognition = recognitionRef.current;
     if (!recognition) return;
 
-    if (!isListening) {
-      recognition.start();
-      setIsListening(true);
-    } else {
+    if (isListening) {
       recognition.stop();
       setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
     }
   };
 
@@ -189,13 +201,17 @@ export default function Home() {
   // ---------- 送信と応答 ---------- //
 
   const handleSend = async (showAbortMessage = false) => {
-    if (inputText.trim() === "") return;
+    if (
+      inputText.trim() === "" &&
+      images.problem.length === 0 &&
+      images.solution.length === 0
+    )
+      return;
 
     setIsLoading(true);
     setIsSent(true);
 
-    // ユーザーメッセージは単純に追加
-    addMessage(inputText, "user");
+    addMessage(inputText || "(画像のみ)", "user");
     setActiveContent(null);
     setInputText("");
 
@@ -208,6 +224,10 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: inputText,
+          images: {
+            problem: images.problem,
+            solution: images.solution,
+          },
           options: switchState,
           sliders,
         }),
@@ -218,7 +238,6 @@ export default function Home() {
 
       if (!controller.signal.aborted) {
         if (data.text) {
-          // AI メッセージを追加、ここでその時点の switchState を sectionsState として渡す
           addMessage(data.text, "ai", switchState);
         }
       } else if (data.error) {
@@ -235,6 +254,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
       setAbortController(null);
+      setImages({ problem: [], solution: [] });
     }
   };
 
@@ -512,6 +532,7 @@ export default function Home() {
                   className="max-h-10 bg-dark-5 dark:bg-light-5"
                 />
                 <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5">
+                  Ver. {packageJson.version}
                 </span>
                 <Divider
                   orientation="horizontal"
@@ -675,12 +696,17 @@ export default function Home() {
                           isIconOnly
                           radius="full"
                           className={`${
-                            inputText.trim() === ""
-                              ? "text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3"
-                              : "text-light-3 bg-blue-500"
+                            inputText.trim() !== "" || images.problem.length > 0
+                              ? "text-light-3 bg-blue-500" // アクティブ時
+                              : "text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3" // 非アクティブ時
                           }`}
                           onPress={() => handleSend()}
-                          disabled={inputText.trim() === ""}
+                          disabled={
+                            !(
+                              inputText.trim() !== "" ||
+                              images.problem.length > 0
+                            )
+                          }
                         >
                           <SendHorizontal />
                         </Button>
@@ -780,23 +806,23 @@ export default function Home() {
                                     fullWidth
                                   >
                                     <Tab
-                                      key="summary"
-                                      title="要約"
+                                      key="problem"
+                                      title="問題"
                                       className="w-full h-full"
                                     >
                                       <DroppableArea
-                                        tabKey="summary"
-                                        inputRef={summaryInputRef}
+                                        tabKey="problem"
+                                        inputRef={problemInputRef}
                                       >
-                                        {images.summary.length === 0 ? (
-                                          <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
+                                        {images.problem.length === 0 ? (
+                                          <div className="flex flex-col gap-2 justify-center items-center p-8 w-full h-full">
                                             <Button
                                               aria-label="Upload Images Button"
                                               size="lg"
                                               radius="full"
                                               className="text-center text-xl font-medium text-light-1 bg-blue-middle"
                                               onPress={() =>
-                                                summaryInputRef.current?.click()
+                                                problemInputRef.current?.click()
                                               }
                                             >
                                               画像アップロード
@@ -806,15 +832,15 @@ export default function Home() {
                                             </span>
                                           </div>
                                         ) : (
-                                          <div className="flex flex-row gap-2 overflow-x-scroll">
-                                            {images.summary.map((src, idx) => (
+                                          <div className="flex flex-row gap-2 overflow-x-auto">
+                                            {images.problem.map((src, idx) => (
                                               <Image
                                                 key={idx}
                                                 src={src}
-                                                alt={`uploaded-summary-${idx}`} // tabKey を文字列に置き換え
+                                                alt={`uploaded-problem-${idx}`}
                                                 width={128}
                                                 height={128}
-                                                className="rounded-lg object-cover"
+                                                className="rounded-lg object-cover aspect-square"
                                               />
                                             ))}
                                           </div>
@@ -823,23 +849,23 @@ export default function Home() {
                                     </Tab>
 
                                     <Tab
-                                      key="explanation"
-                                      title="解説"
+                                      key="solution"
+                                      title="解説 / 解答"
                                       className="w-full h-full"
                                     >
                                       <DroppableArea
-                                        tabKey="selfanswer"
-                                        inputRef={explanationInputRef}
+                                        tabKey="solution"
+                                        inputRef={solutionInputRef}
                                       >
-                                        {images.explanation.length === 0 ? (
-                                          <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
+                                        {images.solution.length === 0 ? (
+                                          <div className="flex flex-col gap-2 justify-center items-center p-8 w-full h-full">
                                             <Button
                                               aria-label="Upload Images Button"
                                               size="lg"
                                               radius="full"
                                               className="text-center text-xl font-medium text-light-1 bg-blue-middle"
                                               onPress={() =>
-                                                explanationInputRef.current?.click()
+                                                solutionInputRef.current?.click()
                                               }
                                             >
                                               画像アップロード
@@ -849,60 +875,15 @@ export default function Home() {
                                             </span>
                                           </div>
                                         ) : (
-                                          <div className="flex flex-row gap-2 overflow-x-scroll">
-                                            {images.explanation.map(
-                                              (src, idx) => (
-                                                <Image
-                                                  key={idx}
-                                                  src={src}
-                                                  alt={`uploaded-explanation-${idx}`} // tabKey を文字列に置き換え
-                                                  width={128}
-                                                  height={128}
-                                                  className="rounded-lg object-cover"
-                                                />
-                                              )
-                                            )}
-                                          </div>
-                                        )}
-                                      </DroppableArea>
-                                    </Tab>
-
-                                    <Tab
-                                      key="answer"
-                                      title="解答"
-                                      className="w-full h-full"
-                                    >
-                                      <DroppableArea
-                                        tabKey="answer"
-                                        inputRef={answerInputRef}
-                                      >
-                                        {images.answer.length === 0 ? (
-                                          <div className="flex flex-col gap-2 justify-center items-center w-full h-full">
-                                            <Button
-                                              aria-label="Upload Images Button"
-                                              size="lg"
-                                              radius="full"
-                                              className="text-center text-xl font-medium text-light-1 bg-blue-middle"
-                                              onPress={() =>
-                                                answerInputRef.current?.click()
-                                              }
-                                            >
-                                              画像アップロード
-                                            </Button>
-                                            <span className="text-lg font-medium text-gray">
-                                              ファイルをドラッグ&ドロップ
-                                            </span>
-                                          </div>
-                                        ) : (
-                                          <div className="flex flex-row gap-2 overflow-x-scroll">
-                                            {images.answer.map((src, idx) => (
+                                          <div className="flex flex-row gap-2 overflow-x-auto">
+                                            {images.solution.map((src, idx) => (
                                               <Image
                                                 key={idx}
                                                 src={src}
-                                                alt={`uploaded-answer-${idx}`} // tabKey を文字列に置き換え
+                                                alt={`uploaded-solution-${idx}`}
                                                 width={128}
                                                 height={128}
-                                                className="rounded-lg object-cover"
+                                                className="rounded-lg object-cover aspect-square"
                                               />
                                             ))}
                                           </div>

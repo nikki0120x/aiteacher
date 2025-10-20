@@ -16,14 +16,25 @@ type SliderOptions = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, options, sliders } = (await req.json()) as {
+    const { prompt, options, sliders, images } = (await req.json()) as {
       prompt: string;
       options?: SwitchOptions;
       sliders?: SliderOptions;
+      images?: {
+        problem?: string[];
+        solution?: string[];
+      };
     };
 
-    if (!prompt || typeof prompt !== "string") {
-      return NextResponse.json({ error: "prompt が無効です" }, { status: 400 });
+    if (
+      (!prompt || typeof prompt !== "string") &&
+      !images?.problem?.length &&
+      !images?.solution?.length
+    ) {
+      return NextResponse.json(
+        { error: "prompt または画像が必要です" },
+        { status: 400 }
+      );
     }
 
     // スイッチ設定
@@ -102,6 +113,8 @@ export async function POST(req: NextRequest) {
       ],
     });
 
+    console.log("分類結果:", classify);
+
     const rawCategory = classify.text?.toLowerCase() ?? "other";
     let category:
       | "math"
@@ -171,14 +184,50 @@ ${politenessText}
 
     finalPrompt += `\nユーザーの質問: ${prompt}\n`;
 
+    const parts: {
+      text?: string;
+      inlineData?: { mimeType: string; data: string };
+    }[] = [{ text: finalPrompt }];
+
+    // 画像がある場合は inlineData に変換して追加
+    if (images?.problem?.length) {
+      images.problem.forEach((imgBase64) => {
+        const data = imgBase64?.split(",")[1];
+        if (data) {
+          parts.push({
+            inlineData: {
+              mimeType: "image/png",
+              data,
+            },
+          });
+        }
+      });
+    }
+
+    if (images?.solution?.length) {
+      images.solution.forEach((imgBase64) => {
+        const data = imgBase64?.split(",")[1];
+        if (data) {
+          parts.push({
+            inlineData: {
+              mimeType: "image/png",
+              data,
+            },
+          });
+        }
+      });
+    }
+
+    // これで generateContent を呼ぶ
     const response = (await ai.models.generateContent({
       model: "gemini-2.5-pro",
-      contents: [{ role: "user", parts: [{ text: finalPrompt }] }],
+      contents: [{ role: "user", parts }],
     })) as GenerateContentResponse;
 
     const text = response.text ?? "応答がありません";
     return NextResponse.json({ text, category });
   } catch (error: unknown) {
+    console.error("POST /api/gemini でエラー発生:", error);
     const message =
       error instanceof Error ? error.message : "不明なエラーが発生しました";
     return NextResponse.json({ error: message }, { status: 500 });
