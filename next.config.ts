@@ -17,6 +17,15 @@ const nextConfig: NextConfig = {
       },
     },
   },
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
+  },
+  env: {
+    GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  },
 };
 
 export default nextConfig;
