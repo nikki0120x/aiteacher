@@ -69,6 +69,7 @@ export default function Home() {
     setActiveContent,
     addMessage,
     setAbortController,
+    updateMessage,
   } = useChatStore();
 
   const [images, setImages] = useState<{ [key: string]: string[] }>({
@@ -210,7 +211,13 @@ export default function Home() {
     setIsLoading(true);
     setIsSent(true);
 
+    // ユーザーの発言を追加
     addMessage(inputText || "(画像のみ)", "user");
+
+    // ★ ここで仮のAIメッセージを追加（空のアコーディオン用）
+    const tempId = crypto.randomUUID();
+    addMessage("...", "ai", switchState, tempId);
+
     setActiveContent(null);
     setInputText("");
 
@@ -237,18 +244,19 @@ export default function Home() {
 
       if (!controller.signal.aborted) {
         if (data.text) {
-          addMessage(data.text, "ai", switchState);
+          // ★ 仮メッセージを上書きする関数が必要
+          updateMessage(tempId, data.text);
         }
       } else if (data.error) {
-        addMessage(`Error: ${data.error}`, "ai", switchState);
+        updateMessage(tempId, `Error: ${data.error}`);
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        addMessage("AIの返答を中止しました", "ai", switchState);
+        updateMessage(tempId, "AIの返答を中止しました");
       } else if (err instanceof Error) {
-        addMessage(`Fetch error: ${err.message}`, "ai", switchState);
+        updateMessage(tempId, `Fetch error: ${err.message}`);
       } else {
-        addMessage("Fetch error: 不明なエラー", "ai", switchState);
+        updateMessage(tempId, "Fetch error: 不明なエラー");
       }
     } finally {
       setIsLoading(false);
@@ -276,9 +284,10 @@ export default function Home() {
     <>
       <motion.div className="flex flex-col gap-4 w-full h-full relative">
         <motion.div
-          initial={{ flex: 0, opacity: 0 }}
+          initial={{ flex: 0, height: 0, opacity: 0 }}
           animate={{
             flex: isSent ? 1 : 0,
+            height: isSent ? "auto" : 0,
             opacity: isSent ? 1 : 0,
           }}
           transition={{
@@ -335,7 +344,7 @@ export default function Home() {
                       >
                         <CardBody>
                           <div
-                            className="overflow-x-auto select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3"
+                            className="overflow-x-auto select-text prose dark:prose-invert max-w-full wrap-break-word text-xl font-medium text-dark-3 dark:text-light-3"
                             style={{
                               maxHeight: "calc(1.75rem * 3)",
                               overflowY: "auto",
@@ -396,7 +405,7 @@ export default function Home() {
                           className="rounded-tl-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
                         >
                           <CardBody>
-                            <div className="overflow-x-auto select-text prose dark:prose-invert max-w-full break-words text-xl font-medium text-dark-3 dark:text-light-3">
+                            <div className="overflow-x-auto select-text prose dark:prose-invert max-w-full wrap-break-word text-xl font-medium text-dark-3 dark:text-light-3">
                               <ReactMarkdown>{msg.text}</ReactMarkdown>
                             </div>
                           </CardBody>
@@ -437,7 +446,7 @@ export default function Home() {
                               title={
                                 <span
                                   className={`
-                                    text-2xl font-medium
+                                    text-2xl font-medium no-select
                                     ${
                                       sec.title === "要約" ? "text-sky-500" : ""
                                     }
@@ -466,7 +475,7 @@ export default function Home() {
                                 trigger: "my-2 cursor-pointer",
                               }}
                             >
-                              <div className="overflow-x-auto prose dark:prose-invert max-w-full break-words leading-9 text-xl font-normal text-dark-3 dark:text-light-3">
+                              <div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-xl font-normal text-dark-3 dark:text-light-3">
                                 <ReactMarkdown
                                   remarkPlugins={[remarkGfm, remarkMath]}
                                   rehypePlugins={[rehypeMathjax]}
@@ -486,7 +495,7 @@ export default function Home() {
           </ScrollShadow>
         </motion.div>
         <motion.div
-          initial={{ flex: 1 }}
+          initial={{ flex: 1, height: 1, opacity: 1 }}
           animate={{
             flex: isSent ? 0 : 1,
             height: isPanelOpen ? "auto" : 0,
@@ -517,20 +526,20 @@ export default function Home() {
                   alt="Logo (Dark)"
                   width={128}
                   height={128}
-                  className="object-contain dark:hidden"
+                  className="object-contain dark:hidden no-select"
                 />
                 <Image
                   src="/logos/light.webp"
                   alt="Logo (Light)"
                   width={128}
                   height={128}
-                  className="object-contain hidden dark:block"
+                  className="object-contain hidden dark:block no-select"
                 />
                 <Divider
                   orientation="vertical"
                   className="max-h-10 bg-dark-5 dark:bg-light-5"
                 />
-                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5">
+                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5 no-select">
                   Ver. {packageJson.version}
                 </span>
                 <Divider
@@ -614,7 +623,7 @@ export default function Home() {
                         variant="underlined"
                         validationBehavior="aria"
                         placeholder="AI に訊きたい問題はある？"
-                        className="text-dark-1 dark:text-light-1"
+                        className="text-dark-1 dark:text-light-1 no-select"
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyDown={(e) => {
@@ -722,7 +731,7 @@ export default function Home() {
                         >
                           <ScrollShadow className="w-full h-full">
                             {activeContent === "sliders" && (
-                              <div className="flex flex-col gap-8 justify-center p-2">
+                              <div className="flex flex-col gap-8 justify-center p-2 no-select">
                                 <Slider
                                   className="w-full"
                                   defaultValue={0.5}
