@@ -1,10 +1,7 @@
-// src/app/api/gemini/route.ts (最終修正版)
-
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-// ❌ fsとpathのインポートを削除
-// import fs from "fs";
-// import path from "path";
+import fs from "fs";
+import path from "path";
 
 export const runtime = "nodejs";
 
@@ -24,9 +21,6 @@ type ImageSet = {
   solution?: string[];
 };
 
-// ❌ ensureCredentials 関数を完全に削除
-// 理由：fs.writeFileSyncがサーバーレス環境でクラッシュの原因となるため
-/*
 function ensureCredentials() {
   const json = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
   if (json && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -35,22 +29,23 @@ function ensureCredentials() {
     process.env.GOOGLE_APPLICATION_CREDENTIALS = tmpPath;
   }
 }
-*/
 
 function getPolitenessInstruction(value: number): string {
   if (value <= 0)
     return "簡潔に無駄な言葉は使わずテストや入試のような簡単明瞭な返答をして";
-  else if (value <= 0.25) return "簡単にわかりやすく必要最低限の説明で返答して";
-  else if (value <= 0.5) return "一般的にわかりやすくなるように返答して。";
-  else if (value <= 0.75) return "見やすくわかりやすく丁寧に返答して。";
+  else if (value <= 0.25)
+    return "簡単にわかりやすく必要最低限の説明で返答して";
+  else if (value <= 0.5)
+    return "一般的にわかりやすくなるように返答して。";
+  else if (value <= 0.75)
+    return "見やすくわかりやすく丁寧に返答して。";
   else if (value <= 1)
     return "誰でも理解できるよう非常に丁寧かつ詳しく返答して。";
-  else return "丁寧に、ただし冗長にならないよう自然な言葉で返答して。";
+  else
+    return "丁寧に、ただし冗長にならないよう自然な言葉で返答して。";
 }
 
-function normalizeSwitchOptions(
-  options?: SwitchOptions
-): Required<SwitchOptions> {
+function normalizeSwitchOptions(options?: SwitchOptions): Required<SwitchOptions> {
   const result = {
     summary: options?.summary ?? true,
     guidance: options?.guidance ?? false,
@@ -81,11 +76,7 @@ function buildPrompt(
     other: "あなたは高校生向けのやさしい先生です。",
   };
 
-  const sections: string[] = [
-    `${baseInstructions[category]}`,
-    politenessText,
-    "以下の形式で回答してください:",
-  ];
+  const sections: string[] = [`${baseInstructions[category]}`, politenessText, "以下の形式で回答してください:"];
 
   if (switches.summary)
     sections.push(
@@ -142,10 +133,7 @@ async function classifyCategory(ai: GoogleGenAI, prompt: string) {
 }
 
 function buildParts(prompt: string, images?: ImageSet) {
-  const parts: {
-    text?: string;
-    inlineData?: { mimeType: string; data: string };
-  }[] = [{ text: prompt }];
+  const parts: { text?: string; inlineData?: { mimeType: string; data: string } }[] = [{ text: prompt }];
 
   const pushImages = (arr?: string[]) =>
     arr?.forEach((img) => {
@@ -172,20 +160,15 @@ export async function POST(req: NextRequest) {
     };
 
     if (!prompt && !images?.problem?.length && !images?.solution?.length) {
-      return NextResponse.json(
-        { error: "prompt または画像が必要です" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "prompt または画像が必要です" }, { status: 400 });
     }
 
-    // ❌ ensureCredentials(); の呼び出しを削除
+    ensureCredentials();
 
-    // 認証情報に関する特殊なオプションを使用せず、環境変数から自動認証を期待
     const ai = new GoogleGenAI({
       vertexai: true,
       project: process.env.GOOGLE_CLOUD_PROJECT,
       location: process.env.GOOGLE_CLOUD_LOCATION,
-      // ✅ credentials オプションを削除
     });
 
     const category = await classifyCategory(ai, prompt);
@@ -204,17 +187,8 @@ export async function POST(req: NextRequest) {
       category,
     });
   } catch (error: unknown) {
-    // サーバーがクラッシュしてもHTMLを返さず、必ずJSON形式のエラーを返す
     console.error("POST /api/gemini でエラー発生:", error);
-    
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "サーバーで予期せぬエラーが発生しました。ログを確認してください。";
-
-    return NextResponse.json(
-      { error: "Internal Server Error", message: errorMessage },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "不明なエラーが発生しました";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
