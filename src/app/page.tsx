@@ -72,6 +72,8 @@ export default function Home() {
     updateMessage,
   } = useChatStore();
 
+  // ---------- 画像タブ ---------- //
+
   const [images, setImages] = useState<{ [key: string]: string[] }>({
     problem: [],
     solution: [],
@@ -140,12 +142,13 @@ export default function Home() {
     );
   };
 
+  // ---------- 音声入力 ---------- //
+
   const [isListening, setIsListening] = useState(false);
   const [inputText, setInputText] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
-    // ブラウザの音声認識サポートチェック
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -159,29 +162,37 @@ export default function Home() {
     recognition.interimResults = true;
     recognition.continuous = true;
 
-    recognition.onresult = (event) => {
+    const handleResult = (event: SpeechRecognitionEvent) => {
       const transcript = Array.from(event.results)
         .map((result) => result[0].transcript)
         .join("");
       setInputText(transcript);
     };
 
-    recognition.onerror = (event) => {
+    const handleError = (event: SpeechRecognitionErrorEvent) => {
       console.error("音声認識エラー:", event);
       setIsListening(false);
     };
 
-    recognition.onend = () => {
+    const handleEnd = () => {
       setIsListening(false);
     };
 
+    recognition.addEventListener("result", handleResult);
+    recognition.addEventListener("error", handleError);
+    recognition.addEventListener("end", handleEnd);
+
     recognitionRef.current = recognition;
 
-    // クリーンアップ
-    return () => recognition.stop();
+    return () => {
+      recognition.removeEventListener("result", handleResult);
+      recognition.removeEventListener("error", handleError);
+      recognition.removeEventListener("end", handleEnd);
+      recognition.stop();
+      recognitionRef.current = null;
+    };
   }, []);
 
-  // 音声認識のトグル
   const toggleListening = () => {
     const recognition = recognitionRef.current;
     if (!recognition) return;
@@ -195,7 +206,13 @@ export default function Home() {
     }
   };
 
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+    }
+  }, []);
   const [hasMounted, setHasMounted] = useState(false);
 
   // ---------- 送信と応答 ---------- //
@@ -211,10 +228,8 @@ export default function Home() {
     setIsLoading(true);
     setIsSent(true);
 
-    // ユーザーの発言を追加
     addMessage(inputText || "(画像のみ)", "user");
 
-    // ★ ここで仮のAIメッセージを追加（空のアコーディオン用）
     const tempId = crypto.randomUUID();
     addMessage("...", "ai", switchState, tempId);
 
@@ -242,13 +257,10 @@ export default function Home() {
 
       const data: { text?: string; error?: string } = await res.json();
 
-      if (!controller.signal.aborted) {
-        if (data.text) {
-          // ★ 仮メッセージを上書きする関数が必要
-          updateMessage(tempId, data.text);
-        }
-      } else if (data.error) {
+      if (data.error) {
         updateMessage(tempId, `Error: ${data.error}`);
+      } else if (!controller.signal.aborted && data.text) {
+        updateMessage(tempId, data.text);
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -272,7 +284,6 @@ export default function Home() {
       Object.values(switchState).filter(Boolean).length;
 
     setSwitchState((prev) => {
-      // 唯一の true を false にしようとしていたら無視
       if (prev[key] && currentlyTrueCount === 1) return prev;
       return { ...prev, [key]: !prev[key] };
     });
@@ -282,7 +293,7 @@ export default function Home() {
 
   return (
     <>
-      <motion.div className="flex flex-col gap-4 w-full h-full relative">
+      <motion.div className="flex flex-col w-full h-full relative">
         <motion.div
           initial={{ flex: 0, height: 0, opacity: 0 }}
           animate={{
@@ -320,178 +331,139 @@ export default function Home() {
             )}
           </AnimatePresence>
           <ScrollShadow className="w-full h-full overflow-y-scroll">
-            <MathJaxContext
-              version={3}
-              config={{
-                loader: { load: ["input/tex", "output/chtml"] },
-                tex: {
-                  inlineMath: [
-                    ["$", "$"],
-                    ["\\(", "\\)"],
-                  ],
-                },
-              }}
-            >
-              <motion.div className="flex flex-col">
-                {message.map((msg) => {
-                  if (msg.role === "user") {
-                    return (
-                      <Card
-                        key={msg.id}
-                        shadow="none"
-                        radius="lg"
-                        className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
-                      >
-                        <CardBody>
-                          <div
-                            className="overflow-x-auto select-text prose dark:prose-invert max-w-full wrap-break-word text-xl font-medium text-dark-3 dark:text-light-3"
-                            style={{
-                              maxHeight: "calc(1.75rem * 3)",
-                              overflowY: "auto",
-                            }}
-                          >
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm, remarkMath]}
-                              rehypePlugins={[rehypeMathjax]}
-                            >
-                              {msg.text}
-                            </ReactMarkdown>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    );
-                  } else if (msg.role === "ai") {
-                    const state = msg.sectionsState ?? switchState;
-                    const sections: { title: string; text: string }[] = [];
-
-                    const extractSection = (header: string) => {
-                      const regex = new RegExp(
-                        `###\\s*${header}\\s*([\\s\\S]*?)(?=\\n###|$)`,
-                        "i"
-                      );
-                      return msg.text.match(regex)?.[1]?.trim();
-                    };
-
-                    if (state.summary) {
-                      const text = extractSection("要約");
-                      if (text) sections.push({ title: "要約", text });
-                    }
-
-                    if (state.guidance) {
-                      const text = extractSection("指針");
-                      if (text) sections.push({ title: "指針", text });
-                    }
-
-                    if (state.explanation) {
-                      const text = extractSection("解説");
-                      if (text) sections.push({ title: "解説", text });
-                    }
-
-                    if (state.answer) {
-                      const text = extractSection("解答");
-                      if (text) sections.push({ title: "解答", text });
-                    }
-
-                    if (sections.length === 0) {
-                      sections.push({ title: "内容", text: msg.text });
-                    }
-
-                    if (sections.length === 0) {
-                      return (
-                        <Card
-                          key={msg.id}
-                          shadow="none"
-                          radius="lg"
-                          className="rounded-tl-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+            <motion.div className="flex flex-col">
+              {message.map((msg) => (
+                <MathJaxContext
+                  key={msg.id}
+                  version={3}
+                  config={{
+                    tex: {
+                      inlineMath: [
+                        ["$", "$"],
+                        ["\\(", "\\)"],
+                      ],
+                    },
+                  }}
+                >
+                  {msg.role === "user" ? (
+                    <Card
+                      shadow="none"
+                      radius="lg"
+                      className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+                    >
+                      <CardBody>
+                        <div
+                          className="overflow-x-hidden select-text prose dark:prose-invert max-w-full wrap-break-word text-xl font-medium text-dark-3 dark:text-light-3"
+                          style={{
+                            minHeight: "2rem",
+                            maxHeight: `calc(2rem * 3)`,
+                            lineHeight: "2rem",
+                            overflowY: "auto",
+                          }}
                         >
-                          <CardBody>
-                            <div className="overflow-x-auto select-text prose dark:prose-invert max-w-full wrap-break-word text-xl font-medium text-dark-3 dark:text-light-3">
-                              <ReactMarkdown>{msg.text}</ReactMarkdown>
-                            </div>
-                          </CardBody>
-                        </Card>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[rehypeMathjax]}
+                          >
+                            {msg.text}
+                          </ReactMarkdown>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  ) : (
+                    (() => {
+                      const state = msg.sectionsState ?? switchState;
+                      const sections: { title: string; text: string }[] = [];
+
+                      const extractSection = (header: string) => {
+                        const regex = new RegExp(
+                          `###\\s*${header}\\s*([\\s\\S]*?)(?=\\n###|$)`,
+                          "i"
+                        );
+                        return msg.text.match(regex)?.[1]?.trim();
+                      };
+
+                      if (state.summary) {
+                        const text = extractSection("要約");
+                        if (text) sections.push({ title: "要約", text });
+                      }
+                      if (state.guidance) {
+                        const text = extractSection("指針");
+                        if (text) sections.push({ title: "指針", text });
+                      }
+                      if (state.explanation) {
+                        const text = extractSection("解説");
+                        if (text) sections.push({ title: "解説", text });
+                      }
+                      if (state.answer) {
+                        const text = extractSection("解答");
+                        if (text) sections.push({ title: "解答", text });
+                      }
+                      if (sections.length === 0) {
+                        sections.push({ title: "内容", text: msg.text });
+                      }
+
+                      return (
+                        <Accordion
+                          selectionMode="multiple"
+                          variant="bordered"
+                          className="mb-4 border-light-5 dark:border-dark-5 font-medium text-dark-3 dark:text-light-3"
+                        >
+                          {sections.map((sec, i) => {
+                            let icon = null;
+                            switch (sec.title) {
+                              case "要約":
+                                icon = <ScrollText className="text-sky-500" />;
+                                break;
+                              case "指針":
+                                icon = <BowArrow className="text-orange-500" />;
+                                break;
+                              case "解説":
+                                icon = <BookText className="text-rose-500" />;
+                                break;
+                              case "解答":
+                                icon = <BookCheck className="text-lime-500" />;
+                                break;
+                            }
+
+                            return (
+                              <AccordionItem
+                                key={i}
+                                aria-label={sec.title}
+                                title={
+                                  <span
+                                    className={`
+                            text-2xl font-medium no-select
+                            ${sec.title === "要約" ? "text-sky-500" : ""}
+                            ${sec.title === "指針" ? "text-orange-500" : ""}
+                            ${sec.title === "解説" ? "text-rose-500" : ""}
+                            ${sec.title === "解答" ? "text-lime-500" : ""}
+                          `}
+                                  >
+                                    {sec.title}
+                                  </span>
+                                }
+                                startContent={icon}
+                                classNames={{ trigger: "my-2 cursor-pointer" }}
+                              >
+                                <div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-xl font-normal text-dark-3 dark:text-light-3">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm, remarkMath]}
+                                    rehypePlugins={[rehypeMathjax]}
+                                  >
+                                    {sec.text}
+                                  </ReactMarkdown>
+                                </div>
+                              </AccordionItem>
+                            );
+                          })}
+                        </Accordion>
                       );
-                    }
-
-                    return (
-                      <Accordion
-                        key={msg.id}
-                        selectionMode="multiple"
-                        variant="bordered"
-                        className="mb-4 border-light-5 dark:border-dark-5 font-medium text-dark-3 dark:text-light-3"
-                      >
-                        {sections.map((sec, i) => {
-                          let icon = null;
-                          switch (sec.title) {
-                            case "要約":
-                              icon = <ScrollText className="text-sky-500" />;
-                              break;
-                            case "指針":
-                              icon = <BowArrow className="text-orange-500" />;
-                              break;
-                            case "解説":
-                              icon = <BookText className="text-rose-500" />;
-                              break;
-                            case "解答":
-                              icon = <BookCheck className="text-lime-500" />;
-                              break;
-                            default:
-                              break;
-                          }
-
-                          return (
-                            <AccordionItem
-                              key={i}
-                              aria-label={sec.title}
-                              title={
-                                <span
-                                  className={`
-                                    text-2xl font-medium no-select
-                                    ${
-                                      sec.title === "要約" ? "text-sky-500" : ""
-                                    }
-                                    ${
-                                      sec.title === "指針"
-                                        ? "text-orange-500"
-                                        : ""
-                                    }
-                                    ${
-                                      sec.title === "解説"
-                                        ? "text-rose-500"
-                                        : ""
-                                    }
-                                    ${
-                                      sec.title === "解答"
-                                        ? "text-lime-500"
-                                        : ""
-                                    }
-                                  `}
-                                >
-                                  {sec.title}
-                                </span>
-                              }
-                              startContent={icon}
-                              classNames={{
-                                trigger: "my-2 cursor-pointer",
-                              }}
-                            >
-                              <div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-xl font-normal text-dark-3 dark:text-light-3">
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkGfm, remarkMath]}
-                                  rehypePlugins={[rehypeMathjax]}
-                                >
-                                  {sec.text}
-                                </ReactMarkdown>
-                              </div>
-                            </AccordionItem>
-                          );
-                        })}
-                      </Accordion>
-                    );
-                  }
-                })}
-              </motion.div>
-            </MathJaxContext>
+                    })()
+                  )}
+                </MathJaxContext>
+              ))}
+            </motion.div>
           </ScrollShadow>
         </motion.div>
         <motion.div
@@ -505,7 +477,7 @@ export default function Home() {
             duration: 0.5,
             ease: "easeInOut",
           }}
-          className="flex flex-col justify-center items-center relative w-full h-full"
+          className="flex flex-col gap-10 justify-center items-center w-full h-full"
         >
           <AnimatePresence>
             {!isSent && (
@@ -515,7 +487,7 @@ export default function Home() {
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="flex flex-row justify-center items-center gap-4 relative bottom-10 w-full"
+                className="flex flex-row justify-center items-center gap-4 w-full"
               >
                 <Divider
                   orientation="horizontal"
@@ -729,7 +701,10 @@ export default function Home() {
                           transition={{ duration: 0.5, ease: "easeInOut" }}
                           className="overflow-hidden"
                         >
-                          <ScrollShadow className="w-full h-full">
+                          <ScrollShadow
+                            visibility="none"
+                            className="w-full h-full"
+                          >
                             {activeContent === "sliders" && (
                               <div className="flex flex-col gap-8 justify-center p-2 no-select">
                                 <Slider

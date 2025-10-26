@@ -49,7 +49,7 @@ export default function Sidebar() {
     setIsSent(false);
     setIsLoading(false);
     setIsPanelOpen(true);
-    setActiveContent(null);
+    setActiveContent("sliders");
     clearMessage();
     if (abortController) {
       abortController.abort();

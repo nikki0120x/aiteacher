@@ -1,0 +1,39 @@
+[package]
+name = "app"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.1", features = [] }
+
+[dependencies]
+# 1. 既存の主要な依存関係
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4"
+
+# 2. Tauri本体とプラグイン (v2ブランチを指定)
+tauri = { version = "2.9.1", features = [] }
+# 💡 修正: バージョン解析エラーを避けるため、tauri-plugin-logはGitとブランチで指定
+tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
+
+# 3. Gemini API通信と非同期処理に必要な依存関係
+# 非同期処理ランタイム
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+# HTTPリクエスト（Gemini API呼び出し用）
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false } 
+
+# Base64エンコーディング/デコーディング用 (画像データ処理に使用)
+base64 = "0.22"
