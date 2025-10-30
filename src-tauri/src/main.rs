@@ -1,12 +1,12 @@
 // =========================================================================
-// Rust Code (src-tauri/src/main.rs) - 外部プロキシクライアントに修正
+// Rust Code (src-tauri/src/main.rs) - 外部プロキシクライアント完全版
 // =========================================================================
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri;
 use serde::{Deserialize, Serialize};
-// AUTHORIZATIONとstd::envは不要になったため削除
 use reqwest::header::{HeaderMap, CONTENT_TYPE};
+use std::env;
 
 // =========================================================================
 // 1. フロントエンドから受け取るデータ構造 (route.tsと共通)
@@ -32,7 +32,6 @@ struct ImageSet {
     solution: Option<Vec<String>>,
 }
 
-// フロントエンドからのリクエスト全体（そのままWebサーバーへ転送）
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GeminiRequestPayload {
@@ -42,18 +41,15 @@ struct GeminiRequestPayload {
     images: Option<ImageSet>,
 }
 
-
 // =========================================================================
 // 2. 応答データ構造 (route.tsからの応答に合わせる)
 // =========================================================================
 
-// route.tsは { text: string, category: string } を返すため、これに合わせる
 #[derive(Debug, Deserialize)]
 struct ProxyResponse {
     text: String,
     category: String,
 }
-
 
 // =========================================================================
 // 3. Tauri Command (Rustの公開関数)
@@ -61,40 +57,49 @@ struct ProxyResponse {
 
 #[tauri::command]
 async fn process_gemini_request(payload: GeminiRequestPayload) -> Result<String, String> {
-    // 🚨 以下のURLを、デプロイした route.ts の公開URLに置き換えてください 🚨
-    const PROXY_API_URL: &str = "https://www.focalrina.com/api/gemini"; // 例
+    // 環境変数から URL を取得
+    let proxy_url = env::var("GEMINI_API_URL")
+        .unwrap_or_else(|_| "https://www.focalrina.com/api/gemini".to_string());
 
-    // 1. 認証情報やプロンプト構築ロジックはWebサーバー側で行うため、すべて削除
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::limited(5)) // リダイレクトを最大5回追跡
+        .build()
+        .map_err(|e| format!("HTTPクライアントの作成に失敗しました: {:?}", e))?;
 
-    // 2. 外部WebサーバーのAPIエンドポイントへのリクエスト
-    let client = reqwest::Client::new();
-
-    // ヘッダーの設定
     let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
+        headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
+        headers.insert("Accept", "application/json".parse().unwrap());
+        headers.insert("User-Agent", "curl/8.2.1".parse().unwrap());
 
-    // 3. リクエストの送信
-    // route.ts が受け取るオリジナルのペイロードをJSON形式で送信
+    println!("DEBUG: Sending request to {}", proxy_url);
+    println!("DEBUG: Payload = {:?}", payload);
+
     let response = client
-        .post(PROXY_API_URL)
+        .post(&proxy_url)
         .headers(headers)
-        .json(&payload) // GeminiRequestPayload をそのまま転送
+        .json(&payload)
         .send()
         .await
-        .map_err(|e| format!("外部Webサーバーへのリクエスト送信に失敗しました（URL: {}）。サーバーがデプロイされ、稼働しているか確認してください: {}", PROXY_API_URL, e))?;
+        .map_err(|e| format!("外部Webサーバーへのリクエスト送信に失敗しました（URL: {}）。{:?}", proxy_url, e))?;
 
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_else(|_| "応答本文なし".to_string());
-        return Err(format!("Webサーバーからのエラー応答 (HTTP {}): {}", status, body));
+    println!("DEBUG: Received HTTP status: {}", response.status());
+
+    let body_text = response
+        .text()
+        .await
+        .unwrap_or_else(|_| "<empty response>".to_string());
+
+    // JSONかどうか簡易チェック
+    if !body_text.trim_start().starts_with('{') {
+        println!("DEBUG: Non-JSON response:\n{}", body_text);
+        return Err(format!("WebサーバーからJSON以外の応答が返されました:\n{}", body_text));
     }
 
-    // 4. レスポンスの解析 (ProxyResponseに合わせる)
-    let proxy_response: ProxyResponse = response.json()
-        .await
-        .map_err(|e| format!("WebサーバーからのJSON解析に失敗しました: {}", e))?;
-    
-    // 5. 結果テキストの抽出
+    // JSON解析
+    let proxy_response: ProxyResponse = serde_json::from_str(&body_text)
+        .map_err(|e| format!("WebサーバーからのJSON解析に失敗しました: {:?}\nResponse body: {}", e, body_text))?;
+
+    println!("DEBUG: Response text: {}", proxy_response.text);
     Ok(proxy_response.text)
 }
 
@@ -104,7 +109,7 @@ async fn process_gemini_request(payload: GeminiRequestPayload) -> Result<String,
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![process_gemini_request]) 
+        .invoke_handler(tauri::generate_handler![process_gemini_request])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

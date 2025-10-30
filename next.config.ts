@@ -1,50 +1,38 @@
 import type { NextConfig } from "next";
 
-// 💡 環境変数 TAURI_BUILD_MODE が設定されているかチェック
-const isTauriBuild = process.env.TAURI_BUILD_MODE === 'true';
+// 環境変数 TAURI_BUILD_MODE が設定されているかチェック
+const isTauriBuild = process.env.TAURI_BUILD_MODE === "true";
 
 // --- Tauriビルド専用の設定 ---
 const tauriConfig: NextConfig = {
-  // 必須: 静的エクスポートを有効にする
-  output: "export",
-  
-  // 必須: サーバー依存の画像最適化機能を無効化
+  output: "export", // 静的HTMLエクスポート
   images: {
-    unoptimized: true,
+    unoptimized: true, // サーバー依存の画像最適化を無効化
   },
-
-  // Webpack設定は両方で共通またはTauriビルドで必要なものを定義
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
       use: ["@svgr/webpack"],
     });
-
     return config;
   },
-  
-  // ⚠️ Tauriビルド時には、その他の設定は適用されない（または空にする）
+  // ⚠️ ここでTauri用の環境変数を指定
+  env: {
+    NEXT_PUBLIC_GEMINI_API_URL: process.env.NEXT_PUBLIC_GEMINI_API_URL || "https://www.focalrina.com/api/gemini",
+  },
   turbopack: {},
   experimental: {},
-  env: {},
 };
 
-// --- Webアプリビルド専用の設定 (ユーザーの既存設定を反映) ---
+// --- Webアプリビルド専用の設定 ---
 const webConfig: NextConfig = {
-  // サーバー機能を利用するため 'export' は設定しない (または 'standalone' など)
-  // images設定はそのまま
-  // ...
-
-  // 既存設定
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
       use: ["@svgr/webpack"],
     });
-
     return config;
   },
-
   turbopack: {
     rules: {
       "*.svg": {
@@ -53,20 +41,17 @@ const webConfig: NextConfig = {
       },
     },
   },
-
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",
     },
   },
-
   env: {
     GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   },
 };
 
-
-// 💡 最終的なエクスポート: 環境変数に応じて設定を切り替える
+// 💡 最終的に環境に応じて切り替え
 const finalConfig: NextConfig = isTauriBuild ? tauriConfig : webConfig;
 
 export default finalConfig;
