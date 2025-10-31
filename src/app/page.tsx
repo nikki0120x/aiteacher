@@ -41,6 +41,16 @@ import {
 } from "lucide-react";
 import packageJson from "../../package.json";
 
+type Part = {
+  text?: string;
+  inlineData?: { mimeType: string; data: string };
+};
+
+type Content = {
+  role: "user" | "model";
+  parts: Part[];
+};
+
 export default function Home() {
   const [switchState, setSwitchState] = useState({
     summary: true,
@@ -61,6 +71,7 @@ export default function Home() {
     isPanelOpen,
     activeContent,
     message,
+    history,
     abortController,
     setIsSent,
     setIsLoading,
@@ -68,6 +79,7 @@ export default function Home() {
     togglePanel,
     setActiveContent,
     addMessage,
+    addContentToHistory,
     setAbortController,
     updateMessage,
   } = useChatStore();
@@ -228,29 +240,38 @@ export default function Home() {
     setIsLoading(true);
     setIsSent(true);
 
-    addMessage(inputText || "(画像のみ)", "user");
-
+    const userText = inputText || "(画像のみ)";
     const tempId = crypto.randomUUID();
-    addMessage("...", "ai", switchState, tempId);
-
-    setActiveContent(null);
-    setInputText("");
-
     const controller = new AbortController();
     setAbortController(controller);
 
+    // 1. ユーザーメッセージをUIと履歴に追加
+    addMessage(userText, "user");
+    addMessage("...", "ai", switchState, tempId); // UIに仮の応答を表示
+
+    // ユーザーのContentを作成 (画像を含む場合はPartとして追加)
+    const userParts: Part[] = [{ text: userText }];
+    images.problem.forEach((img) =>
+      userParts.push({ inlineData: { mimeType: "image/png", data: img } })
+    );
+    images.solution.forEach((img) =>
+      userParts.push({ inlineData: { mimeType: "image/png", data: img } })
+    );
+
+    // 履歴に追加するユーザーContent
+    const userContent: Content = { role: "user", parts: userParts };
+
+    // 2. リクエストペイロードに履歴を含める
     try {
       const res = await fetch("/api/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: inputText,
-          images: {
-            problem: images.problem,
-            solution: images.solution,
-          },
+          images: images, // 画像データはBase64形式で送信
           options: switchState,
           sliders,
+          history: [...history, userContent], // ★送信: 既存の履歴に今回のユーザー入力を追加して送信
         }),
         signal: controller.signal,
       });
@@ -259,8 +280,22 @@ export default function Home() {
 
       if (data.error) {
         updateMessage(tempId, `Error: ${data.error}`);
+        // エラー時、ユーザーのContentは履歴に追加しない
       } else if (!controller.signal.aborted && data.text) {
+        // 3. 成功時: UIを更新し、ユーザーとAIの応答を履歴に格納
+
+        // UIを更新
         updateMessage(tempId, data.text);
+
+        // 履歴にユーザーのContentを格納（画像をContentとして送信する必要があるため、ここで追加）
+        addContentToHistory(userContent);
+
+        // AIのContentを作成し、履歴に格納
+        const aiContent: Content = {
+          role: "model",
+          parts: [{ text: data.text }],
+        };
+        addContentToHistory(aiContent);
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -270,10 +305,13 @@ export default function Home() {
       } else {
         updateMessage(tempId, "Fetch error: 不明なエラー");
       }
+      // エラー時、ユーザーのContentは履歴に追加しない
     } finally {
       setIsLoading(false);
       setAbortController(null);
       setImages({ problem: [], solution: [] });
+      setActiveContent(null);
+      setInputText("");
     }
   };
 
@@ -709,7 +747,7 @@ export default function Home() {
                               <div className="flex flex-col gap-8 justify-center p-2 no-select">
                                 <Slider
                                   className="w-full"
-                                  defaultValue={0.5}
+                                  value={sliders.politeness}
                                   formatOptions={{ style: "percent" }}
                                   label="丁寧度"
                                   marks={[

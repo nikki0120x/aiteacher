@@ -21,6 +21,29 @@ type ImageSet = {
   solution?: string[];
 };
 
+// @google/genai の Content/Part の型に合わせる
+type Part = {
+  text?: string;
+  inlineData?: { mimeType: string; data: string };
+};
+
+type Content = {
+  role: "user" | "model";
+  parts: Part[];
+};
+
+// POSTで受け取るペイロードの型
+type PostPayload = {
+  prompt: string;
+  options?: SwitchOptions;
+  sliders?: SliderOptions;
+  images?: ImageSet;
+  // ★追加: 会話履歴の型定義
+  history?: Content[];
+};
+
+// ... (既存の型定義は省略)
+
 function ensureCredentials() {
   const json = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
   if (json && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -33,19 +56,17 @@ function ensureCredentials() {
 function getPolitenessInstruction(value: number): string {
   if (value <= 0)
     return "簡潔に無駄な言葉は使わずテストや入試のような簡単明瞭な返答をして";
-  else if (value <= 0.25)
-    return "簡単にわかりやすく必要最低限の説明で返答して";
-  else if (value <= 0.5)
-    return "一般的にわかりやすくなるように返答して。";
-  else if (value <= 0.75)
-    return "見やすくわかりやすく丁寧に返答して。";
+  else if (value <= 0.25) return "簡単にわかりやすく必要最低限の説明で返答して";
+  else if (value <= 0.5) return "一般的にわかりやすくなるように返答して。";
+  else if (value <= 0.75) return "見やすくわかりやすく丁寧に返答して。";
   else if (value <= 1)
     return "誰でも理解できるよう非常に丁寧かつ詳しく返答して。";
-  else
-    return "丁寧に、ただし冗長にならないよう自然な言葉で返答して。";
+  else return "丁寧に、ただし冗長にならないよう自然な言葉で返答して。";
 }
 
-function normalizeSwitchOptions(options?: SwitchOptions): Required<SwitchOptions> {
+function normalizeSwitchOptions(
+  options?: SwitchOptions
+): Required<SwitchOptions> {
   const result = {
     summary: options?.summary ?? true,
     guidance: options?.guidance ?? false,
@@ -76,7 +97,11 @@ function buildPrompt(
     other: "あなたは高校生向けのやさしい先生です。",
   };
 
-  const sections: string[] = [`${baseInstructions[category]}`, politenessText, "以下の形式で回答してください:"];
+  const sections: string[] = [
+    `${baseInstructions[category]}`,
+    politenessText,
+    "以下の形式で回答してください:",
+  ];
 
   if (switches.summary)
     sections.push(
@@ -133,7 +158,10 @@ async function classifyCategory(ai: GoogleGenAI, prompt: string) {
 }
 
 function buildParts(prompt: string, images?: ImageSet) {
-  const parts: { text?: string; inlineData?: { mimeType: string; data: string } }[] = [{ text: prompt }];
+  const parts: {
+    text?: string;
+    inlineData?: { mimeType: string; data: string };
+  }[] = [{ text: prompt }];
 
   const pushImages = (arr?: string[]) =>
     arr?.forEach((img) => {
@@ -152,15 +180,14 @@ function buildParts(prompt: string, images?: ImageSet) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, options, sliders, images } = (await req.json()) as {
-      prompt: string;
-      options?: SwitchOptions;
-      sliders?: SliderOptions;
-      images?: ImageSet;
-    };
+    const { prompt, options, sliders, images, history } =
+      (await req.json()) as PostPayload; // ★ history を受け取る
 
     if (!prompt && !images?.problem?.length && !images?.solution?.length) {
-      return NextResponse.json({ error: "prompt または画像が必要です" }, { status: 400 });
+      return NextResponse.json(
+        { error: "prompt または画像が必要です" },
+        { status: 400 }
+      );
     }
 
     ensureCredentials();
@@ -171,15 +198,74 @@ export async function POST(req: NextRequest) {
       location: process.env.GOOGLE_CLOUD_LOCATION,
     });
 
+    // 履歴を考慮に入れるか、新しい質問のみで分類するかはユースケースによりますが、
+    // ここでは引き続き新しいプロンプトのみで分類します。
     const category = await classifyCategory(ai, prompt);
     const switches = normalizeSwitchOptions(options);
     const politenessText = getPolitenessInstruction(sliders?.politeness ?? 0.5);
-    const finalPrompt = buildPrompt(category, politenessText, switches, prompt);
-    const parts = buildParts(finalPrompt, images);
 
+    // ★ buildPrompt で作成したインストラクションを最初のターンにのみ適用するため、
+    //    履歴がない（最初の会話）場合のみ finalPrompt を使用します。
+    //    会話継続時は、履歴がモデルに文脈を伝えます。
+    const fullInitialPrompt = buildPrompt(
+      category,
+      politenessText,
+      switches,
+      prompt
+    );
+    // 履歴がある場合は、finalPromptのテキストをプロンプトとして使用せず、
+    // 履歴の最後に新しいユーザーの質問を追加します。
+    // ユーザーの質問部分（最後の行）を探す
+    const lastQuestionMarker = `ユーザーの質問: ${prompt}`;
+    let instructionPart = fullInitialPrompt;
+
+    // 形式指示部分を抽出 (ユーザーの質問以降を削除)
+    if (fullInitialPrompt.endsWith(lastQuestionMarker)) {
+      instructionPart = fullInitialPrompt
+        .substring(0, fullInitialPrompt.length - lastQuestionMarker.length)
+        .trim();
+    } else {
+      // 安全策: 見つからない場合は全体を使う (初回はこれでOK)
+      instructionPart = fullInitialPrompt;
+    }
+
+    // 2回目以降の会話 (履歴あり) のために Content を準備
+    let newParts: Part[] = [];
+
+    if (history && history.length > 0) {
+      // ★修正ポイント１: 履歴がある場合、指示部分と今回のプロンプトを結合して新しいPartを作成
+      const combinedPrompt = `${instructionPart}\n\n${lastQuestionMarker}`;
+      newParts = [{ text: combinedPrompt }];
+    } else {
+      // 初回会話 (履歴なし) の場合、instructionPart == fullInitialPrompt であり、
+      // newPartsは不要。buildContents内で fullInitialPrompt が使われる。
+      newParts = [{ text: fullInitialPrompt }];
+    }
+
+    // 画像の Part を追加
+    const pushImages = (arr?: string[]) =>
+      arr?.forEach((img) => {
+        const base64 = img.split(",")[1];
+        if (base64)
+          newParts.push({
+            inlineData: { mimeType: "image/png", data: base64 },
+          });
+      });
+
+    pushImages(images?.problem);
+    pushImages(images?.solution);
+
+    // 履歴と今回のユーザー入力を結合したContents
+    const contents: Content[] = [
+      ...(history || []), // 既存の履歴
+      { role: "user", parts: newParts }, // 今回のユーザー入力
+    ];
+
+    // ★ generateContent の呼び出しを contents に変更
     const response = (await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts }],
+      // 履歴と現在のプロンプトを含む contents を使用
+      contents: contents,
     })) as GenerateContentResponse;
 
     return NextResponse.json({
@@ -188,7 +274,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("POST /api/gemini でエラー発生:", error);
-    const message = error instanceof Error ? error.message : "不明なエラーが発生しました";
+    const message =
+      error instanceof Error ? error.message : "不明なエラーが発生しました";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+// ... (その他の既存の関数はそのまま)

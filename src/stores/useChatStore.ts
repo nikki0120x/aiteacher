@@ -1,5 +1,15 @@
 import { create } from "zustand";
 
+type Part = {
+  text?: string;
+  inlineData?: { mimeType: string; data: string };
+};
+
+type Content = {
+  role: "user" | "model";
+  parts: Part[];
+};
+
 type Message = {
   id: string; // ← number から string に変更（UUID対応）
   text: string;
@@ -18,6 +28,7 @@ interface ChatState {
   isPanelOpen: boolean;
   activeContent: "sliders" | "images" | null;
   message: Message[];
+  history: Content[]; // ★追加: 会話履歴 (Content型)
   abortController: AbortController | null;
 
   // 状態操作関数たち
@@ -26,6 +37,7 @@ interface ChatState {
   setIsPanelOpen: (open: boolean) => void;
   togglePanel: () => void;
   setActiveContent: (content: "sliders" | "images" | null) => void;
+  addContentToHistory: (content: Content) => void;
 
   addMessage: (
     text: string,
@@ -51,6 +63,7 @@ export const useChatStore = create<ChatState>((set) => ({
   isPanelOpen: true,
   activeContent: "sliders",
   message: [],
+  history: [],
   abortController: null,
 
   setIsSent: (sent) => set({ isSent: sent }),
@@ -75,6 +88,10 @@ export const useChatStore = create<ChatState>((set) => ({
         message: [...state.message, newMessage],
       };
     }),
+  addContentToHistory: (content) =>
+    set((state) => ({
+      history: [...state.history, content],
+    })),
 
   // ★ メッセージ内容を上書きする関数
   updateMessage: (id, newText) =>
@@ -84,6 +101,6 @@ export const useChatStore = create<ChatState>((set) => ({
       ),
     })),
 
-  clearMessage: () => set({ message: [] }),
+  clearMessage: () => set({ message: [], history: [] }),
   setAbortController: (controller) => set({ abortController: controller }),
 }));
