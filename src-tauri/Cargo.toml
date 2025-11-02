@@ -24,7 +24,7 @@ serde_json = "1.0"
 log = "0.4"
 
 # 2. Tauri本体とプラグイン (v2ブランチを指定)
-tauri = { version = "2.9.1", features = [] }
+tauri = { version = "2.9.2", features = [] }
 # 💡 修正: バージョン解析エラーを避けるため、tauri-plugin-logはGitとブランチで指定
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
 
@@ -37,4 +37,5 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-feature
 
 # Base64エンコーディング/デコーディング用 (画像データ処理に使用)
 base64 = "0.22"
-tauri-plugin-http = "2.5.2"
+tauri-plugin-http = "2.5.4"
+dotenvy = "0.15.7"

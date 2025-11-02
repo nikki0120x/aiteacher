@@ -1,14 +1,19 @@
 import type { NextConfig } from "next";
 
+// 共通設定（必ず output: "export" を入れる）
+const baseConfig: NextConfig = {
+  output: "export", // 静的HTMLエクスポート
+  images: {
+    unoptimized: true, // /_next/image 404を回避
+  },
+};
+
 // 環境変数 TAURI_BUILD_MODE が設定されているかチェック
 const isTauriBuild = process.env.TAURI_BUILD_MODE === "true";
 
 // --- Tauriビルド専用の設定 ---
 const tauriConfig: NextConfig = {
-  output: "export", // 静的HTMLエクスポート
-  images: {
-    unoptimized: true, // サーバー依存の画像最適化を無効化
-  },
+  ...baseConfig,
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
@@ -16,9 +21,10 @@ const tauriConfig: NextConfig = {
     });
     return config;
   },
-  // ⚠️ ここでTauri用の環境変数を指定
   env: {
-    NEXT_PUBLIC_GEMINI_API_URL: process.env.NEXT_PUBLIC_GEMINI_API_URL || "https://www.focalrina.com/api/gemini",
+    NEXT_PUBLIC_GEMINI_API_URL:
+      process.env.NEXT_PUBLIC_GEMINI_API_URL ||
+      "https://www.focalrina.com/api/gemini",
   },
   turbopack: {},
   experimental: {},
@@ -26,6 +32,7 @@ const tauriConfig: NextConfig = {
 
 // --- Webアプリビルド専用の設定 ---
 const webConfig: NextConfig = {
+  ...baseConfig,
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,

@@ -10,6 +10,7 @@ import remarkMath from "remark-math";
 import rehypeMathjax from "rehype-mathjax";
 import { MathJaxContext } from "better-react-mathjax";
 import { DndContext, useDroppable } from "@dnd-kit/core";
+import { invoke } from "@tauri-apps/api/core";
 import {
   ScrollShadow,
   Spinner,
@@ -261,31 +262,25 @@ export default function Home() {
     // 履歴に追加するユーザーContent
     const userContent: Content = { role: "user", parts: userParts };
 
-    // 2. リクエストペイロードに履歴を含める
+    // 2. リクエストペイロードをRustコマンドに送信
     try {
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // 💡 修正: fetch("/api/gemini", ...) を invoke("process_gemini_request", ...) に変更
+      const data: string = await invoke("process_gemini_request", {
+        // Rustの GeminiRequestPayload 構造体に合うペイロードを送信
+        payload: {
           prompt: inputText,
           images: images, // 画像データはBase64形式で送信
           options: switchState,
           sliders,
-          history: [...history, userContent], // ★送信: 既存の履歴に今回のユーザー入力を追加して送信
-        }),
-        signal: controller.signal,
+          // history: [...history, userContent], // 💡 削除: Rust側の構造体に無いため
+        },
       });
 
-      const data: { text?: string; error?: string } = await res.json();
-
-      if (data.error) {
-        updateMessage(tempId, `Error: ${data.error}`);
-        // エラー時、ユーザーのContentは履歴に追加しない
-      } else if (!controller.signal.aborted && data.text) {
-        // 3. 成功時: UIを更新し、ユーザーとAIの応答を履歴に格納
-
+      // 3. 成功時: UIを更新し、ユーザーとAIの応答を履歴に格納
+      // invoke は成功時、Rustの Ok(String) を直接文字列として返す
+      if (!controller.signal.aborted && data) {
         // UIを更新
-        updateMessage(tempId, data.text);
+        updateMessage(tempId, data);
 
         // 履歴にユーザーのContentを格納（画像をContentとして送信する必要があるため、ここで追加）
         addContentToHistory(userContent);
@@ -293,17 +288,22 @@ export default function Home() {
         // AIのContentを作成し、履歴に格納
         const aiContent: Content = {
           role: "model",
-          parts: [{ text: data.text }],
+          parts: [{ text: data }],
         };
         addContentToHistory(aiContent);
       }
     } catch (err: unknown) {
+      // 💡 エラー処理: Rust側の Err(String) はここで文字列として捕捉される
       if (err instanceof DOMException && err.name === "AbortError") {
         updateMessage(tempId, "AIの返答を中止しました");
+      } else if (typeof err === "string") {
+        // Rust側で設定したカスタムエラーメッセージ（HTML検知やログパスを含む）がここに表示される
+        updateMessage(tempId, `Rust Command Error: ${err}`);
       } else if (err instanceof Error) {
-        updateMessage(tempId, `Fetch error: ${err.message}`);
+        // その他の invoke/Tauri エラー
+        updateMessage(tempId, `Command Error: ${err.message}`);
       } else {
-        updateMessage(tempId, "Fetch error: 不明なエラー");
+        updateMessage(tempId, "Command Error: 不明なエラー");
       }
       // エラー時、ユーザーのContentは履歴に追加しない
     } finally {
