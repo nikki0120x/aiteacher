@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 // 共通設定（必ず output: "export" を入れる）
 const baseConfig: NextConfig = {
-  output: "export", // 静的HTMLエクスポート
+  output: "standalone",
   images: {
     unoptimized: true, // /_next/image 404を回避
   },
