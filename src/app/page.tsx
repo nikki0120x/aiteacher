@@ -246,11 +246,9 @@ export default function Home() {
     const controller = new AbortController();
     setAbortController(controller);
 
-    // 1. ユーザーメッセージをUIと履歴に追加
     addMessage(userText, "user");
-    addMessage("...", "ai", switchState, tempId); // UIに仮の応答を表示
+    addMessage("...", "ai", switchState, tempId);
 
-    // ユーザーのContentを作成 (画像を含む場合はPartとして追加)
     const userParts: Part[] = [{ text: userText }];
     images.problem.forEach((img) =>
       userParts.push({ inlineData: { mimeType: "image/png", data: img } })
@@ -259,53 +257,42 @@ export default function Home() {
       userParts.push({ inlineData: { mimeType: "image/png", data: img } })
     );
 
-    // 履歴に追加するユーザーContent
     const userContent: Content = { role: "user", parts: userParts };
 
-    // 2. リクエストペイロードをRustコマンドに送信
     try {
-      // 💡 修正: fetch("/api/gemini", ...) を invoke("process_gemini_request", ...) に変更
-      const data: string = await invoke("process_gemini_request", {
-        // Rustの GeminiRequestPayload 構造体に合うペイロードを送信
-        payload: {
-          prompt: inputText,
-          images: images, // 画像データはBase64形式で送信
-          options: switchState,
-          sliders,
-          // history: [...history, userContent], // 💡 削除: Rust側の構造体に無いため
-        },
-      });
+      let data: string;
 
-      // 3. 成功時: UIを更新し、ユーザーとAIの応答を履歴に格納
-      // invoke は成功時、Rustの Ok(String) を直接文字列として返す
-      if (!controller.signal.aborted && data) {
-        // UIを更新
-        updateMessage(tempId, data);
-
-        // 履歴にユーザーのContentを格納（画像をContentとして送信する必要があるため、ここで追加）
-        addContentToHistory(userContent);
-
-        // AIのContentを作成し、履歴に格納
-        const aiContent: Content = {
-          role: "model",
-          parts: [{ text: data }],
-        };
-        addContentToHistory(aiContent);
+      // Tauri環境かどうかを確認
+      if (typeof (window as any).__TAURI__ !== "undefined") {
+        data = await invoke("process_gemini_request", {
+          payload: { prompt: inputText, images, options: switchState, sliders },
+        });
+      } else {
+        // fallback (Next.js開発サーバー)
+        const res = await fetch("/api/gemini", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: inputText,
+            images,
+            options: switchState,
+            sliders,
+          }),
+        });
+        data = await res.text();
       }
-    } catch (err: unknown) {
-      // 💡 エラー処理: Rust側の Err(String) はここで文字列として捕捉される
+
+      if (!controller.signal.aborted && data) {
+        updateMessage(tempId, data);
+        addContentToHistory(userContent);
+        addContentToHistory({ role: "model", parts: [{ text: data }] });
+      }
+    } catch (err: any) {
       if (err instanceof DOMException && err.name === "AbortError") {
         updateMessage(tempId, "AIの返答を中止しました");
-      } else if (typeof err === "string") {
-        // Rust側で設定したカスタムエラーメッセージ（HTML検知やログパスを含む）がここに表示される
-        updateMessage(tempId, `Rust Command Error: ${err}`);
-      } else if (err instanceof Error) {
-        // その他の invoke/Tauri エラー
-        updateMessage(tempId, `Command Error: ${err.message}`);
       } else {
-        updateMessage(tempId, "Command Error: 不明なエラー");
+        updateMessage(tempId, `Command Error: ${err.message || String(err)}`);
       }
-      // エラー時、ユーザーのContentは履歴に追加しない
     } finally {
       setIsLoading(false);
       setAbortController(null);
