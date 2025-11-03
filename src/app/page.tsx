@@ -472,11 +472,11 @@ export default function Home() {
                     <Card
                       shadow="none"
                       radius="lg"
-                      className="rounded-tr-lg w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+                      className="rounded-2xl rounded-tr-sm w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
                     >
                       <CardBody>
                         <div
-                          className="overflow-x-hidden select-text prose dark:prose-invert max-w-full wrap-break-word text-xl font-medium text-dark-3 dark:text-light-3"
+                          className="overflow-x-hidden select-text prose dark:prose-invert max-w-full wrap-break-word text-lg font-medium text-dark-3 dark:text-light-3"
                           style={{
                             minHeight: "2rem",
                             maxHeight: `calc(2rem * 3)`,
@@ -537,23 +537,19 @@ export default function Home() {
                         "i"
                       );
 
-                      // ONになっているセクションが一つ以上あり、かつ、まだヘッダーがmsg.text内に見当たらない場合
                       if (
                         sections.length > 0 &&
                         !msg.text.match(anyHeaderRegex)
                       ) {
-                        // ★ 修正: 最初のセクションだけでなく、有効なすべてのセクションに msg.text を割り当てる
                         sections.forEach((sec) => {
                           sec.text = msg.text;
                         });
                       }
 
-                      // 3. 最終フォールバック: 全てのスイッチがOFFの場合や予期せぬエラーの場合
                       if (sections.length === 0) {
                         sections.push({ title: "応答", text: msg.text });
                       }
 
-                      // ONになっているセクションが一つ以上あり、かつ、まだヘッダーがmsg.text内に見当たらない場合
                       if (
                         sections.length > 0 &&
                         !msg.text.match(anyHeaderRegex)
@@ -561,12 +557,10 @@ export default function Home() {
                         sections[0].text = msg.text;
                       }
 
-                      // 最終フォールバック
                       if (sections.length === 0) {
                         sections.push({ title: "応答", text: msg.text });
                       }
 
-                      // --- ★ 修正 1: アニメーション対象セクションの特定ロジックを追加 ★ ---
                       let targetSectionIndex = -1;
                       if (isCurrentLoadingMessage) {
                         const lastSectionIndexWithContent = sections
@@ -574,13 +568,12 @@ export default function Home() {
                           .reverse()
                           .findIndex((s) => s.text && s.text.length > 0);
 
-                        // そのセクションの元のインデックスを計算
                         if (lastSectionIndexWithContent >= 0) {
                           targetSectionIndex =
                             sections.length - 1 - lastSectionIndexWithContent;
                         }
                       }
-                      // -------------------------------------------------------------------
+
                       const LOADING_PHRASES = [
                         "回答を準備しています...",
                         "思考中...",
@@ -650,7 +643,7 @@ export default function Home() {
                                 title={
                                   <span
                                     className={`
-                            text-2xl font-medium no-select
+                            text-xl font-medium no-select
                             ${sec.title === "要約" ? "text-sky-500" : ""}
                             ${
                               sec.title === "指針" || sec.title === "応答"
@@ -665,13 +658,12 @@ export default function Home() {
                                   </span>
                                 }
                                 startContent={icon}
-                                classNames={{ trigger: "my-2 cursor-pointer" }}
+                                classNames={{ trigger: "cursor-pointer" }}
                               >
-                                <div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-xl font-normal text-dark-3 dark:text-light-3">
-                                  {shouldAnimate ? ( // ★ 修正: shouldAnimate を使用
-                                    // motion.div block
+                                <div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-lg font-normal text-dark-3 dark:text-light-3">
+                                  {shouldAnimate ? (
                                     <motion.div
-                                      key={motionKey} // Keyはそのまま
+                                      key={motionKey}
                                       style={{ whiteSpace: "pre-wrap" }}
                                     >
                                       {displayContent
@@ -691,7 +683,6 @@ export default function Home() {
                                         ))}
                                     </motion.div>
                                   ) : (
-                                    // Markdown block
                                     <ReactMarkdown
                                       remarkPlugins={[remarkGfm, remarkMath]}
                                       rehypePlugins={[rehypeMathjax]}
@@ -723,17 +714,17 @@ export default function Home() {
             duration: 0.5,
             ease: "easeInOut",
           }}
-          className="flex flex-col gap-10 justify-center items-center w-full h-full"
+          className="flex flex-col justify-center items-center gap-10 w-full h-full"
         >
           <AnimatePresence>
             {!isSent && (
               <motion.div
                 key="heading"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="flex flex-row justify-center items-center gap-4 w-full"
+                className="flex flex-row justify-center items-center gap-4 w-full h-auto"
               >
                 <Divider
                   orientation="horizontal"
@@ -923,8 +914,8 @@ export default function Home() {
                           radius="full"
                           className={`${
                             inputText.trim() !== "" || images.problem.length > 0
-                              ? "text-light-3 bg-blue-500" // アクティブ時
-                              : "text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3" // 非アクティブ時
+                              ? "text-light-3 bg-blue-500"
+                              : "text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3"
                           }`}
                           onPress={() => handleSend()}
                           disabled={
