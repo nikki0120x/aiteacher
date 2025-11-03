@@ -88,13 +88,13 @@ function buildPrompt(
   userPrompt: string
 ): string {
   const baseInstructions: Record<string, string> = {
-    math: "あなたは高校数学の教師です。",
-    physics: "あなたは高校物理の教師です。",
-    chemistry: "あなたは高校化学の教師です。",
-    biology: "あなたは高校生物の教師です。",
-    earth_science: "あなたは高校地学の教師です。",
-    english: "あなたは高校英語の教師です。",
-    other: "あなたは高校生向けのやさしい先生です。",
+    math: "あなたは数学者であり、教師です。",
+    physics: "あなたは物理学者であり、教師です。",
+    chemistry: "あなたは化学者であり、教師です。",
+    biology: "あなたは生物学者であり、教師です。",
+    earth_science: "あなたは地学者であり、教師です。",
+    english: "あなたは英語話者であり、教師です。",
+    other: "あなたは学者であり、教師です。",
   };
 
   const sections: string[] = [
@@ -103,24 +103,28 @@ function buildPrompt(
     "以下の形式で回答してください:",
   ];
 
+  sections.push(
+    "AI は、出力形式のセクション指示（###）を厳密に守り、ONになっている最初のセクションのヘッダーから直ちに回答を開始してください。それ以外のテキストは出力しないでください。"
+  );
+
   if (switches.summary)
     sections.push(
-      `### 要約\n問題の要点を簡潔にまとめて、それ以外の指針、解説、解答はしない。\n数式は LaTeX で書き、コードブロックではなく通常の形式で書くこと。`
+      `### 要約\n問題の要点をまとめてください。\n数式は LaTeX で書き、コードブロックではなく通常の形式で書くこと。`
     );
 
   if (switches.guidance)
     sections.push(
-      `### 指針\n問題解決の方針や考え方を丁寧に示し、それ以外の要約や解説、解答はしない。\n数式は LaTeX 形式で書くこと。`
+      `### 指針\n問題解決の方針や考え方を視覚的にわかりやすいように構造的に表現してください。\n数式は LaTeX 形式で書くこと。`
     );
 
   if (switches.explanation)
     sections.push(
-      `### 解説\n解答までの手順を説明する。最後に使用した定義や公式をリスト形式でまとめること。\n数式は LaTeX 形式で書くこと。`
+      `### 解説\n最初に問題解決までの発想ルートを視覚的にわかりやすいように構造的に表現してください。次に解答までの手順を説明する。最後に使用した定義や公式をリスト形式でまとめること。\n数式は LaTeX 形式で書くこと。`
     );
 
   if (switches.answer)
     sections.push(
-      `### 解答\nテストや入試の筆記を意識した簡潔な解答をする。\n数式は LaTeX 形式で書くこと。`
+      `### 解答\nテストや入試の筆記を意識した解答をしてください。\n数式は LaTeX 形式で書くこと。`
     );
 
   sections.push(`ユーザーの質問: ${userPrompt}`);
@@ -157,127 +161,88 @@ async function classifyCategory(ai: GoogleGenAI, prompt: string) {
   return "other";
 }
 
-function buildParts(prompt: string, images?: ImageSet) {
-  const parts: {
-    text?: string;
-    inlineData?: { mimeType: string; data: string };
-  }[] = [{ text: prompt }];
-
-  const pushImages = (arr?: string[]) =>
-    arr?.forEach((img) => {
-      const base64 = img.split(",")[1];
-      if (base64)
-        parts.push({
-          inlineData: { mimeType: "image/png", data: base64 },
-        });
-    });
-
-  pushImages(images?.problem);
-  pushImages(images?.solution);
-
-  return parts;
-}
+// route.ts の POST 関数全体を修正
 
 export async function POST(req: NextRequest) {
-  try {
-    const { prompt, options, sliders, images, history } =
-      (await req.json()) as PostPayload; // ★ history を受け取る
+  // ★ 修正: ペイロード全体を取得し、オプション、スライダー、画像をデストラクト
+  const { prompt, options, sliders, images, history }: PostPayload =
+    await req.json();
 
-    if (!prompt && !images?.problem?.length && !images?.solution?.length) {
-      return NextResponse.json(
-        { error: "prompt または画像が必要です" },
-        { status: 400 }
-      );
-    }
-
-    ensureCredentials();
-
-    const ai = new GoogleGenAI({
-      vertexai: true,
-      project: process.env.GOOGLE_CLOUD_PROJECT,
-      location: process.env.GOOGLE_CLOUD_LOCATION,
-    });
-
-    // 履歴を考慮に入れるか、新しい質問のみで分類するかはユースケースによりますが、
-    // ここでは引き続き新しいプロンプトのみで分類します。
-    const category = await classifyCategory(ai, prompt);
-    const switches = normalizeSwitchOptions(options);
-    const politenessText = getPolitenessInstruction(sliders?.politeness ?? 0.5);
-
-    // ★ buildPrompt で作成したインストラクションを最初のターンにのみ適用するため、
-    //    履歴がない（最初の会話）場合のみ finalPrompt を使用します。
-    //    会話継続時は、履歴がモデルに文脈を伝えます。
-    const fullInitialPrompt = buildPrompt(
-      category,
-      politenessText,
-      switches,
-      prompt
+  // ★ ユーザーがプロンプトを入力していない場合はエラー応答を返す
+  if (!prompt && !images?.problem?.length && !images?.solution?.length) {
+    return NextResponse.json(
+      { error: "質問内容または画像がありません" },
+      { status: 400 }
     );
-    // 履歴がある場合は、finalPromptのテキストをプロンプトとして使用せず、
-    // 履歴の最後に新しいユーザーの質問を追加します。
-    // ユーザーの質問部分（最後の行）を探す
-    const lastQuestionMarker = `ユーザーの質問: ${prompt}`;
-    let instructionPart = fullInitialPrompt;
+  }
 
-    // 形式指示部分を抽出 (ユーザーの質問以降を削除)
-    if (fullInitialPrompt.endsWith(lastQuestionMarker)) {
-      instructionPart = fullInitialPrompt
-        .substring(0, fullInitialPrompt.length - lastQuestionMarker.length)
-        .trim();
-    } else {
-      // 安全策: 見つからない場合は全体を使う (初回はこれでOK)
-      instructionPart = fullInitialPrompt;
-    }
+  ensureCredentials();
 
-    // 2回目以降の会話 (履歴あり) のために Content を準備
-    let newParts: Part[] = [];
+  const ai = new GoogleGenAI({
+    vertexai: true,
+    project: process.env.GOOGLE_CLOUD_PROJECT,
+    location: process.env.GOOGLE_CLOUD_LOCATION,
+  });
 
-    if (history && history.length > 0) {
-      // ★修正ポイント１: 履歴がある場合、指示部分と今回のプロンプトを結合して新しいPartを作成
-      const combinedPrompt = `${instructionPart}\n\n${lastQuestionMarker}`;
-      newParts = [{ text: combinedPrompt }];
-    } else {
-      // 初回会話 (履歴なし) の場合、instructionPart == fullInitialPrompt であり、
-      // newPartsは不要。buildContents内で fullInitialPrompt が使われる。
-      newParts = [{ text: fullInitialPrompt }];
-    }
+  // 1. カテゴリ分類とプロンプトの構築
+  const category = await classifyCategory(ai, prompt);
+  const politenessText = getPolitenessInstruction(sliders?.politeness ?? 0.5);
+  const switches = normalizeSwitchOptions(options);
+  const finalPrompt = buildPrompt(category, politenessText, switches, prompt);
 
-    // 画像の Part を追加
-    const pushImages = (arr?: string[]) =>
-      arr?.forEach((img) => {
-        const base64 = img.split(",")[1];
-        if (base64)
-          newParts.push({
-            inlineData: { mimeType: "image/png", data: base64 },
-          });
+  // 2. ユーザー Content の Parts を構築
+  const userParts: Part[] = [{ text: finalPrompt }];
+
+  // 画像データを Parts に追加
+  if (images?.problem) {
+    images.problem.forEach((base64) => {
+      // Base64 からプレフィックスを削除し、mimeType を指定（今回はpngと仮定）
+      const data = base64.split(",")[1];
+      userParts.push({ inlineData: { mimeType: "image/png", data } });
+    });
+  }
+  if (images?.solution) {
+    images.solution.forEach((base64) => {
+      const data = base64.split(",")[1];
+      userParts.push({ inlineData: { mimeType: "image/png", data } });
+    });
+  }
+
+  // 3. 最終的な Contents 構築 (履歴 + 新しいユーザー Content)
+  const userContent: Content = { role: "user", parts: userParts };
+  const contents: Content[] = [...(history || []), userContent];
+
+  const { readable, writable } = new TransformStream();
+
+  (async () => {
+    try {
+      // generateContentStream の呼び出しに 'await' を追加 (以前の修正を保持)
+      const stream = await ai.models.generateContentStream({
+        model: "gemini-2.5-flash",
+        contents, // ★ 構築したcontentsを使用
       });
 
-    pushImages(images?.problem);
-    pushImages(images?.solution);
+      const writer = writable.getWriter();
 
-    // 履歴と今回のユーザー入力を結合したContents
-    const contents: Content[] = [
-      ...(history || []), // 既存の履歴
-      { role: "user", parts: newParts }, // 今回のユーザー入力
-    ];
+      for await (const part of stream) {
+        if (part.text) {
+          writer.write(new TextEncoder().encode(part.text));
+        }
+      }
+      writer.close();
+    } catch (err) {
+      console.error("ストリームエラー:", err);
+      // エラー発生時もストリームを閉じる
+      const writer = writable.getWriter();
+      writer.write(
+        new TextEncoder().encode(`\n\n**エラーが発生しました:** ${String(err)}`)
+      );
+      writer.close();
+    }
+  })();
 
-    // ★ generateContent の呼び出しを contents に変更
-    const response = (await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      // 履歴と現在のプロンプトを含む contents を使用
-      contents: contents,
-    })) as GenerateContentResponse;
-
-    return NextResponse.json({
-      text: response.text ?? "応答がありません",
-      category,
-    });
-  } catch (error: unknown) {
-    console.error("POST /api/gemini でエラー発生:", error);
-    const message =
-      error instanceof Error ? error.message : "不明なエラーが発生しました";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return new Response(readable, {
+    // Content-Type を 'text/plain' のままにして、クライアント側で生のテキストとして処理
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }
-
-// ... (その他の既存の関数はそのまま)

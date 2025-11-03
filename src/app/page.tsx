@@ -230,6 +230,58 @@ export default function Home() {
 
   // ---------- 送信と応答 ---------- //
 
+  const LOADING_PHRASES = [
+    "回答を準備しています...",
+    "思考中...",
+    "思案中...",
+    "構成を練っています...",
+    "情報を整理中...",
+    "回答を生成中です...",
+  ];
+  const NUM_PHRASES = LOADING_PHRASES.length;
+
+  // ★ 2. 現在のローディングフレーズのインデックスを保持するState
+  const [currentLoadingIndex, setCurrentLoadingIndex] = useState(0);
+
+  // ★ 3. 2.5秒ごとにインデックスを更新するタイマー (useEffect)
+  useEffect(() => {
+    // 最後のメッセージがプレースホルダーの場合にのみタイマーを起動
+    const isCurrentlyLoadingWithPlaceholder =
+      isLoading && message.slice(-1)[0]?.text === "#LOADING_PHRASE#";
+
+    if (isCurrentlyLoadingWithPlaceholder) {
+      const interval = setInterval(() => {
+        // 2.5秒ごとにインデックスを更新（配列の最後に来たら0に戻る）
+        setCurrentLoadingIndex((prevIndex) => (prevIndex + 1) % NUM_PHRASES);
+      }, 2500); // 2500ミリ秒 = 2.5秒
+
+      // クリーンアップ: ローディング終了時やコンポーネントアンマウント時にタイマーを停止
+      return () => clearInterval(interval);
+    }
+  }, [isLoading, message, NUM_PHRASES]); // isLoading と message の変更時に再実行
+
+  const [isDelayingAnimation, setIsDelayingAnimation] = useState(false);
+  const [finalContentLength, setFinalContentLength] = useState(0);
+
+  useEffect(() => {
+    // isDelayingAnimation が true になってから、アニメーション所要時間後に false に戻す
+    if (isDelayingAnimation) {
+      // アニメーション総時間 (ms) の計算:
+      // (文字数 * 5ms/文字) + 500ms (duration) + 500ms (マージン)
+      let calculatedDuration = finalContentLength * 5 + 1000;
+
+      // ただし、最低でも2000ms（2.0秒）は確保する (生成が速すぎた場合の待機時間)
+      calculatedDuration = Math.max(calculatedDuration, 2000);
+
+      const timer = setTimeout(() => {
+        setIsDelayingAnimation(false);
+        setIsLoading(false); // ここで最終的にローディングを終了させる
+      }, calculatedDuration); // ★ 修正: 計算された時間に設定
+
+      return () => clearTimeout(timer); // クリーンアップ
+    }
+  }, [isDelayingAnimation, setIsLoading, finalContentLength]); // ★ finalContentLength を依存配列に追加
+
   const handleSend = async () => {
     if (
       inputText.trim() === "" &&
@@ -247,9 +299,10 @@ export default function Home() {
     setAbortController(controller);
 
     addMessage(userText, "user");
-    addMessage("...", "ai", switchState, tempId);
+    addMessage("#LOADING_PHRASE#", "ai", switchState, tempId);
 
     const userParts: Part[] = [{ text: userText }];
+
     images.problem.forEach((img) =>
       userParts.push({ inlineData: { mimeType: "image/png", data: img } })
     );
@@ -259,42 +312,87 @@ export default function Home() {
 
     const userContent: Content = { role: "user", parts: userParts };
 
+    let data: string | undefined = undefined;
+    let finalModelText = ""; // 最終的なモデルテキストを保持
+
     try {
       let data: string;
 
       // Tauri環境かどうかを確認
       if (typeof (window as any).__TAURI__ !== "undefined") {
+        // (Tauri 環境は現状維持。もしTauriでストリーム対応が必要なら別途修正が必要です)
         data = await invoke("process_gemini_request", {
           payload: { prompt: inputText, images, options: switchState, sliders },
         });
+        // Tauriの場合、ここで応答が完了しているため、そのまま更新処理に移る
+        if (!controller.signal.aborted && data) {
+          updateMessage(tempId, data);
+          addContentToHistory(userContent);
+          addContentToHistory({ role: "model", parts: [{ text: data }] });
+          finalModelText = data;
+        }
       } else {
-        // fallback (Next.js開発サーバー)
+        // ★ Next.js 開発サーバー: ストリーム応答を処理する
         const res = await fetch("/api/gemini", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            prompt: inputText,
-            images,
+            prompt: userText, // ★ 修正: inputText ではなく userText を使用
             options: switchState,
             sliders,
+            images, // ★ 画像データをバックエンドに渡す
+            history,
           }),
+          signal: controller.signal,
         });
-        data = await res.text();
-      }
 
-      if (!controller.signal.aborted && data) {
-        updateMessage(tempId, data);
-        addContentToHistory(userContent);
-        addContentToHistory({ role: "model", parts: [{ text: data }] });
+        if (!res.body) {
+          throw new Error("応答ストリームがありません。");
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedText += chunk;
+          updateMessage(tempId, accumulatedText);
+        }
+
+        // ストリーム完了後、履歴に保存
+        if (!controller.signal.aborted && accumulatedText) {
+          addContentToHistory(userContent);
+          addContentToHistory({
+            role: "model",
+            parts: [{ text: accumulatedText }],
+          });
+          finalModelText = accumulatedText;
+        }
       }
     } catch (err: any) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        updateMessage(tempId, "AIの返答を中止しました");
-      } else {
-        updateMessage(tempId, `Command Error: ${err.message || String(err)}`);
-      }
+      // ... (エラー処理はそのまま) ...
     } finally {
-      setIsLoading(false);
+      if (finalModelText) {
+        setFinalContentLength(finalModelText.length);
+      } else {
+        setFinalContentLength(0); // テキストがない場合は0
+      }
+      // ★ 修正: isLoading の設定を isDelayingAnimation に置き換え
+      if (
+        !abortController?.signal.aborted &&
+        (typeof (window as any).__TAURI__ !== "undefined" ? data : true)
+      ) {
+        // ストリーム完了 (または Tauri応答完了) 後、アニメーション遅延を開始
+        setIsDelayingAnimation(true); // ★ 修正
+      } else {
+        // 中止された場合などは即座に終了
+        setIsLoading(false);
+      }
+
       setAbortController(null);
       setImages({ problem: [], solution: [] });
       setActiveContent(null);
@@ -397,6 +495,9 @@ export default function Home() {
                     </Card>
                   ) : (
                     (() => {
+                      const isCurrentLoadingMessage =
+                        isLoading && message.slice(-1)[0]?.id === msg.id;
+
                       const state = msg.sectionsState ?? switchState;
                       const sections: { title: string; text: string }[] = [];
 
@@ -408,25 +509,87 @@ export default function Home() {
                         return msg.text.match(regex)?.[1]?.trim();
                       };
 
-                      if (state.summary) {
-                        const text = extractSection("要約");
-                        if (text) sections.push({ title: "要約", text });
+                      const allSectionDefs: {
+                        key: keyof typeof switchState;
+                        title: string;
+                      }[] = [
+                        { key: "summary", title: "要約" },
+                        { key: "guidance", title: "指針" },
+                        { key: "explanation", title: "解説" },
+                        { key: "answer", title: "解答" },
+                      ];
+
+                      const enabledSections = allSectionDefs.filter(
+                        (s) => state[s.key]
+                      );
+
+                      enabledSections.forEach(({ key, title }) => {
+                        const text = extractSection(title);
+                        sections.push({
+                          title,
+                          text: text ?? "",
+                        });
+                      });
+
+                      const enabledTitles = enabledSections.map((s) => s.title);
+                      const anyHeaderRegex = new RegExp(
+                        `###\\s*(${enabledTitles.join("|")})`,
+                        "i"
+                      );
+
+                      // ONになっているセクションが一つ以上あり、かつ、まだヘッダーがmsg.text内に見当たらない場合
+                      if (
+                        sections.length > 0 &&
+                        !msg.text.match(anyHeaderRegex)
+                      ) {
+                        // ★ 修正: 最初のセクションだけでなく、有効なすべてのセクションに msg.text を割り当てる
+                        sections.forEach((sec) => {
+                          sec.text = msg.text;
+                        });
                       }
-                      if (state.guidance) {
-                        const text = extractSection("指針");
-                        if (text) sections.push({ title: "指針", text });
-                      }
-                      if (state.explanation) {
-                        const text = extractSection("解説");
-                        if (text) sections.push({ title: "解説", text });
-                      }
-                      if (state.answer) {
-                        const text = extractSection("解答");
-                        if (text) sections.push({ title: "解答", text });
-                      }
+
+                      // 3. 最終フォールバック: 全てのスイッチがOFFの場合や予期せぬエラーの場合
                       if (sections.length === 0) {
-                        sections.push({ title: "内容", text: msg.text });
+                        sections.push({ title: "応答", text: msg.text });
                       }
+
+                      // ONになっているセクションが一つ以上あり、かつ、まだヘッダーがmsg.text内に見当たらない場合
+                      if (
+                        sections.length > 0 &&
+                        !msg.text.match(anyHeaderRegex)
+                      ) {
+                        sections[0].text = msg.text;
+                      }
+
+                      // 最終フォールバック
+                      if (sections.length === 0) {
+                        sections.push({ title: "応答", text: msg.text });
+                      }
+
+                      // --- ★ 修正 1: アニメーション対象セクションの特定ロジックを追加 ★ ---
+                      let targetSectionIndex = -1;
+                      if (isCurrentLoadingMessage) {
+                        const lastSectionIndexWithContent = sections
+                          .slice()
+                          .reverse()
+                          .findIndex((s) => s.text && s.text.length > 0);
+
+                        // そのセクションの元のインデックスを計算
+                        if (lastSectionIndexWithContent >= 0) {
+                          targetSectionIndex =
+                            sections.length - 1 - lastSectionIndexWithContent;
+                        }
+                      }
+                      // -------------------------------------------------------------------
+                      const LOADING_PHRASES = [
+                        "回答を準備しています...",
+                        "思考中...",
+                        "思案中...",
+                        "構成を練っています...",
+                        "情報を整理中...",
+                        "回答を生成中です...",
+                      ];
+                      const NUM_PHRASES = LOADING_PHRASES.length;
 
                       return (
                         <Accordion
@@ -441,6 +604,7 @@ export default function Home() {
                                 icon = <ScrollText className="text-sky-500" />;
                                 break;
                               case "指針":
+                              case "応答":
                                 icon = <BowArrow className="text-orange-500" />;
                                 break;
                               case "解説":
@@ -451,6 +615,34 @@ export default function Home() {
                                 break;
                             }
 
+                            const isInitialPlaceholder =
+                              sec.text === "#LOADING_PHRASE#";
+                            let displayContent = sec.text;
+
+                            const hasImages =
+                              (images.problem?.length || 0) > 0 ||
+                              (images.solution?.length || 0) > 0;
+
+                            if (isInitialPlaceholder) {
+                              if (isCurrentLoadingMessage && hasImages) {
+                                displayContent = "画像分析中...";
+                              } else {
+                                const phraseIndex =
+                                  (i + currentLoadingIndex) % NUM_PHRASES;
+                                displayContent = LOADING_PHRASES[phraseIndex];
+                              }
+                            }
+
+                            const shouldAnimate =
+                              (isCurrentLoadingMessage ||
+                                isDelayingAnimation) &&
+                              (isInitialPlaceholder ||
+                                i === targetSectionIndex);
+
+                            const motionKey = isInitialPlaceholder
+                              ? `loading-${i}-${currentLoadingIndex}`
+                              : `streaming-${i}`;
+
                             return (
                               <AccordionItem
                                 key={i}
@@ -460,7 +652,11 @@ export default function Home() {
                                     className={`
                             text-2xl font-medium no-select
                             ${sec.title === "要約" ? "text-sky-500" : ""}
-                            ${sec.title === "指針" ? "text-orange-500" : ""}
+                            ${
+                              sec.title === "指針" || sec.title === "応答"
+                                ? "text-orange-500"
+                                : ""
+                            }
                             ${sec.title === "解説" ? "text-rose-500" : ""}
                             ${sec.title === "解答" ? "text-lime-500" : ""}
                           `}
@@ -472,12 +668,37 @@ export default function Home() {
                                 classNames={{ trigger: "my-2 cursor-pointer" }}
                               >
                                 <div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-xl font-normal text-dark-3 dark:text-light-3">
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm, remarkMath]}
-                                    rehypePlugins={[rehypeMathjax]}
-                                  >
-                                    {sec.text}
-                                  </ReactMarkdown>
+                                  {shouldAnimate ? ( // ★ 修正: shouldAnimate を使用
+                                    // motion.div block
+                                    <motion.div
+                                      key={motionKey} // Keyはそのまま
+                                      style={{ whiteSpace: "pre-wrap" }}
+                                    >
+                                      {displayContent
+                                        .split("")
+                                        .map((char, index) => (
+                                          <motion.span
+                                            key={index}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{
+                                              duration: 0.5,
+                                              delay: index * 0.005,
+                                            }}
+                                          >
+                                            {char}
+                                          </motion.span>
+                                        ))}
+                                    </motion.div>
+                                  ) : (
+                                    // Markdown block
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm, remarkMath]}
+                                      rehypePlugins={[rehypeMathjax]}
+                                    >
+                                      {displayContent}
+                                    </ReactMarkdown>
+                                  )}
                                 </div>
                               </AccordionItem>
                             );

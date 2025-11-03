@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "tauri:dev": "npm run dev & tauri dev",
     "build": "next build",
     "tauri:build": "cross-env TAURI_BUILD_MODE=true next build && dotenv tauri build",
+    "build:web": "next build",
+    "build:tauri": "cross-env TAURI_BUILD_MODE=true next build",
     "start": "next start"
   },
   "main": "electron/dist/main.js",
