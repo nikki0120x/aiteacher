@@ -11,6 +11,7 @@ import rehypeMathjax from "rehype-mathjax";
 import { MathJaxContext } from "better-react-mathjax";
 import { DndContext, useDroppable } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/core";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ScrollShadow,
   Spinner,
@@ -227,6 +228,14 @@ export default function Home() {
     }
   }, []);
   const [hasMounted, setHasMounted] = useState(false);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: message.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 250, // 1メッセージあたりの平均高さ(px)
+    overscan: 5, // 前後5件ぶん余裕をもってレンダリング
+  });
 
   // ---------- 送信と応答 ---------- //
 
