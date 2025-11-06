@@ -20,8 +20,6 @@ import {
   Slider,
   Divider,
   Switch,
-  Tabs,
-  Tab,
   Card,
   CardBody,
   Accordion,
@@ -90,11 +88,9 @@ export default function Home() {
 
   const [images, setImages] = useState<{ [key: string]: string[] }>({
     problem: [],
-    solution: [],
   });
 
   const problemInputRef = useRef<HTMLInputElement>(null);
-  const solutionInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = (tabKey: string, files: FileList | null) => {
     if (!files) return;
@@ -113,7 +109,7 @@ export default function Home() {
           }));
         }
       };
-      reader.readAsDataURL(file); // ここで Base64 に変換
+      reader.readAsDataURL(file);
     });
   };
 
@@ -229,14 +225,6 @@ export default function Home() {
   }, []);
   const [hasMounted, setHasMounted] = useState(false);
 
-  const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: message.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 250, // 1メッセージあたりの平均高さ(px)
-    overscan: 5, // 前後5件ぶん余裕をもってレンダリング
-  });
-
   // ---------- 送信と応答 ---------- //
 
   const LOADING_PHRASES = [
@@ -249,55 +237,23 @@ export default function Home() {
   ];
   const NUM_PHRASES = LOADING_PHRASES.length;
 
-  // ★ 2. 現在のローディングフレーズのインデックスを保持するState
   const [currentLoadingIndex, setCurrentLoadingIndex] = useState(0);
 
-  // ★ 3. 2.5秒ごとにインデックスを更新するタイマー (useEffect)
   useEffect(() => {
-    // 最後のメッセージがプレースホルダーの場合にのみタイマーを起動
     const isCurrentlyLoadingWithPlaceholder =
       isLoading && message.slice(-1)[0]?.text === "#LOADING_PHRASE#";
 
     if (isCurrentlyLoadingWithPlaceholder) {
       const interval = setInterval(() => {
-        // 2.5秒ごとにインデックスを更新（配列の最後に来たら0に戻る）
         setCurrentLoadingIndex((prevIndex) => (prevIndex + 1) % NUM_PHRASES);
-      }, 2500); // 2500ミリ秒 = 2.5秒
+      }, 2500);
 
-      // クリーンアップ: ローディング終了時やコンポーネントアンマウント時にタイマーを停止
       return () => clearInterval(interval);
     }
-  }, [isLoading, message, NUM_PHRASES]); // isLoading と message の変更時に再実行
-
-  const [isDelayingAnimation, setIsDelayingAnimation] = useState(false);
-  const [finalContentLength, setFinalContentLength] = useState(0);
-
-  useEffect(() => {
-    // isDelayingAnimation が true になってから、アニメーション所要時間後に false に戻す
-    if (isDelayingAnimation) {
-      // アニメーション総時間 (ms) の計算:
-      // (文字数 * 5ms/文字) + 500ms (duration) + 500ms (マージン)
-      let calculatedDuration = finalContentLength * 5 + 1000;
-
-      // ただし、最低でも2000ms（2.0秒）は確保する (生成が速すぎた場合の待機時間)
-      calculatedDuration = Math.max(calculatedDuration, 2000);
-
-      const timer = setTimeout(() => {
-        setIsDelayingAnimation(false);
-        setIsLoading(false); // ここで最終的にローディングを終了させる
-      }, calculatedDuration); // ★ 修正: 計算された時間に設定
-
-      return () => clearTimeout(timer); // クリーンアップ
-    }
-  }, [isDelayingAnimation, setIsLoading, finalContentLength]); // ★ finalContentLength を依存配列に追加
+  }, [isLoading, message, NUM_PHRASES]);
 
   const handleSend = async () => {
-    if (
-      inputText.trim() === "" &&
-      images.problem.length === 0 &&
-      images.solution.length === 0
-    )
-      return;
+    if (inputText.trim() === "" && images.problem.length === 0) return;
 
     setIsLoading(true);
     setIsSent(true);
@@ -315,25 +271,23 @@ export default function Home() {
     images.problem.forEach((img) =>
       userParts.push({ inlineData: { mimeType: "image/png", data: img } })
     );
-    images.solution.forEach((img) =>
-      userParts.push({ inlineData: { mimeType: "image/png", data: img } })
-    );
 
     const userContent: Content = { role: "user", parts: userParts };
 
     let data: string | undefined = undefined;
-    let finalModelText = ""; // 最終的なモデルテキストを保持
+    let finalModelText = "";
 
     try {
       let data: string;
 
-      // Tauri環境かどうかを確認
       if (typeof (window as any).__TAURI__ !== "undefined") {
-        // (Tauri 環境は現状維持。もしTauriでストリーム対応が必要なら別途修正が必要です)
         data = await invoke("process_gemini_request", {
-          payload: { prompt: inputText, images, options: switchState, sliders },
+          prompt: inputText,
+          images: { problem: images.problem },
+          options: switchState,
+          sliders,
         });
-        // Tauriの場合、ここで応答が完了しているため、そのまま更新処理に移る
+
         if (!controller.signal.aborted && data) {
           updateMessage(tempId, data);
           addContentToHistory(userContent);
@@ -341,15 +295,14 @@ export default function Home() {
           finalModelText = data;
         }
       } else {
-        // ★ Next.js 開発サーバー: ストリーム応答を処理する
         const res = await fetch("/api/gemini", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            prompt: userText, // ★ 修正: inputText ではなく userText を使用
+            prompt: userText,
             options: switchState,
             sliders,
-            images, // ★ 画像データをバックエンドに渡す
+            images,
             history,
           }),
           signal: controller.signal,
@@ -372,7 +325,6 @@ export default function Home() {
           updateMessage(tempId, accumulatedText);
         }
 
-        // ストリーム完了後、履歴に保存
         if (!controller.signal.aborted && accumulatedText) {
           addContentToHistory(userContent);
           addContentToHistory({
@@ -383,27 +335,11 @@ export default function Home() {
         }
       }
     } catch (err: any) {
-      // ... (エラー処理はそのまま) ...
     } finally {
-      if (finalModelText) {
-        setFinalContentLength(finalModelText.length);
-      } else {
-        setFinalContentLength(0); // テキストがない場合は0
-      }
-      // ★ 修正: isLoading の設定を isDelayingAnimation に置き換え
-      if (
-        !abortController?.signal.aborted &&
-        (typeof (window as any).__TAURI__ !== "undefined" ? data : true)
-      ) {
-        // ストリーム完了 (または Tauri応答完了) 後、アニメーション遅延を開始
-        setIsDelayingAnimation(true); // ★ 修正
-      } else {
-        // 中止された場合などは即座に終了
-        setIsLoading(false);
-      }
+      setIsLoading(false);
 
       setAbortController(null);
-      setImages({ problem: [], solution: [] });
+      setImages({ problem: [] });
       setActiveContent(null);
       setInputText("");
     }
@@ -621,9 +557,7 @@ export default function Home() {
                               sec.text === "#LOADING_PHRASE#";
                             let displayContent = sec.text;
 
-                            const hasImages =
-                              (images.problem?.length || 0) > 0 ||
-                              (images.solution?.length || 0) > 0;
+                            const hasImages = (images.problem?.length || 0) > 0;
 
                             if (isInitialPlaceholder) {
                               if (isCurrentLoadingMessage && hasImages) {
@@ -636,8 +570,7 @@ export default function Home() {
                             }
 
                             const shouldAnimate =
-                              (isCurrentLoadingMessage ||
-                                isDelayingAnimation) &&
+                              isCurrentLoadingMessage &&
                               (isInitialPlaceholder ||
                                 i === targetSectionIndex);
 
@@ -723,7 +656,7 @@ export default function Home() {
             duration: 0.5,
             ease: "easeInOut",
           }}
-          className="flex flex-col justify-center items-center gap-10 w-full h-full"
+          className="flex flex-col justify-center items-center gap-10 w-full h-full no-select"
         >
           <AnimatePresence>
             {!isSent && (
@@ -744,20 +677,20 @@ export default function Home() {
                   alt="Logo (Dark)"
                   width={128}
                   height={128}
-                  className="object-contain dark:hidden no-select"
+                  className="object-contain dark:hidden"
                 />
                 <Image
                   src="/logos/light.webp"
                   alt="Logo (Light)"
                   width={128}
                   height={128}
-                  className="object-contain hidden dark:block no-select"
+                  className="object-contain hidden dark:block"
                 />
                 <Divider
                   orientation="vertical"
                   className="max-h-10 bg-dark-5 dark:bg-light-5"
                 />
-                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5 no-select">
+                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5">
                   Ver. {packageJson.version}
                 </span>
                 <Divider
@@ -841,7 +774,7 @@ export default function Home() {
                         variant="underlined"
                         validationBehavior="aria"
                         placeholder="AI に訊きたい問題はある？"
-                        className="text-dark-1 dark:text-light-1 no-select"
+                        className="text-dark-1 dark:text-light-1"
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyDown={(e) => {
@@ -942,17 +875,18 @@ export default function Home() {
                       {activeContent && (
                         <motion.div
                           initial={{ height: 0 }}
-                          animate={{ height: "auto" }}
+                          animate={{ height: "var(--panel-height)" }}
                           exit={{ height: 0 }}
                           transition={{ duration: 0.5, ease: "easeInOut" }}
-                          className="overflow-hidden"
+                          className="overflow-hidden [--panel-height:15rem] lg:[--panel-height:12rem]"
                         >
                           <ScrollShadow
+                            hideScrollBar
                             visibility="none"
                             className="w-full h-full"
                           >
                             {activeContent === "sliders" && (
-                              <div className="flex flex-col gap-8 justify-center p-2 no-select">
+                              <div className="flex flex-col gap-8 justify-center p-2 w-full h-full">
                                 <Slider
                                   className="w-full"
                                   value={sliders.politeness}
@@ -1026,100 +960,43 @@ export default function Home() {
 
                             {activeContent === "images" && (
                               <DndContext>
-                                <div className="flex flex-col items-center w-full h-full">
-                                  <Tabs
-                                    aria-label="Options"
-                                    variant="underlined"
-                                    size="lg"
-                                    radius="full"
-                                    fullWidth
+                                <div className="w-full h-full">
+                                  <DroppableArea
+                                    tabKey="problem"
+                                    inputRef={problemInputRef}
                                   >
-                                    <Tab
-                                      key="problem"
-                                      title="問題"
-                                      className="w-full h-full"
-                                    >
-                                      <DroppableArea
-                                        tabKey="problem"
-                                        inputRef={problemInputRef}
-                                      >
-                                        {images.problem.length === 0 ? (
-                                          <div className="flex flex-col gap-2 justify-center items-center p-8 w-full h-full">
-                                            <Button
-                                              aria-label="Upload Images Button"
-                                              size="lg"
-                                              radius="full"
-                                              className="text-center text-xl font-medium text-light-1 bg-blue-middle"
-                                              onPress={() =>
-                                                problemInputRef.current?.click()
-                                              }
-                                            >
-                                              画像アップロード
-                                            </Button>
-                                            <span className="text-lg font-medium text-gray">
-                                              ファイルをドラッグ&ドロップ
-                                            </span>
-                                          </div>
-                                        ) : (
-                                          <div className="flex flex-row gap-2 overflow-x-auto">
-                                            {images.problem.map((src, idx) => (
-                                              <Image
-                                                key={idx}
-                                                src={src}
-                                                alt={`uploaded-problem-${idx}`}
-                                                width={128}
-                                                height={128}
-                                                className="rounded-lg object-cover aspect-square"
-                                              />
-                                            ))}
-                                          </div>
-                                        )}
-                                      </DroppableArea>
-                                    </Tab>
-
-                                    <Tab
-                                      key="solution"
-                                      title="解説 / 解答"
-                                      className="w-full h-full"
-                                    >
-                                      <DroppableArea
-                                        tabKey="solution"
-                                        inputRef={solutionInputRef}
-                                      >
-                                        {images.solution.length === 0 ? (
-                                          <div className="flex flex-col gap-2 justify-center items-center p-8 w-full h-full">
-                                            <Button
-                                              aria-label="Upload Images Button"
-                                              size="lg"
-                                              radius="full"
-                                              className="text-center text-xl font-medium text-light-1 bg-blue-middle"
-                                              onPress={() =>
-                                                solutionInputRef.current?.click()
-                                              }
-                                            >
-                                              画像アップロード
-                                            </Button>
-                                            <span className="text-lg font-medium text-gray">
-                                              ファイルをドラッグ&ドロップ
-                                            </span>
-                                          </div>
-                                        ) : (
-                                          <div className="flex flex-row gap-2 overflow-x-auto">
-                                            {images.solution.map((src, idx) => (
-                                              <Image
-                                                key={idx}
-                                                src={src}
-                                                alt={`uploaded-solution-${idx}`}
-                                                width={128}
-                                                height={128}
-                                                className="rounded-lg object-cover aspect-square"
-                                              />
-                                            ))}
-                                          </div>
-                                        )}
-                                      </DroppableArea>
-                                    </Tab>
-                                  </Tabs>
+                                    {images.problem.length === 0 ? (
+                                      <div className="flex flex-col gap-2 justify-center items-center p-8 w-full h-full">
+                                        <Button
+                                          aria-label="Upload Images Button"
+                                          size="lg"
+                                          radius="full"
+                                          className="text-center text-xl font-medium text-light-1 bg-blue-middle"
+                                          onPress={() =>
+                                            problemInputRef.current?.click()
+                                          }
+                                        >
+                                          画像アップロード
+                                        </Button>
+                                        <span className="text-lg font-medium text-gray">
+                                          ファイルをドラッグ&ドロップ
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-row gap-2 overflow-x-auto">
+                                        {images.problem.map((src, idx) => (
+                                          <Image
+                                            key={idx}
+                                            src={src}
+                                            alt={`uploaded-problem-${idx}`}
+                                            width={128}
+                                            height={128}
+                                            className="rounded-lg object-cover aspect-square"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                  </DroppableArea>
                                 </div>
                               </DndContext>
                             )}
