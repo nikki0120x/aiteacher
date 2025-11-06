@@ -1,49 +1,61 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# =====================================
+#   一般・依存ファイル
+# =====================================
+node_modules/
+.pnp
 .pnp.*
+*.pem
+.DS_Store
+
+# Yarn v2+
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# =====================================
+#   テスト関連
+# =====================================
+coverage/
 
-# next.js
-/.next/
-/out/
+# =====================================
+#   Next.js / Tauri ビルド関連
+# =====================================
+.next/
+out/
+build/
+src-tauri/target/
+src-tauri/gen/
 
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# =====================================
+#   ログ・デバッグファイル
+# =====================================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
+# =====================================
+#   環境ファイル（秘密情報）
+# =====================================
+.env
+.env.*
+!.env.example
+.env.local
 .vercel
+gemini-api-key.json
 
-# typescript
+# =====================================
+#   TypeScript
+# =====================================
 *.tsbuildinfo
 next-env.d.ts
 
-# Google Cloud サービスアカウントキー
-gemini-api-key.json
-
-# Next.js 環境変数ファイル
-.env.local
-
-.vercel
+# =====================================
+#   OS・エディタ設定
+# =====================================
+Thumbs.db
+.idea/
+.vscode/

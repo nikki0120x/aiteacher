@@ -82,11 +82,10 @@ body,
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 全ての MathJax SVG を横並びに */
 mjx-container svg {
-  display: inline-block; /* ← これが肝 */
-  vertical-align: middle; /* テキストと高さを揃える */
-  margin: 0 0.1em; /* 数式間の隙間 */
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.1em;
 }
 
 .no-select {

@@ -5,14 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --webpack",
-    "tauri:dev": "npm run dev & tauri dev",
+    "dev:tauri": "cross-env TAURI_BUILD_MODE=true tauri dev",
     "build": "next build",
-    "tauri:build": "cross-env TAURI_BUILD_MODE=true next build && dotenv tauri build",
-    "build:web": "next build",
-    "build:tauri": "cross-env TAURI_BUILD_MODE=true next build",
+    "build:tauri": "cross-env TAURI_BUILD_MODE=true next build && dotenv tauri build",
     "start": "next start"
   },
-  "main": "electron/dist/main.js",
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
@@ -44,9 +41,9 @@
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
     "@tauri-apps/api": "^2.9.0",
-    "@tauri-apps/cli": "^2.9.2",
+    "@tauri-apps/cli": "^2.9.3",
     "@types/cross-spawn": "^6.0.6",
-    "@types/node": "^24.9.2",
+    "@types/node": "^24.10.0",
     "@types/nprogress": "^0.2.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",

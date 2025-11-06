@@ -58,7 +58,6 @@ struct GeminiRequestPayload {
 #[derive(Debug, Deserialize)]
 struct ProxyResponse {
     text: String,
-    category: String,
 }
 
 // =========================================================================

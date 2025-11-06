@@ -1,11 +1,27 @@
 export default function Server() {
+  const schemaMarkup = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "AITeacher",
+    url: "https://www.focalrina.com/",
+    alternateName: "aiteacher",
+  };
+
   return (
     <>
-      <title>AITeacher — FoCalrina</title>
+      <title>AITeacher</title>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaMarkup) }}
+      />
       <meta name="description" content="AIと共に学び逢おう！" />
       <meta charSet="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+      <meta property="og:site_name" content="AITeacher" />
+      <meta property="og:title" content="AITeacher" />
+      <meta property="og:url" content="https://www.focalrina.com/" />
+      <meta property="og:type" content="website" />
+      <meta property="og:description" content="AIと共に学び逢おう！" />
       <script
         async
         src="https://www.googletagmanager.com/gtag/js?id=G-P7BN0KQ1YQ"
@@ -20,7 +36,6 @@ export default function Server() {
           `,
         }}
       />
-
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link
         rel="preconnect"
