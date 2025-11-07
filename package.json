@@ -20,10 +20,11 @@
     "@tanstack/react-virtual": "^3.13.12",
     "@types/dom-speech-recognition": "^0.0.7",
     "@vercel/analytics": "^1.5.0",
+    "@vercel/blob": "^2.0.0",
     "@vercel/speed-insights": "^1.2.0",
     "better-react-mathjax": "^2.3.0",
     "framer-motion": "^12.23.24",
-    "lucide-react": "^0.552.0",
+    "lucide-react": "^0.553.0",
     "motion": "^12.23.24",
     "next": "^16.0.1",
     "next-themes": "^0.4.6",
@@ -37,7 +38,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
+    "@biomejs/biome": "2.3.4",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
     "@tauri-apps/api": "^2.9.0",
@@ -51,8 +52,6 @@
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "^16.0.1",
     "tailwindcss": "^4",
     "typescript": "^5.9.3",
     "wait-on": "^9.0.1"
@@ -61,8 +60,9 @@
     "last 2 Chrome versions",
     "last 2 Firefox versions",
     "last 2 Safari versions",
-    "last 2 Edge versions"
+    "last E2 dge versions"
   ],
+  "format": "biome format . --write",
   "volta": {
     "node": "22.21.0"
   }

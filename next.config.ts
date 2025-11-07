@@ -2,17 +2,15 @@ import type { NextConfig } from "next";
 
 const isTauriBuild = process.env.TAURI_BUILD_MODE === "true";
 
-// --- 共通設定 ---
 const baseConfig: NextConfig = {
   images: {
-    unoptimized: true, // /_next/image の404回避
+    unoptimized: true,
   },
 };
 
-// --- Tauriビルド専用 ---
 const tauriConfig: NextConfig = {
   ...baseConfig,
-  output: "export", // ← ここ重要！
+  output: "export",
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
@@ -27,7 +25,6 @@ const tauriConfig: NextConfig = {
   },
 };
 
-// --- Webビルド専用 ---
 const webConfig: NextConfig = {
   ...baseConfig,
   output: "standalone",
@@ -40,7 +37,7 @@ const webConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: "4mb",
+      bodySizeLimit: "4.5mb",
     },
   },
   env: {
@@ -48,9 +45,8 @@ const webConfig: NextConfig = {
   },
 };
 
-// --- 最終設定 ---
 const finalConfig: NextConfig = {
   ...(isTauriBuild ? tauriConfig : webConfig),
-  turbopack: {}, // ← これを追加
+  turbopack: {},
 };
 export default finalConfig;

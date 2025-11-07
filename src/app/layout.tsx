@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, Suspense } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, Suspense } from "react";
+import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
 import { HeroUIProvider } from "@heroui/react";
 import { Analytics } from "@vercel/analytics/next";
@@ -15,60 +15,61 @@ import Header from "@/components/layout/header";
 import "./globals.css";
 
 function TopProgress() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+	const pathname = usePathname();
 
-  useEffect(() => {
-    NProgress.start();
-    window.addEventListener("load", () => NProgress.done());
-    return () => window.removeEventListener("load", () => NProgress.done());
-  }, []);
+	useEffect(() => {
+		NProgress.start();
+		window.addEventListener("load", () => NProgress.done());
+		return () => window.removeEventListener("load", () => NProgress.done());
+	}, []);
 
-  useEffect(() => {
-    NProgress.start();
-    NProgress.done();
-  }, [pathname, searchParams?.toString()]);
+	useEffect(() => {
+		console.log("Route changed:", pathname);
 
-  return null;
+		NProgress.start();
+		NProgress.done();
+	}, [pathname]);
+
+	return null;
 }
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <html lang="ja" suppressHydrationWarning>
-      <head>
-        <Server />
-      </head>
-      <body style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}>
-        <Suspense fallback={null}>
-          <TopProgress />
-        </Suspense>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <HeroUIProvider>
-            <div className="flex flex-row w-dvw h-dvh">
-              <Sidebar />
-              <div className="flex flex-col w-full h-full">
-                <Header />
-                <main className="flex flex-col justify-center items-center w-full h-full overflow-hidden">
-                  <div className="flex flex-col p-4 w-full max-w-3xl h-full">
-                    {children}
-                  </div>
-                </main>
-              </div>
-            </div>
-          </HeroUIProvider>
-        </ThemeProvider>
-        <Analytics />
-        <SpeedInsights />
-      </body>
-    </html>
-  );
+	return (
+		<html lang="ja" suppressHydrationWarning>
+			<head>
+				<Server />
+			</head>
+			<body style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}>
+				<Suspense fallback={null}>
+					<TopProgress />
+				</Suspense>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="system"
+					enableSystem
+					disableTransitionOnChange
+				>
+					<HeroUIProvider>
+						<div className="flex flex-row w-dvw h-dvh">
+							<Sidebar />
+							<div className="flex flex-col w-full h-full">
+								<Header />
+								<main className="flex flex-col justify-center items-center w-full h-full overflow-hidden">
+									<div className="flex flex-col p-4 w-full max-w-3xl h-full">
+										{children}
+									</div>
+								</main>
+							</div>
+						</div>
+					</HeroUIProvider>
+				</ThemeProvider>
+				<Analytics />
+				<SpeedInsights />
+			</body>
+		</html>
+	);
 }

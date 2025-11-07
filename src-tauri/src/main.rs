@@ -6,15 +6,14 @@
 use reqwest::header::{HeaderMap, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 // 💡 tauri::api::path のインポートを削除しました
-use tauri; 
+use tauri;
 // use tauri::api::path; // 💡 パス取得APIを削除
 // 💡 実行パス取得のために std::env をインポート
 use std::env;
 // 💡 ファイル操作のために std::fs::File と std::io::Write をインポート
 use std::fs::File;
-use std::io::Write; 
+use std::io::Write;
 use std::path::PathBuf;
-
 
 // =========================================================================
 // 1. フロントエンドから受け取るデータ構造 (route.tsと共通)
@@ -67,7 +66,6 @@ struct ProxyResponse {
 // 💡 AppHandle を引数から削除し、ログパス取得を std::env::current_exe() ベースに切り替えます
 #[tauri::command]
 async fn process_gemini_request(payload: GeminiRequestPayload) -> Result<String, String> {
-    
     // 💡 ログパス取得のロジックを修正: std::env::current_exe() を使用
     // 実行ファイルのあるディレクトリを取得し、"app_logs" フォルダを結合
     let log_dir = env::current_exe()
@@ -85,7 +83,7 @@ async fn process_gemini_request(payload: GeminiRequestPayload) -> Result<String,
 
     let client = reqwest::Client::builder()
         // リダイレクトを最大5回追跡
-        .redirect(reqwest::redirect::Policy::limited(5)) 
+        .redirect(reqwest::redirect::Policy::limited(5))
         // タイムアウトを設定 (例: 60秒)
         .timeout(std::time::Duration::from_secs(60))
         .build()
@@ -102,7 +100,7 @@ async fn process_gemini_request(payload: GeminiRequestPayload) -> Result<String,
     let response = client
         .post(proxy_url)
         .headers(headers)
-        .json(&payload) 
+        .json(&payload)
         .send()
         .await
         .map_err(|e| {
@@ -126,7 +124,7 @@ async fn process_gemini_request(payload: GeminiRequestPayload) -> Result<String,
         // 確実にディレクトリが存在することを確認
         let _ = std::fs::create_dir_all(&log_dir);
         let log_path = log_dir.join("error_response.html");
-        
+
         if let Ok(mut file) = File::create(&log_path) {
             let _ = file.write_all(body_text.as_bytes());
             println!("DEBUG: Wrote error response to: {:?}", log_path);
@@ -141,13 +139,12 @@ async fn process_gemini_request(payload: GeminiRequestPayload) -> Result<String,
 
     // JSONかどうか簡易チェックを強化 (HTML応答の検知)
     if body_text.trim_start().starts_with("<!DOCTYPE") || !body_text.trim_start().starts_with('{') {
-        
         // 💡 HTML応答を検知した場合、ファイルを保存してパスを返す
         // 確実にディレクトリが存在することを確認
         let _ = std::fs::create_dir_all(&log_dir);
-        
+
         let log_path = log_dir.join("html_response_body.html");
-        
+
         if let Ok(mut file) = File::create(&log_path) {
             let _ = file.write_all(body_text.as_bytes());
             println!("DEBUG: Wrote HTML response to: {:?}", log_path);

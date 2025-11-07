@@ -11,7 +11,7 @@ type Content = {
 };
 
 type Message = {
-  id: string; // ← number から string に変更（UUID対応）
+  id: string;
   text: string;
   role: "user" | "ai";
   sectionsState?: {
@@ -28,7 +28,7 @@ interface ChatState {
   isPanelOpen: boolean;
   activeContent: "sliders" | "images" | null;
   message: Message[];
-  history: Content[]; // ★追加: 会話履歴 (Content型)
+  history: Content[];
   abortController: AbortController | null;
 
   // 状態操作関数たち
