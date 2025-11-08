@@ -33,9 +33,9 @@ export default function Sidebar() {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setIsOpen(false); // Escapeで閉じる
+        setIsOpen(false);
       } else if (e.altKey && e.key.toLowerCase() === "m") {
-        setIsOpen((prev) => !prev); // Alt + M でトグル
+        setIsOpen((prev) => !prev);
       }
     };
 
@@ -49,7 +49,7 @@ export default function Sidebar() {
     setIsSent(false);
     setIsLoading(false);
     setIsPanelOpen(true);
-    setActiveContent("sliders");
+    setActiveContent(null);
     clearMessage();
     if (abortController) {
       abortController.abort();
@@ -66,7 +66,7 @@ export default function Sidebar() {
         isIconOnly
         size="lg"
         radius="full"
-        className="fixed top-0 left-0 z-100 m-2 text-dark-3 dark:text-light-3 bg-transparent"
+        className="fixed top-0 left-0 z-100 m-2 text-d3 dark:text-l3 bg-transparent"
         onPress={() => setIsOpen(!isOpen)}
       >
         <Menu />
@@ -77,7 +77,7 @@ export default function Sidebar() {
         isIconOnly
         size="lg"
         radius="full"
-        className="absolute top-0 right-0 z-100 m-2 text-dark-3 dark:text-light-3 bg-transparent"
+        className="absolute top-0 right-0 z-100 m-2 text-d3 dark:text-l3 bg-transparent"
         onPress={handleNewChat}
       >
         <SquarePen />
@@ -94,7 +94,7 @@ export default function Sidebar() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5, ease: easeInOut }}
                 onClick={() => setIsOpen(false)}
-                className="fixed top-0 left-0 z-80 w-full h-full backdrop-blur-[2px] bg-light-1/50 dark:bg-dark-1/50"
+                className="fixed top-0 left-0 z-80 w-full h-full backdrop-blur-[2px] bg-l1/50 dark:bg-d1/50"
               />
             )}
             <motion.aside
@@ -110,7 +110,7 @@ export default function Sidebar() {
               exit={{ width: 0 }}
               transition={{ duration: 0.5, ease: easeInOut }}
               className={`
-              h-full overflow-hidden bg-light-3 dark:bg-dark-3
+              h-full overflow-hidden bg-l3 dark:bg-d3
               ${isMobile ? "fixed top-0 left-0 z-90" : "relative"}
             `}
             ></motion.aside>

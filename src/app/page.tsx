@@ -9,12 +9,16 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeMathjax from "rehype-mathjax";
 import { MathJaxContext } from "better-react-mathjax";
-import { DndContext, useDroppable } from "@dnd-kit/core";
+import { DndContext } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	ScrollShadow,
 	Spinner,
 	Button,
+	Dropdown,
+	DropdownTrigger,
+	DropdownMenu,
+	DropdownItem,
 	Textarea,
 	Slider,
 	Divider,
@@ -23,12 +27,15 @@ import {
 	CardBody,
 	Accordion,
 	AccordionItem,
+	Tooltip,
 } from "@heroui/react";
+import type { SharedSelection } from "@heroui/react";
 import {
 	Mic,
 	MicOff,
 	Settings2,
 	ImageUp,
+	X,
 	PanelBottomClose,
 	PanelTopClose,
 	SendHorizontal,
@@ -37,6 +44,7 @@ import {
 	BowArrow,
 	BookText,
 	BookCheck,
+	ChevronDown,
 } from "lucide-react";
 import packageJson from "../../package.json";
 
@@ -56,9 +64,17 @@ type Content = {
 	parts: Part[];
 };
 
+type ImageItem = {
+	id: string;
+	src: string;
+	fileName: string;
+};
+
+type ResponseMode = "learning" | "standard";
+
 export default function Home() {
 	const [switchState, setSwitchState] = useState({
-		summary: true,
+		summary: false,
 		guidance: false,
 		explanation: false,
 		answer: true,
@@ -89,11 +105,43 @@ export default function Home() {
 		updateMessage,
 	} = useChatStore();
 
+	// ---------- 応答方式 ---------- //
+
+	const responseModes = {
+		standard: {
+			label: "標準",
+			description: "会話に適したモード",
+		},
+		learning: {
+			label: "学習",
+			description: "問題解決に特化したモード",
+		},
+	};
+
+	const [responseMode, setResponseMode] = useState<ResponseMode>("learning");
+
+	const selectedModeLabel = responseModes[responseMode]?.label ?? "標準";
+
+	const handleResponseModeSelection = (keys: SharedSelection) => {
+		const selectedKey = Array.from(keys)[0] as ResponseMode;
+
+		if (selectedKey === "standard" || selectedKey === "learning") {
+			setResponseMode(selectedKey);
+		}
+	};
+
 	// ---------- 画像タブ ---------- //
 
-	const [images, setImages] = useState<{ [key: string]: string[] }>({
+	const [images, setImages] = useState<{ [key: string]: ImageItem[] }>({
 		problem: [],
 	});
+
+	const handleImageRemove = (tabKey: string, idToRemove: string) => {
+		setImages((prev) => ({
+			...prev,
+			[tabKey]: prev[tabKey].filter((item) => item.id !== idToRemove),
+		}));
+	};
 
 	const problemInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,9 +156,14 @@ export default function Home() {
 			reader.onload = () => {
 				const base64 = reader.result?.toString();
 				if (base64) {
+					const newImageItem: ImageItem = {
+						id: crypto.randomUUID(),
+						src: base64,
+						fileName: file.name,
+					};
 					setImages((prev) => ({
 						...prev,
-						[tabKey]: [...prev[tabKey], base64],
+						[tabKey]: [...prev[tabKey], newImageItem],
 					}));
 				}
 			};
@@ -120,7 +173,7 @@ export default function Home() {
 
 	const handleDrop = (
 		tabKey: string,
-		event: React.DragEvent<HTMLButtonElement>,
+		event: React.DragEvent<HTMLDivElement>,
 	) => {
 		event.preventDefault();
 		handleFiles(tabKey, event.dataTransfer.files);
@@ -135,15 +188,62 @@ export default function Home() {
 		children: React.ReactNode;
 		inputRef: React.RefObject<HTMLInputElement | null>;
 	}) => {
-		const { setNodeRef } = useDroppable({ id: tabKey });
+		const [isDragActive, setIsDragActive] = useState(false);
+		const dragCounter = useRef(0);
+
+		const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				inputRef.current?.click();
+			}
+		};
+
+		const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			e.stopPropagation();
+			dragCounter.current++;
+
+			if (dragCounter.current === 1) {
+				setIsDragActive(true);
+			}
+		};
+
+		const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			e.stopPropagation();
+			dragCounter.current--;
+
+			if (dragCounter.current === 0) {
+				setIsDragActive(false);
+			}
+		};
+
+		const handleDropAndReset = (e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			e.stopPropagation();
+			handleDrop(tabKey, e);
+
+			dragCounter.current = 0;
+			setIsDragActive(false);
+		};
+
+		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
+			isDragActive ? "border-blue bg-blue/25" : "border-ld"
+		}`;
+
 		return (
-			<button
-				type="button"
-				ref={setNodeRef}
-				onDrop={(e) => handleDrop(tabKey, e)}
-				onDragOver={(e) => e.preventDefault()}
-				onClick={() => inputRef.current?.click()}
-				className="flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed border-gray cursor-pointer"
+			<div
+				role="button"
+				tabIndex={0}
+				onDrop={handleDropAndReset}
+				onDragOver={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+				}}
+				onDragEnter={handleDragEnter}
+				onDragLeave={handleDragLeave}
+				onKeyDown={handleKeyDown}
+				className={containerClasses}
 			>
 				{children}
 				<input
@@ -154,7 +254,7 @@ export default function Home() {
 					className="hidden"
 					onChange={(e) => handleFiles(tabKey, e.target.files)}
 				/>
-			</button>
+			</div>
 		);
 	};
 
@@ -275,7 +375,7 @@ export default function Home() {
 		const userParts: Part[] = [{ text: userText }];
 
 		images.problem.forEach((img) => {
-			userParts.push({ inlineData: { mimeType: "image/png", data: img } });
+			userParts.push({ inlineData: { mimeType: "image/png", data: img.src } });
 		});
 
 		const userContent: Content = { role: "user", parts: userParts };
@@ -284,10 +384,10 @@ export default function Home() {
 			let data: string;
 
 			if (typeof window.__TAURI__ !== "undefined") {
-				// <- 修正 (any削除)
+				const imageSources = images.problem.map((item) => item.src);
 				data = await invoke("process_gemini_request", {
 					prompt: inputText,
-					images: { problem: images.problem },
+					images: { problem: imageSources },
 					options: switchState,
 					sliders,
 				});
@@ -298,6 +398,9 @@ export default function Home() {
 					addContentToHistory({ role: "model", parts: [{ text: data }] });
 				}
 			} else {
+				const payloadImages = {
+					problem: images.problem.map((item) => item.src),
+				};
 				const res = await fetch("/api/gemini", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -305,7 +408,7 @@ export default function Home() {
 						prompt: userText,
 						options: switchState,
 						sliders,
-						images,
+						images: payloadImages,
 						history,
 					}),
 					signal: controller.signal,
@@ -337,10 +440,13 @@ export default function Home() {
 				}
 			}
 		} catch (error) {
-			console.error("Gemini request error:", error); // エラー処理の追加
+			if (error instanceof DOMException && error.name === "AbortError") {
+				console.log("Request aborted successfully.");
+			} else {
+				console.error("Gemini request error:", error);
+			}
 		} finally {
 			setIsLoading(false);
-
 			setAbortController(null);
 			setImages({ problem: [] });
 			setActiveContent(null);
@@ -392,7 +498,7 @@ export default function Home() {
 								isIconOnly
 								size="lg"
 								radius="md"
-								className="shadow-2xl text-dark-3 dark:text-light-3 backdrop-blur-xs bg-light-3/50 dark:bg-dark-3/50"
+								className="shadow-lg shadow-l3 dark:shadow-d3 bg-l3/50 dark:bg-d3/50 backdrop-blur-xs text-d3 dark:text-l3"
 								onPress={() => setIsPanelOpen(true)}
 							>
 								<PanelTopClose />
@@ -419,11 +525,11 @@ export default function Home() {
 									<Card
 										shadow="none"
 										radius="lg"
-										className="rounded-2xl rounded-tr-sm w-full h-auto mb-2 bg-light-3 dark:bg-dark-3"
+										className="rounded-2xl rounded-tr-sm w-full h-auto mb-2 bg-l3 dark:bg-d3"
 									>
 										<CardBody>
 											<div
-												className="overflow-x-hidden select-text prose dark:prose-invert max-w-full wrap-break-word text-lg font-medium text-dark-3 dark:text-light-3"
+												className="overflow-x-hidden select-text prose dark:prose-invert max-w-full wrap-break-word text-lg font-medium text-d3 dark:text-l3"
 												style={{
 													minHeight: "2rem",
 													maxHeight: `calc(2rem * 3)`,
@@ -535,23 +641,23 @@ export default function Home() {
 											<Accordion
 												selectionMode="multiple"
 												variant="bordered"
-												className="mb-4 border-light-5 dark:border-dark-5 font-medium text-dark-3 dark:text-light-3"
+												className="mb-4 border-1 border-l3 dark:border-d3 bg-l3 dark:bg-d3 text-base font-medium text-d3 dark:text-l3"
 											>
 												{sections.map((sec, i) => {
 													let icon = null;
 													switch (sec.title) {
 														case "要約":
-															icon = <ScrollText className="text-sky-500" />;
+															icon = <ScrollText className="text-blue" />;
 															break;
 														case "指針":
 														case "応答":
-															icon = <BowArrow className="text-orange-500" />;
+															icon = <BowArrow className="text-orange" />;
 															break;
 														case "解説":
-															icon = <BookText className="text-rose-500" />;
+															icon = <BookText className="text-red" />;
 															break;
 														case "解答":
-															icon = <BookCheck className="text-lime-500" />;
+															icon = <BookCheck className="text-lime" />;
 															break;
 													}
 
@@ -595,7 +701,7 @@ export default function Home() {
 														}
                             ${sec.title === "解説" ? "text-rose-500" : ""}
                             ${sec.title === "解答" ? "text-lime-500" : ""}
-                          `}
+																			`}
 																>
 																	{sec.title}
 																</span>
@@ -603,7 +709,7 @@ export default function Home() {
 															startContent={icon}
 															classNames={{ trigger: "cursor-pointer" }}
 														>
-															<div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-lg font-normal text-dark-3 dark:text-light-3">
+															<div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-lg font-normal text-d3 dark:text-l3">
 																{shouldAnimate ? (
 																	<motion.div
 																		key={motionKey}
@@ -671,7 +777,7 @@ export default function Home() {
 						>
 							<Divider
 								orientation="horizontal"
-								className="hidden lg:flex flex-1 mr-8 bg-dark-5 dark:bg-light-5"
+								className="flex-1 mr-8 bg-d5 dark:bg-l5"
 							/>
 							<Image
 								src="/logos/dark.webp"
@@ -689,19 +795,19 @@ export default function Home() {
 							/>
 							<Divider
 								orientation="vertical"
-								className="max-h-10 bg-dark-5 dark:bg-light-5"
+								className="max-h-10 bg-d5 dark:bg-l5"
 							/>
-							<span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-dark-5 dark:text-light-5">
+							<span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-d5 dark:text-l5">
 								Ver. {packageJson.version}
 							</span>
 							<Divider
 								orientation="horizontal"
-								className="hidden lg:flex flex-1 ml-8 bg-dark-5 dark:bg-light-5"
+								className="flex-1 ml-8 bg-d5 dark:bg-l5"
 							/>
 						</motion.div>
 					)}
 				</AnimatePresence>
-				<div className="flex flex-col justify-center p-2 w-full border-2 rounded-2xl border-light-5 dark:border-dark-5">
+				<div className="flex flex-col justify-center p-2 w-full rounded-2xl shadow-lg/50 shadow-l5 dark:shadow-d5 border-1 border-l5 dark:border-d5">
 					<AnimatePresence>
 						{isPanelOpen &&
 							(isLoading ? (
@@ -722,7 +828,7 @@ export default function Home() {
 												aria-label="Close Panel Button"
 												isIconOnly
 												radius="full"
-												className="text-dark-3 dark:text-light-3 bg-transparent"
+												className="text-d3 dark:text-l3 bg-transparent"
 												onPress={() => {
 													togglePanel();
 													setActiveContent(null);
@@ -735,7 +841,7 @@ export default function Home() {
 											aria-label="Pause Button"
 											isIconOnly
 											radius="full"
-											className="ml-auto text-light-3 bg-red-500"
+											className="ml-auto text-l3 bg-red"
 											onPress={() => {
 												if (abortController) {
 													abortController.abort();
@@ -774,8 +880,8 @@ export default function Home() {
 											size="lg"
 											variant="underlined"
 											validationBehavior="aria"
-											placeholder="AI に訊きたい問題はある？"
-											className="text-dark-1 dark:text-light-1"
+											placeholder="AI に訊きたい質問はある？"
+											className="text-d1 dark:text-l1"
 											value={inputText}
 											onChange={(e) => setInputText(e.target.value)}
 											onKeyDown={(e) => {
@@ -789,10 +895,10 @@ export default function Home() {
 											aria-label="Mic Button"
 											isIconOnly
 											radius="full"
-											className={`${
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
 												isListening
-													? "text-light-3 bg-red-500"
-													: "text-dark-3 dark:text-light-3 bg-transparent"
+													? "text-l3 bg-red"
+													: "text-d3 dark:text-l3 bg-transparent"
 											}`}
 											onPress={toggleListening}
 										>
@@ -805,9 +911,9 @@ export default function Home() {
 												aria-label="Sliders Button"
 												isIconOnly
 												radius="full"
-												className={`text-dark-3 dark:text-light-3 ${
+												className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
 													activeContent === "sliders"
-														? "bg-light-3 dark:bg-dark-3"
+														? "bg-l3 dark:bg-d3"
 														: "bg-transparent"
 												}`}
 												onPress={() =>
@@ -822,9 +928,9 @@ export default function Home() {
 												aria-label="Image Button"
 												isIconOnly
 												radius="full"
-												className={`text-dark-3 dark:text-light-3 ${
+												className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
 													activeContent === "images"
-														? "bg-light-3 dark:bg-dark-3"
+														? "bg-l3 dark:bg-d3"
 														: "bg-transparent"
 												}`}
 												onPress={() =>
@@ -837,12 +943,57 @@ export default function Home() {
 											</Button>
 										</div>
 										<div className="flex flex-row gap-2">
+											<Dropdown
+												placement="bottom"
+												classNames={{
+													content:
+														"shadow-lg shadow-l3 dark:shadow-d3 bg-l3/50 dark:bg-d3/50 backdrop-blur-xs text-d3 dark:text-l3",
+												}}
+											>
+												<DropdownTrigger>
+													<Button
+														aria-label="Select a Mode Button"
+														radius="full"
+														className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-base font-medium text-d3 dark:text-l3 hover:bg-l3 hover:dark:bg-d3"
+													>
+														<span className="text-base font-medium mr-1">
+															{selectedModeLabel}
+														</span>
+														<ChevronDown size={16} />
+													</Button>
+												</DropdownTrigger>
+												<DropdownMenu
+													disallowEmptySelection
+													aria-label="Response Mode Options"
+													selectedKeys={[responseMode]}
+													selectionMode="single"
+													onSelectionChange={handleResponseModeSelection}
+													itemClasses={{
+														base: [],
+													}}
+												>
+													<DropdownItem
+														key="standard"
+														description={responseModes.standard.description}
+														className=""
+													>
+														{responseModes.standard.label}
+													</DropdownItem>
+													<DropdownItem
+														key="learning"
+														description={responseModes.learning.description}
+														className=""
+													>
+														{responseModes.learning.label}
+													</DropdownItem>
+												</DropdownMenu>
+											</Dropdown>
 											{isSent && (
 												<Button
 													aria-label="Close Panel Button"
 													isIconOnly
 													radius="full"
-													className="text-dark-3 dark:text-light-3 bg-transparent"
+													className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-d3 dark:text-l3"
 													onPress={() => {
 														togglePanel();
 														setActiveContent(null);
@@ -855,10 +1006,10 @@ export default function Home() {
 												aria-label="Send Button"
 												isIconOnly
 												radius="full"
-												className={`${
+												className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
 													inputText.trim() !== "" || images.problem.length > 0
-														? "text-light-3 bg-blue-500"
-														: "text-dark-3 dark:text-light-3 bg-light-3 dark:bg-dark-3"
+														? "text-l3 bg-blue"
+														: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
 												}`}
 												onPress={() => handleSend()}
 												disabled={
@@ -913,7 +1064,7 @@ export default function Home() {
 																	}));
 																}}
 															/>
-															<Divider className="bg-gray" />
+															<Divider className="bg-ld" />
 															<div className="flex flex-row flex-wrap gap-4">
 																<Switch
 																	size="lg"
@@ -967,28 +1118,59 @@ export default function Home() {
 																				aria-label="Upload Images Button"
 																				size="lg"
 																				radius="full"
-																				className="text-center text-xl font-medium text-light-1 bg-blue-middle"
+																				className="text-center text-xl font-medium text-l1 bg-blue"
 																				onPress={() =>
 																					problemInputRef.current?.click()
 																				}
 																			>
 																				画像アップロード
 																			</Button>
-																			<span className="text-lg font-medium text-gray">
+																			<span className="text-lg font-medium text-ld">
 																				ファイルをドラッグ&ドロップ
 																			</span>
 																		</div>
 																	) : (
-																		<div className="flex flex-row gap-2 overflow-x-auto">
-																			{images.problem.map((src, idx) => (
-																				<Image
-																					key={src}
-																					src={src}
-																					alt={`uploaded-problem-${idx}`}
-																					width={128}
-																					height={128}
-																					className="rounded-lg object-cover aspect-square"
-																				/>
+																		<div className="flex flex-row flex-nowrap gap-2 overflow-x-auto overflow-y-hidden">
+																			{images.problem.map((item) => (
+																				<Tooltip
+																					key={item.id}
+																					content={item.fileName}
+																					placement="bottom"
+																					delay={0}
+																					closeDelay={0}
+																					radius="full"
+																					size="md"
+																					shadow="md"
+																					color="primary"
+																				>
+																					<div
+																						key={item.id}
+																						className="relative group shrink-0"
+																					>
+																						<Image
+																							src={item.src}
+																							alt={item.fileName}
+																							width={160}
+																							height={160}
+																							className="rounded-lg object-cover aspect-square"
+																						/>
+																						<Button
+																							aria-label="Remove Image Button"
+																							isIconOnly
+																							size="sm"
+																							radius="full"
+																							className="absolute top-1 right-1 z-10 text-l1 bg-red opacity-0 group-hover:opacity-100"
+																							onPress={() =>
+																								handleImageRemove(
+																									"problem",
+																									item.id,
+																								)
+																							}
+																						>
+																							<X />
+																						</Button>
+																					</div>
+																				</Tooltip>
 																			))}
 																		</div>
 																	)}

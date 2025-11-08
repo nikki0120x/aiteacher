@@ -6,26 +6,26 @@
 
 @theme {
   --default-font: "Zen Maru Gothic", system-ui;
-  --color-light-1: oklch(98.4% 0.003 247.858);
-  --color-light-2: oklch(96.8% 0.007 247.896);
-  --color-light-3: oklch(92.9% 0.013 255.508);
-  --color-light-4: oklch(86.9% 0.022 252.894);
-  --color-light-5: oklch(70.4% 0.04 256.788);
-  --color-dark-1: oklch(12.9% 0.042 264.695);
-  --color-dark-2: oklch(20.8% 0.042 265.755);
-  --color-dark-3: oklch(27.9% 0.041 260.031);
-  --color-dark-4: oklch(37.2% 0.044 257.287);
-  --color-dark-5: oklch(44.6% 0.043 257.281);
-  --color-gray: oklch(55.4% 0.046 257.417);
-  --color-green-light: oklch(93.8% 0.127 124.321);
-  --color-green-middle: oklch(76.8% 0.233 130.85);
-  --color-green-dark: oklch(45.3% 0.124 130.933);
-  --color-blue-middle: oklch(62.3% 0.214 259.815);
+  --color-l1: oklch(98.5% 0.001 106.423);
+  --color-l2: oklch(97% 0.001 106.424);
+  --color-l3: oklch(92.3% 0.003 48.717);
+  --color-l4: oklch(86.9% 0.005 56.366);
+  --color-l5: oklch(70.9% 0.01 56.259);
+  --color-d1: oklch(14.7% 0.004 49.25);
+  --color-d2: oklch(21.6% 0.006 56.043);
+  --color-d3: oklch(26.8% 0.007 34.298);
+  --color-d4: oklch(37.4% 0.01 67.558);
+  --color-d5: oklch(44.4% 0.011 73.639);
+  --color-ld: oklch(55.3% 0.013 58.071);
+  --color-blue: oklch(68.5% 0.169 237.323);
+  --color-orange: oklch(70.5% 0.213 47.604);
+  --color-red: oklch(64.5% 0.246 16.439);
+  --color-lime: oklch(76.8% 0.233 130.85);
 }
 
 *::selection {
-  color: var(--color-light-1);
-  background-color: var(--color-blue-middle);
+  color: var(--color-l1);
+  background-color: var(--color-blue);
 }
 
 *::-webkit-scrollbar {
@@ -34,24 +34,24 @@
 }
 *::-webkit-scrollbar-thumb {
   border-radius: 1rem;
-  background: var(--color-dark-3);
+  background: var(--color-d3);
 }
 .dark *::-webkit-scrollbar-thumb {
-  background: var(--color-light-3);
+  background: var(--color-l3);
 }
 *::-webkit-scrollbar-thumb:hover {
   border-radius: 1rem;
-  background: var(--color-dark-5);
+  background: var(--color-d5);
 }
 .dark *::-webkit-scrollbar-thumb:hover {
-  background: var(--color-light-5);
+  background: var(--color-l5);
 }
 *::-webkit-scrollbar-thumb:active {
   border-radius: 1rem;
-  background: var(--color-dark-4);
+  background: var(--color-d4);
 }
 .dark *::-webkit-scrollbar-thumb:active {
-  background: var(--color-light-4);
+  background: var(--color-l4);
 }
 
 html {
@@ -59,7 +59,7 @@ html {
 }
 
 body {
-  @apply text-dark-1 bg-light-1 dark:text-light-1 dark:bg-dark-1;
+  @apply text-d1 bg-l1 dark:text-l1 dark:bg-d1;
   overflow: hidden;
   font-style: normal;
   font-optical-sizing: auto;

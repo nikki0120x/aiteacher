@@ -10,7 +10,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import NProgress from "nprogress";
 import Server from "./server";
 import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
+import Header from "@/stores/header";
 
 import "./globals.css";
 

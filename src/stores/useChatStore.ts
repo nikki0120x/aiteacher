@@ -31,7 +31,6 @@ interface ChatState {
   history: Content[];
   abortController: AbortController | null;
 
-  // 状態操作関数たち
   setIsSent: (sent: boolean) => void;
   setIsLoading: (loading: boolean) => void;
   setIsPanelOpen: (open: boolean) => void;
@@ -48,10 +47,10 @@ interface ChatState {
       explanation: boolean;
       answer: boolean;
     },
-    id?: string // ← IDを指定可能に
+    id?: string
   ) => void;
 
-  updateMessage: (id: string, newText: string) => void; // ← 新機能
+  updateMessage: (id: string, newText: string) => void;
 
   clearMessage: () => void;
   setAbortController: (controller: AbortController | null) => void;
@@ -61,7 +60,7 @@ export const useChatStore = create<ChatState>((set) => ({
   isSent: false,
   isLoading: false,
   isPanelOpen: true,
-  activeContent: "sliders",
+  activeContent: null,
   message: [],
   history: [],
   abortController: null,
@@ -72,12 +71,11 @@ export const useChatStore = create<ChatState>((set) => ({
   togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
   setActiveContent: (content) => set({ activeContent: content }),
 
-  // メッセージ追加
   addMessage: (
     text,
     role = "user",
     sectionsState,
-    id = crypto.randomUUID() // ← 明示的IDを受け取れるように
+    id = crypto.randomUUID()
   ) =>
     set((state) => {
       const newMessage: Message = { id, text, role };
@@ -93,7 +91,6 @@ export const useChatStore = create<ChatState>((set) => ({
       history: [...state.history, content],
     })),
 
-  // ★ メッセージ内容を上書きする関数
   updateMessage: (id, newText) =>
     set((state) => ({
       message: state.message.map((msg) =>
