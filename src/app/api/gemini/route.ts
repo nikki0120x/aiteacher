@@ -138,7 +138,8 @@ export async function POST(req: NextRequest) {
 
 	if (images?.problem) {
 		images.problem.forEach((base64) => {
-			const data = base64.split(",")[1];
+			const data = base64;
+
 			userParts.push({ inlineData: { mimeType: "image/png", data } });
 		});
 	}

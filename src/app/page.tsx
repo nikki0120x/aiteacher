@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { useChatStore } from "@/stores/useChatStore";
+import type { MessageItem } from "@/stores/useChatStore";
+
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import rehypeMathjax from "rehype-mathjax";
-import { MathJaxContext } from "better-react-mathjax";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { DndContext } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -72,6 +74,11 @@ type ImageItem = {
 
 type ResponseMode = "learning" | "standard";
 
+type ChatTurn = {
+	user: MessageItem;
+	model: MessageItem | undefined;
+};
+
 export default function Home() {
 	const [switchState, setSwitchState] = useState({
 		summary: false,
@@ -104,6 +111,15 @@ export default function Home() {
 		setAbortController,
 		updateMessage,
 	} = useChatStore();
+
+	const prevDisplayContentLengthRef = useRef<{ [key: string]: number }>({});
+	const messagesEndRef = useRef<HTMLDivElement>(null);
+
+	const [chatHistoryHeight, setChatHistoryHeight] = useState<
+		number | undefined
+	>(undefined);
+
+	const prevHeightRef = useRef<number | undefined>(undefined);
 
 	// ---------- 応答方式 ---------- //
 
@@ -358,6 +374,30 @@ export default function Home() {
 		}
 	}, [isLoading, message, NUM_PHRASES]);
 
+	useEffect(() => {
+		const currentMessageIds = new Set(message.map((m) => m.id));
+		const idsToCleanup = Object.keys(prevDisplayContentLengthRef.current);
+
+		idsToCleanup.forEach((id) => {
+			const isCurrentLoadingMessage =
+				isLoading && message.slice(-1)[0]?.id === id;
+
+			if (
+				!currentMessageIds.has(id) ||
+				(!isCurrentLoadingMessage &&
+					prevDisplayContentLengthRef.current[id] !== undefined)
+			) {
+				delete prevDisplayContentLengthRef.current[id];
+			}
+		});
+	}, [isLoading, message]);
+
+	useLayoutEffect(() => {
+		if (messagesEndRef.current) {
+			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+		}
+	}, [message]);
+
 	const handleSend = async () => {
 		if (inputText.trim() === "" && images.problem.length === 0) return;
 
@@ -375,7 +415,10 @@ export default function Home() {
 		const userParts: Part[] = [{ text: userText }];
 
 		images.problem.forEach((img) => {
-			userParts.push({ inlineData: { mimeType: "image/png", data: img.src } });
+			const base64Data = img.src.split(",")[1] || img.src;
+			userParts.push({
+				inlineData: { mimeType: "image/png", data: base64Data },
+			});
 		});
 
 		const userContent: Content = { role: "user", parts: userParts };
@@ -399,8 +442,12 @@ export default function Home() {
 				}
 			} else {
 				const payloadImages = {
-					problem: images.problem.map((item) => item.src),
+					problem: images.problem.map((item) => {
+						const base64Data = item.src.split(",")[1] || item.src;
+						return base64Data;
+					}),
 				};
+
 				const res = await fetch("/api/gemini", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -466,6 +513,64 @@ export default function Home() {
 		});
 	};
 
+	const turns: ChatTurn[] = [];
+	for (let i = 0; i < message.length; i++) {
+		const msg = message[i];
+		if (msg.role === "user") {
+			turns.push({
+				user: msg,
+				model: message[i + 1]?.role === "ai" ? message[i + 1] : undefined,
+			});
+		}
+	}
+
+	const lastTurnId = turns.slice(-1)[0]?.user.id;
+
+	const chatHistoryRef = useRef<HTMLDivElement>(null);
+
+	useLayoutEffect(() => {
+		const chatElement = chatHistoryRef.current;
+
+		if (!chatElement) return;
+
+		let timeoutId: NodeJS.Timeout | null = null;
+		const DEBOUNCE_DELAY = 50;
+
+		const measureHeight = () => {
+			if (timeoutId) {
+				clearTimeout(timeoutId);
+			}
+
+			timeoutId = setTimeout(() => {
+				const height = chatElement.clientHeight;
+
+				if (height !== prevHeightRef.current) {
+					setChatHistoryHeight(height);
+
+					console.log(
+						`Measured chatHistoryHeight (Debounced ${DEBOUNCE_DELAY}ms):`,
+						height,
+					);
+				}
+
+				prevHeightRef.current = height;
+			}, DEBOUNCE_DELAY);
+		};
+
+		const observer = new ResizeObserver(() => {
+			measureHeight();
+		});
+
+		observer.observe(chatElement);
+
+		return () => {
+			observer.disconnect();
+			if (timeoutId) {
+				clearTimeout(timeoutId);
+			}
+		};
+	}, []);
+
 	// ---------- フロントエンド ---------- //
 
 	return (
@@ -482,6 +587,7 @@ export default function Home() {
 					ease: "easeInOut",
 				}}
 				className="flex flex-col w-full h-full overflow-hidden"
+				ref={chatHistoryRef}
 			>
 				<AnimatePresence>
 					{!isPanelOpen && (
@@ -506,22 +612,90 @@ export default function Home() {
 						</motion.div>
 					)}
 				</AnimatePresence>
-				<ScrollShadow className="w-full h-full overflow-y-scroll">
-					<motion.div className="flex flex-col">
-						{message.map((msg) => (
-							<MathJaxContext
-								key={msg.id}
-								version={3}
-								config={{
-									tex: {
-										inlineMath: [
-											["$", "$"],
-											["\\(", "\\)"],
-										],
-									},
-								}}
-							>
-								{msg.role === "user" ? (
+
+				<ScrollShadow
+					hideScrollBar
+					visibility="none"
+					className="w-full h-full"
+				>
+					<AnimatePresence mode="sync">
+						{turns.map((turn) => {
+							const isLatestTurn = turn.user.id === lastTurnId;
+							const msg = turn.model;
+							const latestMessage = message.slice(-1)[0];
+							const isCurrentLoadingTurn =
+								isLoading && turn.model?.id === latestMessage?.id;
+
+							const hasImages = (images.problem?.length || 0) > 0;
+
+							const state = msg?.sectionsState ?? switchState;
+							const sections: { title: string; text: string }[] = [];
+
+							const extractSection = (header: string) => {
+								if (!msg?.text) return undefined;
+								const regex = new RegExp(
+									`###\\s*${header}\\s*([\\s\\S]*?)(?=\\n###|$)`,
+									"i",
+								);
+								return msg.text.match(regex)?.[1]?.trim();
+							};
+
+							const allSectionDefs: {
+								key: keyof typeof switchState;
+								title: string;
+							}[] = [
+								{ key: "summary", title: "要約" },
+								{ key: "guidance", title: "指針" },
+								{ key: "explanation", title: "解説" },
+								{ key: "answer", title: "解答" },
+							];
+
+							const enabledSections = allSectionDefs.filter(
+								(s) => state[s.key],
+							);
+
+							enabledSections.forEach(({ title }) => {
+								const text = extractSection(title);
+								sections.push({
+									title,
+									text: text ?? "",
+								});
+							});
+
+							const enabledTitles = enabledSections.map((s) => s.title);
+							const anyHeaderRegex = new RegExp(
+								`###\\s*(${enabledTitles.join("|")})`,
+								"i",
+							);
+
+							if (
+								msg &&
+								sections.length > 0 &&
+								!msg.text.match(anyHeaderRegex)
+							) {
+								sections[0].text = msg.text;
+							}
+							if (msg && sections.length === 0) {
+								sections.push({ title: "応答", text: msg.text });
+							}
+
+							return (
+								<motion.div
+									key={turn.user.id}
+									initial={{ opacity: 0, y: 50 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: 50 }}
+									transition={{
+										duration: 0.5,
+										ease: "easeInOut",
+									}}
+									style={{
+										height:
+											isLatestTurn && chatHistoryHeight
+												? `${chatHistoryHeight}px`
+												: "auto",
+									}}
+								>
 									<Card
 										shadow="none"
 										radius="lg"
@@ -539,159 +713,60 @@ export default function Home() {
 											>
 												<ReactMarkdown
 													remarkPlugins={[remarkGfm, remarkMath]}
-													rehypePlugins={[rehypeMathjax]}
+													rehypePlugins={[rehypeKatex]}
 												>
-													{msg.text}
+													{turn.user.text}
 												</ReactMarkdown>
 											</div>
 										</CardBody>
 									</Card>
-								) : (
-									(() => {
-										const isCurrentLoadingMessage =
-											isLoading && message.slice(-1)[0]?.id === msg.id;
 
-										const state = msg.sectionsState ?? switchState;
-										const sections: { title: string; text: string }[] = [];
+									{/* アシスタントメッセージ (Accordion) */}
+									{turn.model && (
+										<Accordion
+											selectionMode="multiple"
+											variant="bordered"
+											className="border-1 border-l3 dark:border-d3 bg-l3 dark:bg-d3 text-base font-medium text-d3 dark:text-l3"
+										>
+											{sections.map((sec, i) => {
+												let icon = null;
+												switch (sec.title) {
+													case "要約":
+														icon = <ScrollText className="text-blue" />;
+														break;
+													case "指針":
+													case "応答":
+														icon = <BowArrow className="text-orange" />;
+														break;
+													case "解説":
+														icon = <BookText className="text-red" />;
+														break;
+													case "解答":
+														icon = <BookCheck className="text-lime" />;
+														break;
+												}
 
-										const extractSection = (header: string) => {
-											const regex = new RegExp(
-												`###\\s*${header}\\s*([\\s\\S]*?)(?=\\n###|$)`,
-												"i",
-											);
-											return msg.text.match(regex)?.[1]?.trim();
-										};
+												const isInitialPlaceholder =
+													sec.text === "#LOADING_PHRASE#";
+												let displayContent = sec.text;
 
-										const allSectionDefs: {
-											key: keyof typeof switchState;
-											title: string;
-										}[] = [
-											{ key: "summary", title: "要約" },
-											{ key: "guidance", title: "指針" },
-											{ key: "explanation", title: "解説" },
-											{ key: "answer", title: "解答" },
-										];
-
-										const enabledSections = allSectionDefs.filter(
-											(s) => state[s.key],
-										);
-
-										enabledSections.forEach(({ title }) => {
-											const text = extractSection(title);
-											sections.push({
-												title,
-												text: text ?? "",
-											});
-										});
-
-										const enabledTitles = enabledSections.map((s) => s.title);
-										const anyHeaderRegex = new RegExp(
-											`###\\s*(${enabledTitles.join("|")})`,
-											"i",
-										);
-
-										if (
-											sections.length > 0 &&
-											!msg.text.match(anyHeaderRegex)
-										) {
-											sections.forEach((sec) => {
-												sec.text = msg.text;
-											});
-										}
-
-										if (sections.length === 0) {
-											sections.push({ title: "応答", text: msg.text });
-										}
-
-										if (
-											sections.length > 0 &&
-											!msg.text.match(anyHeaderRegex)
-										) {
-											sections[0].text = msg.text;
-										}
-
-										if (sections.length === 0) {
-											sections.push({ title: "応答", text: msg.text });
-										}
-
-										let targetSectionIndex = -1;
-										if (isCurrentLoadingMessage) {
-											const lastSectionIndexWithContent = sections
-												.slice()
-												.reverse()
-												.findIndex((s) => s.text && s.text.length > 0);
-
-											if (lastSectionIndexWithContent >= 0) {
-												targetSectionIndex =
-													sections.length - 1 - lastSectionIndexWithContent;
-											}
-										}
-
-										const LOADING_PHRASES = [
-											"回答を準備しています...",
-											"思考中...",
-											"思案中...",
-											"構成を練っています...",
-											"情報を整理中...",
-											"回答を生成中です...",
-										];
-										const NUM_PHRASES = LOADING_PHRASES.length;
-
-										return (
-											<Accordion
-												selectionMode="multiple"
-												variant="bordered"
-												className="mb-4 border-1 border-l3 dark:border-d3 bg-l3 dark:bg-d3 text-base font-medium text-d3 dark:text-l3"
-											>
-												{sections.map((sec, i) => {
-													let icon = null;
-													switch (sec.title) {
-														case "要約":
-															icon = <ScrollText className="text-blue" />;
-															break;
-														case "指針":
-														case "応答":
-															icon = <BowArrow className="text-orange" />;
-															break;
-														case "解説":
-															icon = <BookText className="text-red" />;
-															break;
-														case "解答":
-															icon = <BookCheck className="text-lime" />;
-															break;
+												if (isInitialPlaceholder) {
+													if (isCurrentLoadingTurn && hasImages) {
+														displayContent = "画像分析中...";
+													} else if (isCurrentLoadingTurn) {
+														const phraseIndex =
+															(i + currentLoadingIndex) % NUM_PHRASES;
+														displayContent = LOADING_PHRASES[phraseIndex];
 													}
+												}
 
-													const isInitialPlaceholder =
-														sec.text === "#LOADING_PHRASE#";
-													let displayContent = sec.text;
-
-													const hasImages = (images.problem?.length || 0) > 0;
-
-													if (isInitialPlaceholder) {
-														if (isCurrentLoadingMessage && hasImages) {
-															displayContent = "画像分析中...";
-														} else {
-															const phraseIndex =
-																(i + currentLoadingIndex) % NUM_PHRASES;
-															displayContent = LOADING_PHRASES[phraseIndex];
-														}
-													}
-
-													const shouldAnimate =
-														isCurrentLoadingMessage &&
-														(isInitialPlaceholder || i === targetSectionIndex);
-
-													const motionKey = isInitialPlaceholder
-														? `loading-${i}-${currentLoadingIndex}`
-														: `streaming-${i}`;
-
-													return (
-														<AccordionItem
-															key={sec.title}
-															aria-label={sec.title}
-															title={
-																<span
-																	className={`
+												return (
+													<AccordionItem
+														key={sec.title}
+														aria-label={sec.title}
+														title={
+															<span
+																className={`
                             text-xl font-medium no-select
                             ${sec.title === "要約" ? "text-sky-500" : ""}
                             ${
@@ -702,54 +777,80 @@ export default function Home() {
                             ${sec.title === "解説" ? "text-rose-500" : ""}
                             ${sec.title === "解答" ? "text-lime-500" : ""}
 																			`}
-																>
-																	{sec.title}
-																</span>
-															}
-															startContent={icon}
-															classNames={{ trigger: "cursor-pointer" }}
-														>
-															<div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-lg font-normal text-d3 dark:text-l3">
-																{shouldAnimate ? (
-																	<motion.div
-																		key={motionKey}
-																		style={{ whiteSpace: "pre-wrap" }}
-																	>
-																		{displayContent
-																			.split("")
-																			.map((char, index) => (
+															>
+																{sec.title}
+															</span>
+														}
+														startContent={icon}
+														classNames={{ trigger: "cursor-pointer" }}
+													>
+														<div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-lg font-normal text-d3 dark:text-l3">
+															{(() => {
+																if (!isCurrentLoadingTurn) {
+																	return (
+																		<ReactMarkdown
+																			remarkPlugins={[remarkGfm, remarkMath]}
+																			rehypePlugins={[rehypeKatex]}
+																		>
+																			{displayContent}
+																		</ReactMarkdown>
+																	);
+																}
+
+																const prevLen = msg
+																	? (prevDisplayContentLengthRef.current[
+																			msg.id
+																		] ?? 0)
+																	: 0;
+																const currentText = displayContent.substring(
+																	0,
+																	prevLen,
+																);
+																const newText =
+																	displayContent.substring(prevLen);
+
+																return (
+																	<span style={{ whiteSpace: "pre-wrap" }}>
+																		{currentText}
+																		{newText && (
+																			<AnimatePresence mode="popLayout">
 																				<motion.span
-																					key={`${sec.title}-${index}`}
+																					key={displayContent.length}
 																					initial={{ opacity: 0 }}
 																					animate={{ opacity: 1 }}
+																					exit={{ opacity: 0 }}
 																					transition={{
-																						duration: 0.5,
-																						delay: index * 0.005,
+																						duration: 1,
+																						ease: "easeOut",
 																					}}
 																				>
-																					{char}
+																					{newText}
 																				</motion.span>
-																			))}
-																	</motion.div>
-																) : (
-																	<ReactMarkdown
-																		remarkPlugins={[remarkGfm, remarkMath]}
-																		rehypePlugins={[rehypeMathjax]}
-																	>
-																		{displayContent}
-																	</ReactMarkdown>
-																)}
-															</div>
-														</AccordionItem>
-													);
-												})}
-											</Accordion>
-										);
-									})()
-								)}
-							</MathJaxContext>
-						))}
-					</motion.div>
+																			</AnimatePresence>
+																		)}
+
+																		{(() => {
+																			if (msg) {
+																				prevDisplayContentLengthRef.current[
+																					msg.id
+																				] = displayContent.length;
+																			}
+																			return null;
+																		})()}
+																	</span>
+																);
+															})()}
+														</div>
+													</AccordionItem>
+												);
+											})}
+										</Accordion>
+									)}
+								</motion.div>
+							);
+						})}
+					</AnimatePresence>
+					<div ref={messagesEndRef} />
 				</ScrollShadow>
 			</motion.div>
 			<motion.div
@@ -809,26 +910,143 @@ export default function Home() {
 				</AnimatePresence>
 				<div className="flex flex-col justify-center p-2 w-full rounded-2xl shadow-lg/50 shadow-l5 dark:shadow-d5 border-1 border-l5 dark:border-d5">
 					<AnimatePresence>
-						{isPanelOpen &&
-							(isLoading ? (
-								<motion.div
-									key="loadingArea"
-									initial={{ opacity: 0, height: 0 }}
-									animate={{ opacity: 1, height: "auto" }}
-									exit={{ opacity: 0, height: 0 }}
-									transition={{ duration: 0.5, ease: "easeInOut" }}
-									className="flex flex-row justify-between"
-								>
+						{isPanelOpen && (
+							<motion.div
+								key="chatArea"
+								initial={
+									hasMounted
+										? { opacity: 0, height: 0 }
+										: { opacity: 0, height: "auto" }
+								}
+								animate={{ opacity: 1, height: "auto" }}
+								exit={{ opacity: 0, height: 0 }}
+								transition={{ duration: 0.5, ease: "easeInOut" }}
+								className="flex flex-col justify-center"
+								onAnimationComplete={() => setHasMounted(true)}
+							>
+								<div className="flex flex-row pl-2 pb-2">
+									<Textarea
+										isRequired
+										cacheMeasurements={true}
+										minRows={1}
+										maxRows={3}
+										size="lg"
+										variant="underlined"
+										validationBehavior="aria"
+										placeholder="AI に訊きたい質問はある？"
+										className="text-d1 dark:text-l1"
+										value={inputText}
+										onChange={(e) => setInputText(e.target.value)}
+										onKeyDown={(e) => {
+											if (!isMobile && e.key === "Enter" && !e.shiftKey) {
+												e.preventDefault();
+												handleSend();
+											}
+										}}
+									/>
+									<Button
+										aria-label="Mic Button"
+										isIconOnly
+										radius="full"
+										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
+											isListening
+												? "text-l3 bg-red"
+												: "text-d3 dark:text-l3 bg-transparent"
+										}`}
+										onPress={toggleListening}
+									>
+										{isListening ? <Mic /> : <MicOff />}
+									</Button>
+								</div>
+								<div className="flex flex-row justify-between pb-2">
 									<div className="flex flex-row gap-2">
-										<Spinner variant="default" size="md" />
+										<Button
+											aria-label="Sliders Button"
+											isIconOnly
+											radius="full"
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
+												activeContent === "sliders"
+													? "bg-l3 dark:bg-d3"
+													: "bg-transparent"
+											}`}
+											onPress={() =>
+												setActiveContent(
+													activeContent === "sliders" ? null : "sliders",
+												)
+											}
+										>
+											<Settings2 />
+										</Button>
+										<Button
+											aria-label="Image Button"
+											isIconOnly
+											radius="full"
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
+												activeContent === "images"
+													? "bg-l3 dark:bg-d3"
+													: "bg-transparent"
+											}`}
+											onPress={() =>
+												setActiveContent(
+													activeContent === "images" ? null : "images",
+												)
+											}
+										>
+											<ImageUp />
+										</Button>
 									</div>
 									<div className="flex flex-row gap-2">
+										<Dropdown
+											placement="bottom"
+											classNames={{
+												content:
+													"shadow-lg shadow-l3 dark:shadow-d3 bg-l3/50 dark:bg-d3/50 backdrop-blur-xs text-d3 dark:text-l3",
+											}}
+										>
+											<DropdownTrigger>
+												<Button
+													aria-label="Select a Mode Button"
+													radius="full"
+													className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-base font-medium text-d3 dark:text-l3 hover:bg-l3 hover:dark:bg-d3"
+												>
+													<span className="text-base font-medium mr-1">
+														{selectedModeLabel}
+													</span>
+													<ChevronDown size={16} />
+												</Button>
+											</DropdownTrigger>
+											<DropdownMenu
+												disallowEmptySelection
+												aria-label="Response Mode Options"
+												selectedKeys={[responseMode]}
+												selectionMode="single"
+												onSelectionChange={handleResponseModeSelection}
+												itemClasses={{
+													base: [],
+												}}
+											>
+												<DropdownItem
+													key="standard"
+													description={responseModes.standard.description}
+													className=""
+												>
+													{responseModes.standard.label}
+												</DropdownItem>
+												<DropdownItem
+													key="learning"
+													description={responseModes.learning.description}
+													className=""
+												>
+													{responseModes.learning.label}
+												</DropdownItem>
+											</DropdownMenu>
+										</Dropdown>
 										{isSent && (
 											<Button
 												aria-label="Close Panel Button"
 												isIconOnly
 												radius="full"
-												className="text-d3 dark:text-l3 bg-transparent"
+												className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-d3 dark:text-l3"
 												onPress={() => {
 													togglePanel();
 													setActiveContent(null);
@@ -838,352 +1056,183 @@ export default function Home() {
 											</Button>
 										)}
 										<Button
-											aria-label="Pause Button"
-											isIconOnly
-											radius="full"
-											className="ml-auto text-l3 bg-red"
-											onPress={() => {
-												if (abortController) {
-													abortController.abort();
-
-													setTimeout(() => {
-														setIsLoading(false);
-														setAbortController(null);
-													}, 250);
-												}
-											}}
-										>
-											<Pause />
-										</Button>
-									</div>
-								</motion.div>
-							) : (
-								<motion.div
-									key="chatArea"
-									initial={
-										hasMounted
-											? { opacity: 0, height: 0 }
-											: { opacity: 0, height: "auto" }
-									}
-									animate={{ opacity: 1, height: "auto" }}
-									exit={{ opacity: 0, height: 0 }}
-									transition={{ duration: 0.5, ease: "easeInOut" }}
-									className="flex flex-col justify-center"
-									onAnimationComplete={() => setHasMounted(true)}
-								>
-									<div className="flex flex-row pl-2 pb-2">
-										<Textarea
-											isRequired
-											cacheMeasurements={true}
-											minRows={1}
-											maxRows={3}
-											size="lg"
-											variant="underlined"
-											validationBehavior="aria"
-											placeholder="AI に訊きたい質問はある？"
-											className="text-d1 dark:text-l1"
-											value={inputText}
-											onChange={(e) => setInputText(e.target.value)}
-											onKeyDown={(e) => {
-												if (!isMobile && e.key === "Enter" && !e.shiftKey) {
-													e.preventDefault();
-													handleSend();
-												}
-											}}
-										/>
-										<Button
-											aria-label="Mic Button"
+											aria-label="Send Button"
 											isIconOnly
 											radius="full"
 											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
-												isListening
-													? "text-l3 bg-red"
-													: "text-d3 dark:text-l3 bg-transparent"
+												inputText.trim() !== "" || images.problem.length > 0
+													? "text-l3 bg-blue"
+													: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
 											}`}
-											onPress={toggleListening}
+											onPress={() => handleSend()}
+											disabled={
+												!(inputText.trim() !== "" || images.problem.length > 0)
+											}
 										>
-											{isListening ? <Mic /> : <MicOff />}
+											<SendHorizontal />
 										</Button>
 									</div>
-									<div className="flex flex-row justify-between pb-2">
-										<div className="flex flex-row gap-2">
-											<Button
-												aria-label="Sliders Button"
-												isIconOnly
-												radius="full"
-												className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
-													activeContent === "sliders"
-														? "bg-l3 dark:bg-d3"
-														: "bg-transparent"
-												}`}
-												onPress={() =>
-													setActiveContent(
-														activeContent === "sliders" ? null : "sliders",
-													)
-												}
+								</div>
+								<AnimatePresence>
+									{activeContent && (
+										<motion.div
+											initial={{ height: 0 }}
+											animate={{ height: "var(--panel-height)" }}
+											exit={{ height: 0 }}
+											transition={{ duration: 0.5, ease: "easeInOut" }}
+											className="overflow-hidden [--panel-height:15rem] lg:[--panel-height:12rem]"
+										>
+											<ScrollShadow
+												hideScrollBar
+												visibility="none"
+												className="w-full h-full"
 											>
-												<Settings2 />
-											</Button>
-											<Button
-												aria-label="Image Button"
-												isIconOnly
-												radius="full"
-												className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
-													activeContent === "images"
-														? "bg-l3 dark:bg-d3"
-														: "bg-transparent"
-												}`}
-												onPress={() =>
-													setActiveContent(
-														activeContent === "images" ? null : "images",
-													)
-												}
-											>
-												<ImageUp />
-											</Button>
-										</div>
-										<div className="flex flex-row gap-2">
-											<Dropdown
-												placement="bottom"
-												classNames={{
-													content:
-														"shadow-lg shadow-l3 dark:shadow-d3 bg-l3/50 dark:bg-d3/50 backdrop-blur-xs text-d3 dark:text-l3",
-												}}
-											>
-												<DropdownTrigger>
-													<Button
-														aria-label="Select a Mode Button"
-														radius="full"
-														className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-base font-medium text-d3 dark:text-l3 hover:bg-l3 hover:dark:bg-d3"
-													>
-														<span className="text-base font-medium mr-1">
-															{selectedModeLabel}
-														</span>
-														<ChevronDown size={16} />
-													</Button>
-												</DropdownTrigger>
-												<DropdownMenu
-													disallowEmptySelection
-													aria-label="Response Mode Options"
-													selectedKeys={[responseMode]}
-													selectionMode="single"
-													onSelectionChange={handleResponseModeSelection}
-													itemClasses={{
-														base: [],
-													}}
-												>
-													<DropdownItem
-														key="standard"
-														description={responseModes.standard.description}
-														className=""
-													>
-														{responseModes.standard.label}
-													</DropdownItem>
-													<DropdownItem
-														key="learning"
-														description={responseModes.learning.description}
-														className=""
-													>
-														{responseModes.learning.label}
-													</DropdownItem>
-												</DropdownMenu>
-											</Dropdown>
-											{isSent && (
-												<Button
-													aria-label="Close Panel Button"
-													isIconOnly
-													radius="full"
-													className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-d3 dark:text-l3"
-													onPress={() => {
-														togglePanel();
-														setActiveContent(null);
-													}}
-												>
-													<PanelBottomClose />
-												</Button>
-											)}
-											<Button
-												aria-label="Send Button"
-												isIconOnly
-												radius="full"
-												className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
-													inputText.trim() !== "" || images.problem.length > 0
-														? "text-l3 bg-blue"
-														: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
-												}`}
-												onPress={() => handleSend()}
-												disabled={
-													!(
-														inputText.trim() !== "" || images.problem.length > 0
-													)
-												}
-											>
-												<SendHorizontal />
-											</Button>
-										</div>
-									</div>
-									<AnimatePresence>
-										{activeContent && (
-											<motion.div
-												initial={{ height: 0 }}
-												animate={{ height: "var(--panel-height)" }}
-												exit={{ height: 0 }}
-												transition={{ duration: 0.5, ease: "easeInOut" }}
-												className="overflow-hidden [--panel-height:15rem] lg:[--panel-height:12rem]"
-											>
-												<ScrollShadow
-													hideScrollBar
-													visibility="none"
-													className="w-full h-full"
-												>
-													{activeContent === "sliders" && (
-														<div className="flex flex-col gap-8 justify-center p-2 w-full h-full">
-															<Slider
-																className="w-full"
-																value={sliders.politeness}
-																formatOptions={{ style: "percent" }}
-																label="丁寧度"
-																marks={[
-																	{ value: 0.25, label: "難しい" },
-																	{ value: 0.5, label: "普通" },
-																	{ value: 0.75, label: "易しい" },
-																]}
-																maxValue={1}
-																minValue={0}
-																showSteps
-																showTooltip
-																step={0.25}
+												{activeContent === "sliders" && (
+													<div className="flex flex-col gap-8 justify-center p-2 w-full h-full">
+														<Slider
+															className="w-full"
+															value={sliders.politeness}
+															formatOptions={{ style: "percent" }}
+															label="丁寧度"
+															marks={[
+																{ value: 0.25, label: "難しい" },
+																{ value: 0.5, label: "普通" },
+																{ value: 0.75, label: "易しい" },
+															]}
+															maxValue={1}
+															minValue={0}
+															showSteps
+															showTooltip
+															step={0.25}
+															size="lg"
+															onChange={(value: number | number[]) => {
+																const numValue = Array.isArray(value)
+																	? value[0]
+																	: value;
+																setSliders((prev) => ({
+																	...prev,
+																	politeness: numValue,
+																}));
+															}}
+														/>
+														<Divider className="bg-ld" />
+														<div className="flex flex-row flex-wrap gap-4">
+															<Switch
 																size="lg"
-																onChange={(value: number | number[]) => {
-																	const numValue = Array.isArray(value)
-																		? value[0]
-																		: value;
-																	setSliders((prev) => ({
-																		...prev,
-																		politeness: numValue,
-																	}));
-																}}
-															/>
-															<Divider className="bg-ld" />
-															<div className="flex flex-row flex-wrap gap-4">
-																<Switch
-																	size="lg"
-																	isSelected={switchState.summary}
-																	onChange={() => handleSwitchChange("summary")}
-																>
-																	要約
-																</Switch>
+																isSelected={switchState.summary}
+																onChange={() => handleSwitchChange("summary")}
+															>
+																要約
+															</Switch>
 
-																<Switch
-																	size="lg"
-																	isSelected={switchState.guidance}
-																	onChange={() =>
-																		handleSwitchChange("guidance")
-																	}
-																>
-																	指針
-																</Switch>
+															<Switch
+																size="lg"
+																isSelected={switchState.guidance}
+																onChange={() => handleSwitchChange("guidance")}
+															>
+																指針
+															</Switch>
 
-																<Switch
-																	size="lg"
-																	isSelected={switchState.explanation}
-																	onChange={() =>
-																		handleSwitchChange("explanation")
-																	}
-																>
-																	解説
-																</Switch>
+															<Switch
+																size="lg"
+																isSelected={switchState.explanation}
+																onChange={() =>
+																	handleSwitchChange("explanation")
+																}
+															>
+																解説
+															</Switch>
 
-																<Switch
-																	size="lg"
-																	isSelected={switchState.answer}
-																	onChange={() => handleSwitchChange("answer")}
-																>
-																	解答
-																</Switch>
-															</div>
+															<Switch
+																size="lg"
+																isSelected={switchState.answer}
+																onChange={() => handleSwitchChange("answer")}
+															>
+																解答
+															</Switch>
 														</div>
-													)}
+													</div>
+												)}
 
-													{activeContent === "images" && (
-														<DndContext>
-															<div className="w-full h-full">
-																<DroppableArea
-																	tabKey="problem"
-																	inputRef={problemInputRef}
-																>
-																	{images.problem.length === 0 ? (
-																		<div className="flex flex-col gap-2 justify-center items-center p-8 w-full h-full">
-																			<Button
-																				aria-label="Upload Images Button"
-																				size="lg"
+												{activeContent === "images" && (
+													<DndContext>
+														<div className="w-full h-full">
+															<DroppableArea
+																tabKey="problem"
+																inputRef={problemInputRef}
+															>
+																{images.problem.length === 0 ? (
+																	<div className="flex flex-col gap-2 justify-center items-center p-8 w-full h-full">
+																		<Button
+																			aria-label="Upload Images Button"
+																			size="lg"
+																			radius="full"
+																			className="text-center text-xl font-medium text-l1 bg-blue"
+																			onPress={() =>
+																				problemInputRef.current?.click()
+																			}
+																		>
+																			画像アップロード
+																		</Button>
+																		<span className="text-lg font-medium text-ld">
+																			ファイルをドラッグ&ドロップ
+																		</span>
+																	</div>
+																) : (
+																	<div className="flex flex-row flex-nowrap gap-2 overflow-x-auto overflow-y-hidden">
+																		{images.problem.map((item) => (
+																			<Tooltip
+																				key={item.id}
+																				content={item.fileName}
+																				placement="bottom"
+																				delay={0}
+																				closeDelay={0}
 																				radius="full"
-																				className="text-center text-xl font-medium text-l1 bg-blue"
-																				onPress={() =>
-																					problemInputRef.current?.click()
-																				}
+																				size="md"
+																				shadow="md"
+																				color="primary"
 																			>
-																				画像アップロード
-																			</Button>
-																			<span className="text-lg font-medium text-ld">
-																				ファイルをドラッグ&ドロップ
-																			</span>
-																		</div>
-																	) : (
-																		<div className="flex flex-row flex-nowrap gap-2 overflow-x-auto overflow-y-hidden">
-																			{images.problem.map((item) => (
-																				<Tooltip
+																				<div
 																					key={item.id}
-																					content={item.fileName}
-																					placement="bottom"
-																					delay={0}
-																					closeDelay={0}
-																					radius="full"
-																					size="md"
-																					shadow="md"
-																					color="primary"
+																					className="relative shrink-0"
 																				>
-																					<div
-																						key={item.id}
-																						className="relative group shrink-0"
+																					<Image
+																						src={item.src}
+																						alt={item.fileName}
+																						width={160}
+																						height={160}
+																						className="rounded-lg object-cover aspect-square"
+																					/>
+																					<Button
+																						aria-label="Remove Image Button"
+																						isIconOnly
+																						size="sm"
+																						radius="full"
+																						className="absolute top-1 right-1 z-10 text-l3 bg-red"
+																						onPress={() =>
+																							handleImageRemove(
+																								"problem",
+																								item.id,
+																							)
+																						}
 																					>
-																						<Image
-																							src={item.src}
-																							alt={item.fileName}
-																							width={160}
-																							height={160}
-																							className="rounded-lg object-cover aspect-square"
-																						/>
-																						<Button
-																							aria-label="Remove Image Button"
-																							isIconOnly
-																							size="sm"
-																							radius="full"
-																							className="absolute top-1 right-1 z-10 text-l1 bg-red opacity-0 group-hover:opacity-100"
-																							onPress={() =>
-																								handleImageRemove(
-																									"problem",
-																									item.id,
-																								)
-																							}
-																						>
-																							<X />
-																						</Button>
-																					</div>
-																				</Tooltip>
-																			))}
-																		</div>
-																	)}
-																</DroppableArea>
-															</div>
-														</DndContext>
-													)}
-												</ScrollShadow>
-											</motion.div>
-										)}
-									</AnimatePresence>
-								</motion.div>
-							))}
+																						<X />
+																					</Button>
+																				</div>
+																			</Tooltip>
+																		))}
+																	</div>
+																)}
+															</DroppableArea>
+														</div>
+													</DndContext>
+												)}
+											</ScrollShadow>
+										</motion.div>
+									)}
+								</AnimatePresence>
+							</motion.div>
+						)}
 					</AnimatePresence>
 				</div>
 			</motion.div>

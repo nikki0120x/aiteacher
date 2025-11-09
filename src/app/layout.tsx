@@ -6,11 +6,12 @@ import { ThemeProvider } from "next-themes";
 import { HeroUIProvider } from "@heroui/react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import "katex/dist/katex.min.css";
 
 import NProgress from "nprogress";
 import Server from "./server";
 import Sidebar from "@/components/layout/sidebar";
-import Header from "@/stores/header";
+import Header from "@/components/layout/header";
 
 import "./globals.css";
 
