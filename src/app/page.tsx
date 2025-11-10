@@ -5,7 +5,6 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { useChatStore } from "@/stores/useChatStore";
 import type { MessageItem } from "@/stores/useChatStore";
-
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -15,7 +14,6 @@ import { DndContext } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	ScrollShadow,
-	Spinner,
 	Button,
 	Dropdown,
 	DropdownTrigger,
@@ -120,6 +118,14 @@ export default function Home() {
 	>(undefined);
 
 	const prevHeightRef = useRef<number | undefined>(undefined);
+
+	const handleAbort = () => {
+		if (abortController) {
+			abortController.abort();
+			setAbortController(null);
+			setIsLoading(false);
+		}
+	};
 
 	// ---------- 応答方式 ---------- //
 
@@ -403,6 +409,9 @@ export default function Home() {
 
 		setIsLoading(true);
 		setIsSent(true);
+		setInputText("");
+		setActiveContent(null);
+		setImages({ problem: [] });
 
 		const userText = inputText || "(画像のみ)";
 		const tempId = crypto.randomUUID();
@@ -495,9 +504,6 @@ export default function Home() {
 		} finally {
 			setIsLoading(false);
 			setAbortController(null);
-			setImages({ problem: [] });
-			setActiveContent(null);
-			setInputText("");
 		}
 	};
 
@@ -613,11 +619,7 @@ export default function Home() {
 					)}
 				</AnimatePresence>
 
-				<ScrollShadow
-					hideScrollBar
-					visibility="none"
-					className="w-full h-full"
-				>
+				<ScrollShadow hideScrollBar visibility="none" className="w-full h-full">
 					<AnimatePresence mode="sync">
 						{turns.map((turn) => {
 							const isLatestTurn = turn.user.id === lastTurnId;
@@ -1000,7 +1002,7 @@ export default function Home() {
 											placement="bottom"
 											classNames={{
 												content:
-													"shadow-lg shadow-l3 dark:shadow-d3 bg-l3/50 dark:bg-d3/50 backdrop-blur-xs text-d3 dark:text-l3",
+													"shadow-lg shadow-l3 dark:shadow-d3 bg-l3 dark:bg-d3 text-d3 dark:text-l3",
 											}}
 										>
 											<DropdownTrigger>
@@ -1056,20 +1058,23 @@ export default function Home() {
 											</Button>
 										)}
 										<Button
-											aria-label="Send Button"
+											aria-label={isLoading ? "Abort Button" : "Send Button"}
 											isIconOnly
 											radius="full"
 											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
-												inputText.trim() !== "" || images.problem.length > 0
-													? "text-l3 bg-blue"
-													: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
+												isLoading
+													? "text-l3 bg-red"
+													: inputText.trim() !== "" || images.problem.length > 0
+														? "text-l3 bg-blue"
+														: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
 											}`}
-											onPress={() => handleSend()}
+											onPress={() => (isLoading ? handleAbort() : handleSend())}
 											disabled={
+												!isLoading &&
 												!(inputText.trim() !== "" || images.problem.length > 0)
 											}
 										>
-											<SendHorizontal />
+											{isLoading ? <Pause /> : <SendHorizontal />}{" "}
 										</Button>
 									</div>
 								</div>
