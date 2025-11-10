@@ -167,6 +167,69 @@ export default function Home() {
 
 	const problemInputRef = useRef<HTMLInputElement>(null);
 
+	const compressImage = (
+		base64Src: string, // Base64 Data URL (例: data:image/png;base64,...)
+		maxWidth: number = 1024,
+		quality: number = 0.8,
+	): Promise<{ base64: string; mimeType: string }> => {
+		// 戻り値の型を修正
+		return new Promise((resolve) => {
+			// 圧縮前のBase64データ本体を取得
+			const originalBase64Data = base64Src.split(",")[1] || "";
+			// Base64からバイナリサイズを概算: (長さ * 0.75) / 1024 = KB
+			const originalSizeKB = (originalBase64Data.length * 0.75) / 1024;
+
+			const img = new window.Image();
+			img.onload = () => {
+				const canvas = document.createElement("canvas");
+				const ctx = canvas.getContext("2d");
+
+				let width = img.width;
+				let height = img.height;
+
+				// 幅を maxWidth に制限し、アスペクト比を維持
+				if (width > maxWidth) {
+					height *= maxWidth / width;
+					width = maxWidth;
+				}
+
+				canvas.width = width;
+				canvas.height = height;
+
+				if (ctx) {
+					// 背景を白で塗りつぶす
+					ctx.fillStyle = "#ffffff";
+					ctx.fillRect(0, 0, width, height);
+
+					// 画像を描画
+					ctx.drawImage(img, 0, 0, width, height);
+				}
+
+				// 圧縮されたBase64形式のデータを取得 (WebPで圧縮)
+				const mimeType = "image/webp";
+				// 💡 変更: toDataURL() の第一引数を 'image/webp' に変更
+				const compressedDataUrl = canvas.toDataURL(mimeType, quality);
+
+				// データの本体 (Base64) 部分のみを抽出
+				const compressedBase64Only = compressedDataUrl.split(",")[1] || "";
+				// 圧縮後のバイナリサイズを概算
+				const compressedSizeKB = (compressedBase64Only.length * 0.75) / 1024;
+
+				// 💡 ログ出力の要求に対応
+				console.log(
+					`[Compression Log] File Size: Original: ${originalSizeKB.toFixed(
+						2,
+					)} KB -> Compressed (${mimeType}, Quality ${
+						quality * 100
+					}%): ${compressedSizeKB.toFixed(2)} KB`,
+				);
+
+				resolve({ base64: compressedBase64Only, mimeType: mimeType });
+			};
+			img.src = base64Src;
+		});
+	};
+
 	const handleFiles = (tabKey: string, files: FileList | null) => {
 		if (!files) return;
 		const fileArray = Array.from(files).filter((file) =>
@@ -175,12 +238,17 @@ export default function Home() {
 
 		fileArray.forEach((file) => {
 			const reader = new FileReader();
-			reader.onload = () => {
-				const base64 = reader.result?.toString();
-				if (base64) {
+			reader.onload = async () => {
+				const base64Src = reader.result?.toString();
+				if (base64Src) {
+					// --- 💡 変更: 圧縮ロジックの呼び出しと返り値の取得 ---
+					const { base64: compressedBase64, mimeType } =
+						await compressImage(base64Src);
+
 					const newImageItem: ImageItem = {
 						id: crypto.randomUUID(),
-						src: base64,
+						// 💡 変更: WebPのMIME TypeでData URLを再構成
+						src: `data:${mimeType};base64,${compressedBase64}`,
 						fileName: file.name,
 					};
 					setImages((prev) => ({
@@ -426,7 +494,7 @@ export default function Home() {
 		images.problem.forEach((img) => {
 			const base64Data = img.src.split(",")[1] || img.src;
 			userParts.push({
-				inlineData: { mimeType: "image/png", data: base64Data },
+				inlineData: { mimeType: "image/webp", data: base64Data },
 			});
 		});
 
