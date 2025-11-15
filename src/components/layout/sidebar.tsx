@@ -1,122 +1,122 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, easeInOut } from "motion/react";
-import { useChatStore } from "@/stores/useChatStore";
+import { useChatStore } from "@/stores/useChat";
 import { Button } from "@heroui/react";
 import { Menu, SquarePen } from "lucide-react";
 
 export default function Sidebar() {
-  // ---------- 共通状態管理 ---------- //
+	// ---------- 共通状態管理 ---------- //
 
-  const {
-    abortController,
-    setIsSent,
-    setIsLoading,
-    setIsPanelOpen,
-    setActiveContent,
-    clearMessage,
-    setAbortController,
-  } = useChatStore();
+	const {
+		abortController,
+		setIsSent,
+		setIsLoading,
+		setIsPanelOpen,
+		setActiveContent,
+		clearMessage,
+		setAbortController,
+	} = useChatStore();
 
-  // ---------- メニュー ---------- //
+	// ---------- メニュー ---------- //
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+	const [isOpen, setIsOpen] = useState(false);
+	const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+	useEffect(() => {
+		const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+		checkMobile();
+		window.addEventListener("resize", checkMobile);
+		return () => window.removeEventListener("resize", checkMobile);
+	}, []);
 
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsOpen(false);
-      } else if (e.altKey && e.key.toLowerCase() === "m") {
-        setIsOpen((prev) => !prev);
-      }
-    };
+	useEffect(() => {
+		const handleKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				setIsOpen(false);
+			} else if (e.altKey && e.key.toLowerCase() === "m") {
+				setIsOpen((prev) => !prev);
+			}
+		};
 
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, []);
+		window.addEventListener("keydown", handleKey);
+		return () => window.removeEventListener("keydown", handleKey);
+	}, []);
 
-  // ---------- 新規チャット ---------- //
+	// ---------- 新規チャット ---------- //
 
-  const handleNewChat = () => {
-    setIsSent(false);
-    setIsLoading(false);
-    setIsPanelOpen(true);
-    setActiveContent(null);
-    clearMessage();
-    if (abortController) {
-      abortController.abort();
-      setAbortController(null);
-    }
-  };
+	const handleNewChat = () => {
+		setIsSent(false);
+		setIsLoading(false);
+		setIsPanelOpen(true);
+		setActiveContent(null);
+		clearMessage();
+		if (abortController) {
+			abortController.abort();
+			setAbortController(null);
+		}
+	};
 
-  // ---------- フロントエンド ---------- //
+	// ---------- フロントエンド ---------- //
 
-  return (
-    <>
-      <Button
-        aria-label="Menu Button"
-        isIconOnly
-        size="lg"
-        radius="full"
-        className="fixed top-0 left-0 z-100 m-2 text-d3 dark:text-l3 bg-transparent"
-        onPress={() => setIsOpen(!isOpen)}
-      >
-        <Menu />
-      </Button>
+	return (
+		<>
+			<Button
+				aria-label="Menu Button"
+				isIconOnly
+				size="lg"
+				radius="full"
+				className="fixed top-0 left-0 z-100 m-2 text-d3 dark:text-l3 bg-transparent"
+				onPress={() => setIsOpen(!isOpen)}
+			>
+				<Menu />
+			</Button>
 
-      <Button
-        aria-label="New Chat Button"
-        isIconOnly
-        size="lg"
-        radius="full"
-        className="absolute top-0 right-0 z-100 m-2 text-d3 dark:text-l3 bg-transparent"
-        onPress={handleNewChat}
-      >
-        <SquarePen />
-      </Button>
+			<Button
+				aria-label="New Chat Button"
+				isIconOnly
+				size="lg"
+				radius="full"
+				className="absolute top-0 right-0 z-100 m-2 text-d3 dark:text-l3 bg-transparent"
+				onPress={handleNewChat}
+			>
+				<SquarePen />
+			</Button>
 
-      <AnimatePresence>
-        {(isOpen || !isMobile) && (
-          <>
-            {isMobile && isOpen && (
-              <motion.div
-                key="overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, ease: easeInOut }}
-                onClick={() => setIsOpen(false)}
-                className="fixed top-0 left-0 z-80 w-full h-full backdrop-blur-[2px] bg-l1/50 dark:bg-d1/50"
-              />
-            )}
-            <motion.aside
-              key="sidebar"
-              initial={{ width: isMobile ? 0 : "4rem" }}
-              animate={{
-                width: isOpen
-                  ? isMobile
-                    ? "calc(100dvw - 8rem)"
-                    : "16rem"
-                  : "4rem",
-              }}
-              exit={{ width: 0 }}
-              transition={{ duration: 0.5, ease: easeInOut }}
-              className={`
+			<AnimatePresence>
+				{(isOpen || !isMobile) && (
+					<>
+						{isMobile && isOpen && (
+							<motion.div
+								key="overlay"
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
+								transition={{ duration: 0.5, ease: easeInOut }}
+								onClick={() => setIsOpen(false)}
+								className="fixed top-0 left-0 z-80 w-full h-full backdrop-blur-[2px] bg-l1/50 dark:bg-d1/50"
+							/>
+						)}
+						<motion.aside
+							key="sidebar"
+							initial={{ width: isMobile ? 0 : "4rem" }}
+							animate={{
+								width: isOpen
+									? isMobile
+										? "calc(100dvw - 8rem)"
+										: "16rem"
+									: "4rem",
+							}}
+							exit={{ width: 0 }}
+							transition={{ duration: 0.5, ease: easeInOut }}
+							className={`
               h-full overflow-hidden bg-l3 dark:bg-d3
               ${isMobile ? "fixed top-0 left-0 z-90" : "relative"}
             `}
-            ></motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-    </>
-  );
+						></motion.aside>
+					</>
+				)}
+			</AnimatePresence>
+		</>
+	);
 }

@@ -1,17 +1,16 @@
-"use client";
+// src\app\page.tsx
 
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+"use client";
 import Image from "next/image";
-import { motion, AnimatePresence } from "motion/react";
-import { useChatStore } from "@/stores/useChatStore";
-import type { MessageItem } from "@/stores/useChatStore";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
+import rehypeRaw from "rehype-raw";
+import packageJson from "../../package.json";
+import { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { DndContext } from "@dnd-kit/core";
-import { invoke } from "@tauri-apps/api/core";
 import {
 	ScrollShadow,
 	Button,
@@ -29,7 +28,6 @@ import {
 	AccordionItem,
 	Tooltip,
 } from "@heroui/react";
-import type { SharedSelection } from "@heroui/react";
 import {
 	Mic,
 	MicOff,
@@ -46,7 +44,12 @@ import {
 	BookCheck,
 	ChevronDown,
 } from "lucide-react";
-import packageJson from "../../package.json";
+import { useChatStore } from "@/stores/useChat";
+import { useChatInput } from "@/hooks/useTextInput";
+import { useImageUpload } from "@/hooks/useImageUpload";
+import { useChatSettings, responseModes } from "@/hooks/useChatSettings";
+import { useChatDisplay } from "@/hooks/useChatDisplay";
+import { useChatLogic } from "@/hooks/useChatLogic";
 
 declare global {
 	interface Window {
@@ -54,220 +57,95 @@ declare global {
 	}
 }
 
-type Part = {
-	text?: string;
-	inlineData?: { mimeType: string; data: string };
-};
-
-type Content = {
-	role: "user" | "model";
-	parts: Part[];
-};
-
-type ImageItem = {
-	id: string;
-	src: string;
-	fileName: string;
-};
-
-type ResponseMode = "learning" | "standard";
-
-type ChatTurn = {
-	user: MessageItem;
-	model: MessageItem | undefined;
-};
-
 export default function Home() {
-	const [switchState, setSwitchState] = useState({
-		summary: false,
-		guidance: false,
-		explanation: false,
-		answer: true,
-	});
-
-	const [sliders, setSliders] = useState({
-		politeness: 0.5,
-	});
-
-	// ---------- 共通状態管理 ---------- //
-
 	const {
 		isSent,
 		isLoading,
 		isPanelOpen,
 		activeContent,
 		message,
-		history,
-		abortController,
-		setIsSent,
-		setIsLoading,
 		setIsPanelOpen,
 		togglePanel,
 		setActiveContent,
-		addMessage,
-		addContentToHistory,
-		setAbortController,
-		updateMessage,
 	} = useChatStore();
 
-	const prevDisplayContentLengthRef = useRef<{ [key: string]: number }>({});
-	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const {
+		images,
+		setImages,
+		problemInputRef,
+		handleFiles,
+		handleDrop,
+		handleImageRemove,
+	} = useImageUpload();
 
-	const [chatHistoryHeight, setChatHistoryHeight] = useState<
-		number | undefined
-	>(undefined);
+	const {
+		responseMode,
+		selectedModeLabel,
+		handleResponseModeSelection,
+		switchState,
+		handleSwitchChange,
+		sliders,
+		handleSliderChange,
+	} = useChatSettings();
 
-	const prevHeightRef = useRef<number | undefined>(undefined);
+	const {
+		turns,
+		lastTurnId,
+		chatHistoryRef,
+		messagesEndRef,
+		chatHistoryHeight,
+		prevDisplayContentLengthRef,
+		getLoadingPhrase,
+	} = useChatDisplay();
+
+	// ================================================================
+	//     1. 送信と中断（handleSend, handleAbort）
+	// ================================================================
+
+	const { handleSend: chatLogicHandleSend, handleAbort: chatLogicHandleAbort } =
+		useChatLogic();
+
+	const handleSend = async () => {
+		if (inputText.trim() !== "" || images.problem.length > 0) {
+			await chatLogicHandleSend(
+				inputText,
+				images.problem,
+				sliders,
+				switchState,
+				setInputText,
+				setImages,
+			);
+		}
+	};
 
 	const handleAbort = () => {
-		if (abortController) {
-			abortController.abort();
-			setAbortController(null);
-			setIsLoading(false);
-		}
+		chatLogicHandleAbort();
 	};
 
-	// ---------- 応答方式 ---------- //
+	// ================================================================
+	//     2. 入力欄
+	// ================================================================
 
-	const responseModes = {
-		standard: {
-			label: "標準",
-			description: "会話に適したモード",
+	const wrappedHandleSend = useCallback(
+		async (text: string) => {
+			await chatLogicHandleSend(
+				text,
+				images.problem,
+				sliders,
+				switchState,
+				() => {},
+				setImages,
+			);
 		},
-		learning: {
-			label: "学習",
-			description: "問題解決に特化したモード",
-		},
-	};
+		[chatLogicHandleSend, images.problem, sliders, switchState],
+	);
 
-	const [responseMode, setResponseMode] = useState<ResponseMode>("learning");
+	const { inputText, setInputText, isListening, toggleListening, isMobile } =
+		useChatInput(wrappedHandleSend);
 
-	const selectedModeLabel = responseModes[responseMode]?.label ?? "標準";
-
-	const handleResponseModeSelection = (keys: SharedSelection) => {
-		const selectedKey = Array.from(keys)[0] as ResponseMode;
-
-		if (selectedKey === "standard" || selectedKey === "learning") {
-			setResponseMode(selectedKey);
-		}
-	};
-
-	// ---------- 画像タブ ---------- //
-
-	const [images, setImages] = useState<{ [key: string]: ImageItem[] }>({
-		problem: [],
-	});
-
-	const handleImageRemove = (tabKey: string, idToRemove: string) => {
-		setImages((prev) => ({
-			...prev,
-			[tabKey]: prev[tabKey].filter((item) => item.id !== idToRemove),
-		}));
-	};
-
-	const problemInputRef = useRef<HTMLInputElement>(null);
-
-	const compressImage = (
-		base64Src: string, // Base64 Data URL (例: data:image/png;base64,...)
-		maxWidth: number = 1024,
-		quality: number = 0.8,
-	): Promise<{ base64: string; mimeType: string }> => {
-		// 戻り値の型を修正
-		return new Promise((resolve) => {
-			// 圧縮前のBase64データ本体を取得
-			const originalBase64Data = base64Src.split(",")[1] || "";
-			// Base64からバイナリサイズを概算: (長さ * 0.75) / 1024 = KB
-			const originalSizeKB = (originalBase64Data.length * 0.75) / 1024;
-
-			const img = new window.Image();
-			img.onload = () => {
-				const canvas = document.createElement("canvas");
-				const ctx = canvas.getContext("2d");
-
-				let width = img.width;
-				let height = img.height;
-
-				// 幅を maxWidth に制限し、アスペクト比を維持
-				if (width > maxWidth) {
-					height *= maxWidth / width;
-					width = maxWidth;
-				}
-
-				canvas.width = width;
-				canvas.height = height;
-
-				if (ctx) {
-					// 背景を白で塗りつぶす
-					ctx.fillStyle = "#ffffff";
-					ctx.fillRect(0, 0, width, height);
-
-					// 画像を描画
-					ctx.drawImage(img, 0, 0, width, height);
-				}
-
-				// 圧縮されたBase64形式のデータを取得 (WebPで圧縮)
-				const mimeType = "image/webp";
-				// 💡 変更: toDataURL() の第一引数を 'image/webp' に変更
-				const compressedDataUrl = canvas.toDataURL(mimeType, quality);
-
-				// データの本体 (Base64) 部分のみを抽出
-				const compressedBase64Only = compressedDataUrl.split(",")[1] || "";
-				// 圧縮後のバイナリサイズを概算
-				const compressedSizeKB = (compressedBase64Only.length * 0.75) / 1024;
-
-				// 💡 ログ出力の要求に対応
-				console.log(
-					`[Compression Log] File Size: Original: ${originalSizeKB.toFixed(
-						2,
-					)} KB -> Compressed (${mimeType}, Quality ${
-						quality * 100
-					}%): ${compressedSizeKB.toFixed(2)} KB`,
-				);
-
-				resolve({ base64: compressedBase64Only, mimeType: mimeType });
-			};
-			img.src = base64Src;
-		});
-	};
-
-	const handleFiles = (tabKey: string, files: FileList | null) => {
-		if (!files) return;
-		const fileArray = Array.from(files).filter((file) =>
-			file.type.startsWith("image/"),
-		);
-
-		fileArray.forEach((file) => {
-			const reader = new FileReader();
-			reader.onload = async () => {
-				const base64Src = reader.result?.toString();
-				if (base64Src) {
-					// --- 💡 変更: 圧縮ロジックの呼び出しと返り値の取得 ---
-					const { base64: compressedBase64, mimeType } =
-						await compressImage(base64Src);
-
-					const newImageItem: ImageItem = {
-						id: crypto.randomUUID(),
-						// 💡 変更: WebPのMIME TypeでData URLを再構成
-						src: `data:${mimeType};base64,${compressedBase64}`,
-						fileName: file.name,
-					};
-					setImages((prev) => ({
-						...prev,
-						[tabKey]: [...prev[tabKey], newImageItem],
-					}));
-				}
-			};
-			reader.readAsDataURL(file);
-		});
-	};
-
-	const handleDrop = (
-		tabKey: string,
-		event: React.DragEvent<HTMLDivElement>,
-	) => {
-		event.preventDefault();
-		handleFiles(tabKey, event.dataTransfer.files);
-	};
+	// ================================================================
+	//     3. 画像欄
+	// ================================================================
 
 	const DroppableArea = ({
 		tabKey,
@@ -348,302 +226,7 @@ export default function Home() {
 		);
 	};
 
-	// ---------- 音声入力 ---------- //
-
-	const [isListening, setIsListening] = useState(false);
-	const [inputText, setInputText] = useState("");
-	const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-	useEffect(() => {
-		const SpeechRecognition =
-			window.SpeechRecognition || window.webkitSpeechRecognition;
-
-		if (!SpeechRecognition) {
-			console.warn("このブラウザは音声認識をサポートしていません！");
-			return;
-		}
-
-		const recognition = new SpeechRecognition();
-		recognition.lang = "ja-JP";
-		recognition.interimResults = true;
-		recognition.continuous = true;
-
-		const handleResult = (event: SpeechRecognitionEvent) => {
-			const transcript = Array.from(event.results)
-				.map((result) => result[0].transcript)
-				.join("");
-			setInputText(transcript);
-		};
-
-		const handleError = (event: SpeechRecognitionErrorEvent) => {
-			console.error("音声認識エラー:", event);
-			setIsListening(false);
-		};
-
-		const handleEnd = () => {
-			setIsListening(false);
-		};
-
-		recognition.addEventListener("result", handleResult);
-		recognition.addEventListener("error", handleError);
-		recognition.addEventListener("end", handleEnd);
-
-		recognitionRef.current = recognition;
-
-		return () => {
-			recognition.removeEventListener("result", handleResult);
-			recognition.removeEventListener("error", handleError);
-			recognition.removeEventListener("end", handleEnd);
-			recognition.stop();
-			recognitionRef.current = null;
-		};
-	}, []);
-
-	const toggleListening = () => {
-		const recognition = recognitionRef.current;
-		if (!recognition) return;
-
-		if (isListening) {
-			recognition.stop();
-			setIsListening(false);
-		} else {
-			recognition.start();
-			setIsListening(true);
-		}
-	};
-
-	const [isMobile, setIsMobile] = useState(false);
-
-	useEffect(() => {
-		if (typeof navigator !== "undefined") {
-			setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
-		}
-	}, []);
 	const [hasMounted, setHasMounted] = useState(false);
-
-	// ---------- 送信と応答 ---------- //
-
-	const LOADING_PHRASES = [
-		"回答を準備しています...",
-		"思考中...",
-		"思案中...",
-		"構成を練っています...",
-		"情報を整理中...",
-		"回答を生成中です...",
-	];
-	const NUM_PHRASES = LOADING_PHRASES.length;
-
-	const [currentLoadingIndex, setCurrentLoadingIndex] = useState(0);
-
-	useEffect(() => {
-		const isCurrentlyLoadingWithPlaceholder =
-			isLoading && message.slice(-1)[0]?.text === "#LOADING_PHRASE#";
-
-		if (isCurrentlyLoadingWithPlaceholder) {
-			const interval = setInterval(() => {
-				setCurrentLoadingIndex((prevIndex) => (prevIndex + 1) % NUM_PHRASES);
-			}, 2500);
-
-			return () => clearInterval(interval);
-		}
-	}, [isLoading, message, NUM_PHRASES]);
-
-	useEffect(() => {
-		const currentMessageIds = new Set(message.map((m) => m.id));
-		const idsToCleanup = Object.keys(prevDisplayContentLengthRef.current);
-
-		idsToCleanup.forEach((id) => {
-			const isCurrentLoadingMessage =
-				isLoading && message.slice(-1)[0]?.id === id;
-
-			if (
-				!currentMessageIds.has(id) ||
-				(!isCurrentLoadingMessage &&
-					prevDisplayContentLengthRef.current[id] !== undefined)
-			) {
-				delete prevDisplayContentLengthRef.current[id];
-			}
-		});
-	}, [isLoading, message]);
-
-	useLayoutEffect(() => {
-		if (messagesEndRef.current) {
-			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-		}
-	}, [message]);
-
-	const handleSend = async () => {
-		if (inputText.trim() === "" && images.problem.length === 0) return;
-
-		setIsLoading(true);
-		setIsSent(true);
-		setInputText("");
-		setActiveContent(null);
-		setImages({ problem: [] });
-
-		const userText = inputText || "(画像のみ)";
-		const tempId = crypto.randomUUID();
-		const controller = new AbortController();
-		setAbortController(controller);
-
-		addMessage(userText, "user");
-		addMessage("#LOADING_PHRASE#", "ai", switchState, tempId);
-
-		const userParts: Part[] = [{ text: userText }];
-
-		images.problem.forEach((img) => {
-			const base64Data = img.src.split(",")[1] || img.src;
-			userParts.push({
-				inlineData: { mimeType: "image/webp", data: base64Data },
-			});
-		});
-
-		const userContent: Content = { role: "user", parts: userParts };
-
-		try {
-			let data: string;
-
-			if (typeof window.__TAURI__ !== "undefined") {
-				const imageSources = images.problem.map((item) => item.src);
-				data = await invoke("process_gemini_request", {
-					prompt: inputText,
-					images: { problem: imageSources },
-					options: switchState,
-					sliders,
-				});
-
-				if (!controller.signal.aborted && data) {
-					updateMessage(tempId, data);
-					addContentToHistory(userContent);
-					addContentToHistory({ role: "model", parts: [{ text: data }] });
-				}
-			} else {
-				const payloadImages = {
-					problem: images.problem.map((item) => {
-						const base64Data = item.src.split(",")[1] || item.src;
-						return base64Data;
-					}),
-				};
-
-				const res = await fetch("/api/gemini", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						prompt: userText,
-						options: switchState,
-						sliders,
-						images: payloadImages,
-						history,
-					}),
-					signal: controller.signal,
-				});
-
-				if (!res.body) {
-					throw new Error("応答ストリームがありません。");
-				}
-
-				const reader = res.body.getReader();
-				const decoder = new TextDecoder();
-				let accumulatedText = "";
-
-				while (true) {
-					const { done, value } = await reader.read();
-					if (done) break;
-
-					const chunk = decoder.decode(value, { stream: true });
-					accumulatedText += chunk;
-					updateMessage(tempId, accumulatedText);
-				}
-
-				if (!controller.signal.aborted && accumulatedText) {
-					addContentToHistory(userContent);
-					addContentToHistory({
-						role: "model",
-						parts: [{ text: accumulatedText }],
-					});
-				}
-			}
-		} catch (error) {
-			if (error instanceof DOMException && error.name === "AbortError") {
-				console.log("Request aborted successfully.");
-			} else {
-				console.error("Gemini request error:", error);
-			}
-		} finally {
-			setIsLoading(false);
-			setAbortController(null);
-		}
-	};
-
-	// ---------- スイッチの状態管理 ---------- //
-
-	const handleSwitchChange = (key: keyof typeof switchState) => {
-		const currentlyTrueCount =
-			Object.values(switchState).filter(Boolean).length;
-
-		setSwitchState((prev) => {
-			if (prev[key] && currentlyTrueCount === 1) return prev;
-			return { ...prev, [key]: !prev[key] };
-		});
-	};
-
-	const turns: ChatTurn[] = [];
-	for (let i = 0; i < message.length; i++) {
-		const msg = message[i];
-		if (msg.role === "user") {
-			turns.push({
-				user: msg,
-				model: message[i + 1]?.role === "ai" ? message[i + 1] : undefined,
-			});
-		}
-	}
-
-	const lastTurnId = turns.slice(-1)[0]?.user.id;
-
-	const chatHistoryRef = useRef<HTMLDivElement>(null);
-
-	useLayoutEffect(() => {
-		const chatElement = chatHistoryRef.current;
-
-		if (!chatElement) return;
-
-		let timeoutId: NodeJS.Timeout | null = null;
-		const DEBOUNCE_DELAY = 50;
-
-		const measureHeight = () => {
-			if (timeoutId) {
-				clearTimeout(timeoutId);
-			}
-
-			timeoutId = setTimeout(() => {
-				const height = chatElement.clientHeight;
-
-				if (height !== prevHeightRef.current) {
-					setChatHistoryHeight(height);
-
-					console.log(
-						`Measured chatHistoryHeight (Debounced ${DEBOUNCE_DELAY}ms):`,
-						height,
-					);
-				}
-
-				prevHeightRef.current = height;
-			}, DEBOUNCE_DELAY);
-		};
-
-		const observer = new ResizeObserver(() => {
-			measureHeight();
-		});
-
-		observer.observe(chatElement);
-
-		return () => {
-			observer.disconnect();
-			if (timeoutId) {
-				clearTimeout(timeoutId);
-			}
-		};
-	}, []);
 
 	// ---------- フロントエンド ---------- //
 
@@ -783,7 +366,7 @@ export default function Home() {
 											>
 												<ReactMarkdown
 													remarkPlugins={[remarkGfm, remarkMath]}
-													rehypePlugins={[rehypeKatex]}
+													rehypePlugins={[rehypeRaw, rehypeKatex]}
 												>
 													{turn.user.text}
 												</ReactMarkdown>
@@ -824,9 +407,7 @@ export default function Home() {
 													if (isCurrentLoadingTurn && hasImages) {
 														displayContent = "画像分析中...";
 													} else if (isCurrentLoadingTurn) {
-														const phraseIndex =
-															(i + currentLoadingIndex) % NUM_PHRASES;
-														displayContent = LOADING_PHRASES[phraseIndex];
+														displayContent = getLoadingPhrase(i);
 													}
 												}
 
@@ -860,7 +441,7 @@ export default function Home() {
 																	return (
 																		<ReactMarkdown
 																			remarkPlugins={[remarkGfm, remarkMath]}
-																			rehypePlugins={[rehypeKatex]}
+																			rehypePlugins={[rehypeRaw, rehypeKatex]}
 																		>
 																			{displayContent}
 																		</ReactMarkdown>
@@ -1179,13 +760,7 @@ export default function Home() {
 															step={0.25}
 															size="lg"
 															onChange={(value: number | number[]) => {
-																const numValue = Array.isArray(value)
-																	? value[0]
-																	: value;
-																setSliders((prev) => ({
-																	...prev,
-																	politeness: numValue,
-																}));
+																handleSliderChange("politeness", value);
 															}}
 														/>
 														<Divider className="bg-ld" />

@@ -1,33 +1,18 @@
+/* src\stores\useChat.ts */
 import { create } from "zustand";
+import type { Content, MessageItem, SwitchState } from "@/types/chat";
+import { normalizeSwitchOptions } from "@/utils/chat";
 
-type Part = {
-	text?: string;
-	inlineData?: { mimeType: string; data: string };
-};
-
-type Content = {
-	role: "user" | "model";
-	parts: Part[];
-};
-
-export type MessageItem = {
-	id: string;
-	text: string;
-	role: "user" | "ai";
-	sectionsState?: {
-		summary: boolean;
-		guidance: boolean;
-		explanation: boolean;
-		answer: boolean;
-	};
-};
+// ================================================================
+//     1. チャットの状態と更新
+// ================================================================
 
 interface ChatState {
 	isSent: boolean;
 	isLoading: boolean;
 	isPanelOpen: boolean;
-	activeContent: "sliders" | "images" | null;
 	message: MessageItem[];
+	activeContent: "sliders" | "images" | null;
 	history: Content[];
 	abortController: AbortController | null;
 
@@ -37,24 +22,20 @@ interface ChatState {
 	togglePanel: () => void;
 	setActiveContent: (content: "sliders" | "images" | null) => void;
 	addContentToHistory: (content: Content) => void;
-
 	addMessage: (
 		text: string,
 		role?: "user" | "ai",
-		sectionsState?: {
-			summary: boolean;
-			guidance: boolean;
-			explanation: boolean;
-			answer: boolean;
-		},
+		sectionsState?: SwitchState,
 		id?: string,
 	) => void;
-
 	updateMessage: (id: string, newText: string) => void;
-
 	clearMessage: () => void;
 	setAbortController: (controller: AbortController | null) => void;
 }
+
+// ================================================================
+//     2. ストアの実装
+// ================================================================
 
 export const useChatStore = create<ChatState>((set) => ({
 	isSent: false,
@@ -70,12 +51,16 @@ export const useChatStore = create<ChatState>((set) => ({
 	setIsPanelOpen: (open) => set({ isPanelOpen: open }),
 	togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
 	setActiveContent: (content) => set({ activeContent: content }),
-
 	addMessage: (text, role = "user", sectionsState, id = crypto.randomUUID()) =>
 		set((state) => {
-			const newMessage: MessageItem = { id, text, role };
+			const newMessage: MessageItem = {
+				id,
+				text,
+				role,
+				timestamp: Date.now(),
+			};
 			if (role === "ai" && sectionsState) {
-				newMessage.sectionsState = sectionsState;
+				newMessage.sectionsState = normalizeSwitchOptions(sectionsState);
 			}
 			return {
 				message: [...state.message, newMessage],
@@ -85,14 +70,12 @@ export const useChatStore = create<ChatState>((set) => ({
 		set((state) => ({
 			history: [...state.history, content],
 		})),
-
 	updateMessage: (id, newText) =>
 		set((state) => ({
 			message: state.message.map((msg) =>
 				msg.id === id ? { ...msg, text: newText } : msg,
 			),
 		})),
-
 	clearMessage: () => set({ message: [], history: [] }),
 	setAbortController: (controller) => set({ abortController: controller }),
 }));

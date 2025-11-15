@@ -32,6 +32,6 @@
 		".next/dev/types/**/*.ts",
 		"dist\\dev/types/**/*.ts",
 		"dist\\dev/types/**/*.ts"
-	],
+, "src/hooks/useInputts"	],
 	"exclude": ["node_modules", "out", ".next", "src-tauri/target"]
 }
