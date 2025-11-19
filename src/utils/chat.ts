@@ -6,11 +6,11 @@ import type { SwitchState, NormalizedSwitchState } from "@/types/chat";
 // ================================================================
 
 export function getPolitenessInstruction(value: number = 0.5): string {
-	if (value <= 0) return "最大限簡潔で明瞭な返答をしてね！";
-	else if (value <= 0.25) return "簡潔で明瞭な返答をしてね！";
-	else if (value <= 0.5) return "必要十分な返答をしてね！";
-	else if (value <= 0.75) return "丁寧でわかりやすい返答をしてね!";
-	else if (value <= 1) return "最大限丁寧でわかりやすい返答をしてね！";
+	if (value <= 0) return "最大限簡潔で明瞭な返答";
+	else if (value <= 0.25) return "簡潔で明瞭な返答";
+	else if (value <= 0.5) return "必要十分な返答";
+	else if (value <= 0.75) return "丁寧でわかりやすい返答";
+	else if (value <= 1) return "最大限丁寧でわかりやすい返答";
 	else return "";
 }
 
@@ -41,33 +41,35 @@ export function buildPrompt(
 	userPrompt: string,
 ): string {
 	const sections: string[] = [
-		"以下の4つのセクションにおいて、それぞれ独立したものとして干渉や連携しないで返答してね！でも、セクション間の区切り線は不要だ。",
-		politenessText,
-		"以下の形式で日本語で一般的な知識で教科書に準拠して返答してね:",
-	];
+		"【全セクションに共通する厳格なルール】",
+		"- 数式は KaTeX の「改行ディスプレイ数式（$$ ... $$）」を絶対に使うこと",
+		"- 文中に式を埋め込まない。式は必ず単独の行に絶対に置くこと",
+		"- レイアウトは整理された見やすい構成にする。必要なら箇条書きや記号を使用可",
+		"- 日本語で、一般的知識 + 教科書レベルの内容で説明",
 
-	sections.push(
-		"整理されたわかりやすいレイアウト（記号や絵文字など）で構築し、数式は **可能な限り、改行したディスプレイ数式（$$ ... $$）** で書くこと",
-	);
+		"以下の4つのセクションは相互に干渉せず、独立して返答。区切り線は不要。",
+		politenessText,
+		"以下の形式で返答",
+	];
 
 	if (switches.summary)
 		sections.push(
-			`### 要約\n提示された質問の要約のみをやって！\n質問の本質的なものを抽出する感じ。`,
+			`### 要約\n問題の要約(問題の要点)のみ返答`,
 		);
 
 	if (switches.guidance)
 		sections.push(
-			`### 指針\n提示された質問の指針のみを立てて！\n答えを導くための重要なヒントをフローチャート的に。`,
+			`### 指針\n問題の指針(問題を解くためのヒント)のみ返答`,
 		);
 
 	if (switches.explanation)
 		sections.push(
-			`### 解説\n提示された質問の解説のみをして答えを導き出して！\n数式・公式・計算、英文など解説の対象のものは改行して。`,
+			`### 解説\n問題の解説(問題の答えまで導く説明)のみ返答`,
 		);
 
 	if (switches.answer)
 		sections.push(
-			`### 解答\n提示された質問の解答のみを書いて！\n記述式のテストに書き込むのを意識して、答えを求めるまでの必須な軌跡も含めて簡潔に。`,
+			`### 解答\n問題の解答(問題の答え)のみ返答`,
 		);
 
 	sections.push(`今回の質問: ${userPrompt}`);

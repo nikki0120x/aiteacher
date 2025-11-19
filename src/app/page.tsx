@@ -5,8 +5,8 @@ import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
+import rehypeKatex from "rehype-katex";
 import packageJson from "../../package.json";
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -133,7 +133,7 @@ export default function Home() {
 				images.problem,
 				sliders,
 				switchState,
-				() => {},
+				() => { },
 				setImages,
 			);
 		},
@@ -195,9 +195,8 @@ export default function Home() {
 			setIsDragActive(false);
 		};
 
-		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
-			isDragActive ? "border-blue bg-blue/25" : "border-ld"
-		}`;
+		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${isDragActive ? "border-blue bg-blue/25" : "border-ld"
+			}`;
 
 		return (
 			<div
@@ -297,11 +296,11 @@ export default function Home() {
 								key: keyof typeof switchState;
 								title: string;
 							}[] = [
-								{ key: "summary", title: "要約" },
-								{ key: "guidance", title: "指針" },
-								{ key: "explanation", title: "解説" },
-								{ key: "answer", title: "解答" },
-							];
+									{ key: "summary", title: "要約" },
+									{ key: "guidance", title: "指針" },
+									{ key: "explanation", title: "解説" },
+									{ key: "answer", title: "解答" },
+								];
 
 							const enabledSections = allSectionDefs.filter(
 								(s) => state[s.key],
@@ -360,7 +359,7 @@ export default function Home() {
 												style={{
 													minHeight: "2rem",
 													maxHeight: `calc(2rem * 3)`,
-													lineHeight: "2rem",
+													lineHeight: "normal",
 													overflowY: "auto",
 												}}
 											>
@@ -420,11 +419,10 @@ export default function Home() {
 																className={`
                             text-xl font-medium no-select
                             ${sec.title === "要約" ? "text-sky-500" : ""}
-                            ${
-															sec.title === "指針" || sec.title === "応答"
-																? "text-orange-500"
-																: ""
-														}
+                            ${sec.title === "指針" || sec.title === "応答"
+																		? "text-orange-500"
+																		: ""
+																	}
                             ${sec.title === "解説" ? "text-rose-500" : ""}
                             ${sec.title === "解答" ? "text-lime-500" : ""}
 																			`}
@@ -435,62 +433,64 @@ export default function Home() {
 														startContent={icon}
 														classNames={{ trigger: "cursor-pointer" }}
 													>
-														<div className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word leading-9 text-lg font-normal text-d3 dark:text-l3">
-															{(() => {
-																if (!isCurrentLoadingTurn) {
-																	return (
-																		<ReactMarkdown
-																			remarkPlugins={[remarkGfm, remarkMath]}
-																			rehypePlugins={[rehypeRaw, rehypeKatex]}
-																		>
-																			{displayContent}
-																		</ReactMarkdown>
-																	);
-																}
-
-																const prevLen = msg
-																	? (prevDisplayContentLengthRef.current[
-																			msg.id
-																		] ?? 0)
-																	: 0;
-																const currentText = displayContent.substring(
-																	0,
-																	prevLen,
-																);
-																const newText =
-																	displayContent.substring(prevLen);
-
+														<div
+															className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word text-lg font-normal text-d3 dark:text-l3"
+															style={{ lineHeight: "normal" }}
+														>															{(() => {
+															if (!isCurrentLoadingTurn) {
 																return (
-																	<span style={{ whiteSpace: "pre-wrap" }}>
-																		{currentText}
-																		{newText && (
-																			<AnimatePresence mode="popLayout">
-																				<motion.span
-																					key={displayContent.length}
-																					initial={{ opacity: 0 }}
-																					animate={{ opacity: 1 }}
-																					exit={{ opacity: 0 }}
-																					transition={{
-																						duration: 1,
-																						ease: "easeOut",
-																					}}
-																				>
-																					{newText}
-																				</motion.span>
-																			</AnimatePresence>
-																		)}
-
-																		{(() => {
-																			if (msg) {
-																				prevDisplayContentLengthRef.current[
-																					msg.id
-																				] = displayContent.length;
-																			}
-																			return null;
-																		})()}
-																	</span>
+																	<ReactMarkdown
+																		remarkPlugins={[remarkGfm, remarkMath]}
+																		rehypePlugins={[rehypeRaw, rehypeKatex]}
+																	>
+																		{displayContent}
+																	</ReactMarkdown>
 																);
-															})()}
+															}
+
+															const prevLen = msg
+																? (prevDisplayContentLengthRef.current[
+																	msg.id
+																] ?? 0)
+																: 0;
+															const currentText = displayContent.substring(
+																0,
+																prevLen,
+															);
+															const newText =
+																displayContent.substring(prevLen);
+
+															return (
+																<span style={{ whiteSpace: "pre-wrap" }}>
+																	{currentText}
+																	{newText && (
+																		<AnimatePresence mode="popLayout">
+																			<motion.span
+																				key={displayContent.length}
+																				initial={{ opacity: 0 }}
+																				animate={{ opacity: 1 }}
+																				exit={{ opacity: 0 }}
+																				transition={{
+																					duration: 1,
+																					ease: "easeOut",
+																				}}
+																			>
+																				{newText}
+																			</motion.span>
+																		</AnimatePresence>
+																	)}
+
+																	{(() => {
+																		if (msg) {
+																			prevDisplayContentLengthRef.current[
+																				msg.id
+																			] = displayContent.length;
+																		}
+																		return null;
+																	})()}
+																</span>
+															);
+														})()}
 														</div>
 													</AccordionItem>
 												);
@@ -599,11 +599,10 @@ export default function Home() {
 										aria-label="Mic Button"
 										isIconOnly
 										radius="full"
-										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
-											isListening
+										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isListening
 												? "text-l3 bg-red"
 												: "text-d3 dark:text-l3 bg-transparent"
-										}`}
+											}`}
 										onPress={toggleListening}
 									>
 										{isListening ? <Mic /> : <MicOff />}
@@ -615,11 +614,10 @@ export default function Home() {
 											aria-label="Sliders Button"
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
-												activeContent === "sliders"
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "sliders"
 													? "bg-l3 dark:bg-d3"
 													: "bg-transparent"
-											}`}
+												}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "sliders" ? null : "sliders",
@@ -632,11 +630,10 @@ export default function Home() {
 											aria-label="Image Button"
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
-												activeContent === "images"
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "images"
 													? "bg-l3 dark:bg-d3"
 													: "bg-transparent"
-											}`}
+												}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "images" ? null : "images",
@@ -710,13 +707,12 @@ export default function Home() {
 											aria-label={isLoading ? "Abort Button" : "Send Button"}
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
-												isLoading
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isLoading
 													? "text-l3 bg-red"
 													: inputText.trim() !== "" || images.problem.length > 0
 														? "text-l3 bg-blue"
 														: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
-											}`}
+												}`}
 											onPress={() => (isLoading ? handleAbort() : handleSend())}
 											disabled={
 												!isLoading &&
