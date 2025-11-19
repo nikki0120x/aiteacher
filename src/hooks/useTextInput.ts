@@ -29,7 +29,6 @@ export const useChatInput = (onSend: (text: string) => void) => {
 	// ================================================================
 
 	useEffect(() => {
-		// ブラウザ環境でのみ実行
 		if (typeof navigator !== "undefined") {
 			setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
 		}
