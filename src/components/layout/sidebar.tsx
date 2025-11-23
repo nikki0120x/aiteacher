@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence, easeInOut } from "motion/react";
 import { useChatStore } from "@/stores/useChat";
 import { Button } from "@heroui/react";
-import { Menu, SquarePen } from "lucide-react";
+import { Menu, SquarePen, CircleUserRound, Settings } from "lucide-react";
 
 export default function Sidebar() {
 	// ---------- 共通状態管理 ---------- //
@@ -12,7 +12,6 @@ export default function Sidebar() {
 		abortController,
 		setIsSent,
 		setIsLoading,
-		setIsPanelOpen,
 		setActiveContent,
 		clearMessage,
 		setAbortController,
@@ -48,7 +47,6 @@ export default function Sidebar() {
 	const handleNewChat = () => {
 		setIsSent(false);
 		setIsLoading(false);
-		setIsPanelOpen(true);
 		setActiveContent(null);
 		clearMessage();
 		if (abortController) {
@@ -60,24 +58,23 @@ export default function Sidebar() {
 	// ---------- フロントエンド ---------- //
 
 	return (
-		<>
+		<div className="no-select">
 			<Button
 				aria-label="Menu Button"
 				isIconOnly
 				size="lg"
 				radius="full"
-				className="fixed top-0 left-0 z-100 m-2 text-d3 dark:text-l3 bg-transparent"
+				className={`fixed top-0 left-0 z-100 w-16 h-16 rounded-none transition-all duration-500 outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2 ${isOpen ? "rounded-br-4xl" : " rounded-br-none"}`}
 				onPress={() => setIsOpen(!isOpen)}
 			>
 				<Menu />
 			</Button>
-
 			<Button
 				aria-label="New Chat Button"
 				isIconOnly
 				size="lg"
 				radius="full"
-				className="absolute top-0 right-0 z-100 m-2 text-d3 dark:text-l3 bg-transparent"
+				className="absolute top-0 right-0 z-100 w-16 h-16 rounded-none rounded-bl-4xl outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2"
 				onPress={handleNewChat}
 			>
 				<SquarePen />
@@ -100,23 +97,30 @@ export default function Sidebar() {
 						<motion.aside
 							key="sidebar"
 							initial={{ width: isMobile ? 0 : "4rem" }}
-							animate={{
-								width: isOpen
-									? isMobile
-										? "calc(100dvw - 8rem)"
-										: "16rem"
-									: "4rem",
-							}}
+							animate={{ width: isOpen ? "24rem" : "4rem" }}
 							exit={{ width: 0 }}
 							transition={{ duration: 0.5, ease: easeInOut }}
 							className={`
-              h-full overflow-hidden bg-l3 dark:bg-d3
-              ${isMobile ? "fixed top-0 left-0 z-90" : "relative"}
+            flex flex-col w-auto h-full overflow-hidden bg-l2 dark:bg-d2
+            ${isMobile ? "fixed top-0 left-0 z-90" : "relative"}
             `}
-						></motion.aside>
+						>
+							<div className="flex flex-row justify-between items-center w-full h-16">
+								<div className="overflow-hidden shrink-0 w-16 h-full"></div>
+								<Button aria-label="Account Button" className={`overflow-hidden flex flex-row gap-4 justify-start items-center w-auto h-full rounded-none transition-all duration-500 outline-none bg-l3 dark:bg-d3 hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 ${isOpen ? "rounded-bl-4xl" : "rounded-bl-none"}`}>
+									<CircleUserRound className="p-0.5 w-16 h-16 shrink-0" />
+									<span className="text-lg font-medium text-d2 dark:text-l2">ログイン</span>
+								</Button>
+							</div>
+							<div className="flex flex-col justify-start items-start flex-1 w-full h-full"></div>
+							<Button aria-label="Settings Button" className="overflow-hidden flex flex-row gap-4 justify-start items-center w-full h-16 rounded-none outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4">
+								<Settings className="p-0.5 w-16 h-16 shrink-0" />
+								<span className="text-lg font-medium text-d2 dark:text-l2">設定</span>
+							</Button>
+						</motion.aside>
 					</>
 				)}
 			</AnimatePresence>
-		</>
+		</div >
 	);
 }

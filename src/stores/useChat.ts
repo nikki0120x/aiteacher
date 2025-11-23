@@ -18,8 +18,6 @@ interface ChatState {
 
 	setIsSent: (sent: boolean) => void;
 	setIsLoading: (loading: boolean) => void;
-	setIsPanelOpen: (open: boolean) => void;
-	togglePanel: () => void;
 	setActiveContent: (content: "sliders" | "images" | null) => void;
 	addContentToHistory: (content: Content) => void;
 	addMessage: (
@@ -48,8 +46,6 @@ export const useChatStore = create<ChatState>((set) => ({
 
 	setIsSent: (sent) => set({ isSent: sent }),
 	setIsLoading: (loading) => set({ isLoading: loading }),
-	setIsPanelOpen: (open) => set({ isPanelOpen: open }),
-	togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
 	setActiveContent: (content) => set({ activeContent: content }),
 	addMessage: (text, role = "user", sectionsState, id = crypto.randomUUID()) =>
 		set((state) => {

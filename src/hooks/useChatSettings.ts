@@ -8,11 +8,11 @@ import type { ResponseMode, AIModel } from "@/types/chat";
 // ================================================================
 
 export const responseModes = {
-	"standard": {
+	standard: {
 		label: "標準",
 		description: "会話に適したモード",
 	},
-	"learning": {
+	learning: {
 		label: "学習",
 		description: "問題解決に特化したモード",
 	},
@@ -25,15 +25,19 @@ export const responseModes = {
 export const aiModels = {
 	"gemini-3-pro-preview": {
 		label: "Gemini 3 Pro Preview",
+		description: "最新かつ最高峰の性能を誇るモデル",
 	},
 	"gemini-2.5-pro": {
 		label: "Gemini 2.5 Pro",
+		description: "強力な推論能力と長大な文脈長を持つ高性能モデル",
 	},
 	"gemini-2.5-flash": {
 		label: "Gemini 2.5 Flash",
+		description: "品質と速度のバランスに優れたモデル",
 	},
 	"gemini-2.5-flash-lite": {
 		label: "Gemini 2.5 Flash Lite",
+		description: "最も軽量で高速なモデル",
 	}
 };
 

@@ -34,8 +34,6 @@ import {
 	Settings2,
 	ImageUp,
 	X,
-	PanelBottomClose,
-	PanelTopClose,
 	SendHorizontal,
 	Pause,
 	ScrollText,
@@ -64,8 +62,6 @@ export default function Home() {
 		isPanelOpen,
 		activeContent,
 		message,
-		setIsPanelOpen,
-		togglePanel,
 		setActiveContent,
 	} = useChatStore();
 
@@ -244,30 +240,6 @@ export default function Home() {
 				className="flex flex-col w-full h-full overflow-hidden"
 				ref={chatHistoryRef}
 			>
-				<AnimatePresence>
-					{!isPanelOpen && (
-						<motion.div
-							key="open-panel-button"
-							initial={{ height: 0, opacity: 0 }}
-							animate={{ height: "auto", opacity: 1 }}
-							exit={{ height: 0, opacity: 0 }}
-							transition={{ duration: 0.5, ease: "easeInOut" }}
-							className="absolute bottom-6 right-2 z-50"
-						>
-							<Button
-								aria-label="Open Panel Button"
-								isIconOnly
-								size="lg"
-								radius="md"
-								className="shadow-lg shadow-l3 dark:shadow-d3 bg-l3/50 dark:bg-d3/50 backdrop-blur-xs text-d3 dark:text-l3"
-								onPress={() => setIsPanelOpen(true)}
-							>
-								<PanelTopClose />
-							</Button>
-						</motion.div>
-					)}
-				</AnimatePresence>
-
 				<ScrollShadow hideScrollBar visibility="none" className="w-full h-full">
 					<AnimatePresence mode="sync">
 						{turns.map((turn) => {
@@ -372,7 +344,6 @@ export default function Home() {
 										</CardBody>
 									</Card>
 
-									{/* アシスタントメッセージ (Accordion) */}
 									{turn.model && (
 										<Accordion
 											selectionMode="multiple"
@@ -636,20 +607,6 @@ export default function Home() {
 												</DropdownItem>
 											</DropdownMenu>
 										</Dropdown>
-										{isSent && (
-											<Button
-												aria-label="Close Panel Button"
-												isIconOnly
-												radius="full"
-												className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-d3 dark:text-l3"
-												onPress={() => {
-													togglePanel();
-													setActiveContent(null);
-												}}
-											>
-												<PanelBottomClose />
-											</Button>
-										)}
 										<Button
 											aria-label={isLoading ? "Abort Button" : "Send Button"}
 											isIconOnly
