@@ -21,12 +21,16 @@ export default function Sidebar() {
 
 	const [isOpen, setIsOpen] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
+	const [isSmallScreen, setIsSmallScreen] = useState(false);
 
 	useEffect(() => {
-		const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-		checkMobile();
-		window.addEventListener("resize", checkMobile);
-		return () => window.removeEventListener("resize", checkMobile);
+		const checkScreens = () => {
+			setIsMobile(window.innerWidth < 1024);
+			setIsSmallScreen(window.innerWidth < 448)
+		};
+		checkScreens();
+		window.addEventListener("resize", checkScreens);
+		return () => window.removeEventListener("resize", checkScreens);
 	}, []);
 
 	useEffect(() => {
@@ -64,7 +68,7 @@ export default function Sidebar() {
 				isIconOnly
 				size="lg"
 				radius="full"
-				className={`fixed top-0 left-0 z-100 w-16 h-16 rounded-none transition-all duration-500 outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2 ${isOpen ? "rounded-br-4xl" : " rounded-br-none"}`}
+				className={`fixed top-0 left-0 z-100 w-16 h-16 rounded-none transition-all duration-500 outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2 ${isOpen ? "rounded-br-4xl" : "rounded-br-none"}`}
 				onPress={() => setIsOpen(!isOpen)}
 			>
 				<Menu />
@@ -74,12 +78,11 @@ export default function Sidebar() {
 				isIconOnly
 				size="lg"
 				radius="full"
-				className="absolute top-0 right-0 z-100 w-16 h-16 rounded-none rounded-bl-4xl outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2"
+				className={`absolute top-0 right-0 z-100 w-16 h-16 rounded-none transition-all duration-500 outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2 ${isOpen && isSmallScreen ? "rounded-bl-none" : "rounded-bl-4xl"}`}
 				onPress={handleNewChat}
 			>
 				<SquarePen />
 			</Button>
-
 			<AnimatePresence>
 				{(isOpen || !isMobile) && (
 					<>
@@ -97,13 +100,13 @@ export default function Sidebar() {
 						<motion.aside
 							key="sidebar"
 							initial={{ width: isMobile ? 0 : "4rem" }}
-							animate={{ width: isOpen ? "24rem" : "4rem" }}
-							exit={{ width: 0 }}
+							animate={{
+								width: isOpen
+									? (isMobile ? "min(calc(100vw - 4rem), 24rem)" : "24rem")
+									: "4rem"
+							}} exit={{ width: 0 }}
 							transition={{ duration: 0.5, ease: easeInOut }}
-							className={`
-            flex flex-col w-auto h-full overflow-hidden bg-l2 dark:bg-d2
-            ${isMobile ? "fixed top-0 left-0 z-90" : "relative"}
-            `}
+							className={`flex flex-col w-auto h-full overflow-hidden bg-l2 dark:bg-d2 ${isMobile ? "fixed top-0 left-0 z-90" : "relative"}`}
 						>
 							<div className="flex flex-row justify-between items-center w-full h-16">
 								<div className="overflow-hidden shrink-0 w-16 h-full"></div>
