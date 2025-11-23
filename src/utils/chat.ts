@@ -6,11 +6,11 @@ import type { SwitchState, NormalizedSwitchState } from "@/types/chat";
 // ================================================================
 
 export function getPolitenessInstruction(value: number = 0.5): string {
-	if (value <= 0) return "最大限簡潔で明瞭な返答";
-	else if (value <= 0.25) return "簡潔で明瞭な返答";
-	else if (value <= 0.5) return "必要十分な返答";
-	else if (value <= 0.75) return "丁寧でわかりやすい返答";
-	else if (value <= 1) return "最大限丁寧でわかりやすい返答";
+	if (value <= 0) return "超簡潔な返答";
+	else if (value <= 0.25) return "簡潔な返答";
+	else if (value <= 0.5) return "普通の返答";
+	else if (value <= 0.75) return "丁寧な返答";
+	else if (value <= 1) return "超丁寧な返答";
 	else return "";
 }
 
@@ -41,15 +41,12 @@ export function buildPrompt(
 	userPrompt: string,
 ): string {
 	const sections: string[] = [
-		"【全セクションに共通する厳格なルール】",
-		"- 数式は KaTeX の「改行ディスプレイ数式（$$ ... $$）」を絶対に使うこと",
-		"- 文中に式を埋め込まない。式は必ず単独の行に絶対に置くこと",
-		"- レイアウトは整理された見やすい構成にする。必要なら箇条書きや記号を使用可",
-		"- 日本語で、一般的知識 + 教科書レベルの内容で説明",
-
-		"以下の4つのセクションは相互に干渉せず、独立して返答。区切り線は不要。",
+		"Markdownを積極的に使用し、**見出し（##, ###）**、**太字**、**箇条書きリスト**などを用いて、構造的に順序立てて見やすいよう返答すること",
+		"**数式（$や$$で囲まれた部分）をMarkdownのコードブロック（```）で囲まないこと**",
+		"**インライン数式は単一のドル記号「$ ... $」を使用**",
+		"**単独の数式は必ず、前後に空行（改行）を入れて二重のドル記号「$$...$$」を使用すること**",
+		"sections間の区切り線は不要",
 		politenessText,
-		"以下の形式で返答",
 	];
 
 	if (switches.summary)

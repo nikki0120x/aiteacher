@@ -29,7 +29,6 @@ const NUM_PHRASES = LOADING_PHRASES.length;
 
 export const useChatDisplay = () => {
 	const { message, isLoading, isPanelOpen } = useChatStore();
-	const prevDisplayContentLengthRef = useRef<{ [key: string]: number }>({});
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const chatHistoryRef = useRef<HTMLDivElement>(null);
 
@@ -73,10 +72,12 @@ export const useChatDisplay = () => {
 
 	// 自動スクロール
 	useLayoutEffect(() => {
+		// `turns.length` が変わったとき（つまり新しいユーザーメッセージが追加されたとき）に実行される
 		if (messagesEndRef.current) {
+			// 新しいターンが追加されたら、一番下へスクロール
 			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
 		}
-	}, [message]);
+	}, [turns.length]); // 依存配列に `turns.length` を指定
 
 	// chatHistoryHeight の動的計測 (ResizeObserverとDebounceを使用)
 	useLayoutEffect(() => {
@@ -111,25 +112,6 @@ export const useChatDisplay = () => {
 		};
 	}, []);
 
-	// アニメーション表示済みの文字数をクリア
-	useEffect(() => {
-		const currentMessageIds = new Set(message.map((m) => m.id));
-		const idsToCleanup = Object.keys(prevDisplayContentLengthRef.current);
-
-		idsToCleanup.forEach((id) => {
-			const isCurrentLoadingMessage =
-				isLoading && message.slice(-1)[0]?.id === id;
-
-			if (
-				!currentMessageIds.has(id) ||
-				(!isCurrentLoadingMessage &&
-					prevDisplayContentLengthRef.current[id] !== undefined)
-			) {
-				delete prevDisplayContentLengthRef.current[id];
-			}
-		});
-	}, [isLoading, message]);
-
 	const getLoadingPhrase = (index: number) => {
 		const phraseIndex = (index + currentLoadingIndex) % NUM_PHRASES;
 		return LOADING_PHRASES[phraseIndex];
@@ -141,7 +123,6 @@ export const useChatDisplay = () => {
 		chatHistoryRef,
 		messagesEndRef,
 		chatHistoryHeight,
-		prevDisplayContentLengthRef,
 		getLoadingPhrase,
 		isPanelOpen,
 	};

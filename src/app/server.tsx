@@ -35,7 +35,7 @@ export default function Server() {
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', 'G-P7BN0KQ1YQ');
-          `,
+            `,
 				}}
 			/>
 			<link rel="preconnect" href="https://fonts.googleapis.com" />

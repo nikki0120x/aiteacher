@@ -94,7 +94,6 @@ export default function Home() {
 		chatHistoryRef,
 		messagesEndRef,
 		chatHistoryHeight,
-		prevDisplayContentLengthRef,
 		getLoadingPhrase,
 	} = useChatDisplay();
 
@@ -434,63 +433,15 @@ export default function Home() {
 														classNames={{ trigger: "cursor-pointer" }}
 													>
 														<div
-															className="overflow-x-auto prose dark:prose-invert max-w-full wrap-break-word text-lg font-normal text-d3 dark:text-l3"
-															style={{ lineHeight: "normal" }}
-														>															{(() => {
-															if (!isCurrentLoadingTurn) {
-																return (
-																	<ReactMarkdown
-																		remarkPlugins={[remarkGfm, remarkMath]}
-																		rehypePlugins={[rehypeRaw, rehypeKatex]}
-																	>
-																		{displayContent}
-																	</ReactMarkdown>
-																);
-															}
-
-															const prevLen = msg
-																? (prevDisplayContentLengthRef.current[
-																	msg.id
-																] ?? 0)
-																: 0;
-															const currentText = displayContent.substring(
-																0,
-																prevLen,
-															);
-															const newText =
-																displayContent.substring(prevLen);
-
-															return (
-																<span style={{ whiteSpace: "pre-wrap" }}>
-																	{currentText}
-																	{newText && (
-																		<AnimatePresence mode="popLayout">
-																			<motion.span
-																				key={displayContent.length}
-																				initial={{ opacity: 0 }}
-																				animate={{ opacity: 1 }}
-																				exit={{ opacity: 0 }}
-																				transition={{
-																					duration: 1,
-																					ease: "easeOut",
-																				}}
-																			>
-																				{newText}
-																			</motion.span>
-																		</AnimatePresence>
-																	)}
-
-																	{(() => {
-																		if (msg) {
-																			prevDisplayContentLengthRef.current[
-																				msg.id
-																			] = displayContent.length;
-																		}
-																		return null;
-																	})()}
-																</span>
-															);
-														})()}
+															className="prose dark:prose-invert max-w-full wrap-break-word text-lg font-normal text-d3 dark:text-l3"
+															style={{ lineHeight: "2" }}
+														>
+															<ReactMarkdown
+																remarkPlugins={[remarkGfm, remarkMath]}
+																rehypePlugins={[rehypeRaw, rehypeKatex]}
+															>
+																{displayContent}
+															</ReactMarkdown>
 														</div>
 													</AccordionItem>
 												);
@@ -600,8 +551,8 @@ export default function Home() {
 										isIconOnly
 										radius="full"
 										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isListening
-												? "text-l3 bg-red"
-												: "text-d3 dark:text-l3 bg-transparent"
+											? "text-l3 bg-red"
+											: "text-d3 dark:text-l3 bg-transparent"
 											}`}
 										onPress={toggleListening}
 									>
@@ -615,8 +566,8 @@ export default function Home() {
 											isIconOnly
 											radius="full"
 											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "sliders"
-													? "bg-l3 dark:bg-d3"
-													: "bg-transparent"
+												? "bg-l3 dark:bg-d3"
+												: "bg-transparent"
 												}`}
 											onPress={() =>
 												setActiveContent(
@@ -631,8 +582,8 @@ export default function Home() {
 											isIconOnly
 											radius="full"
 											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "images"
-													? "bg-l3 dark:bg-d3"
-													: "bg-transparent"
+												? "bg-l3 dark:bg-d3"
+												: "bg-transparent"
 												}`}
 											onPress={() =>
 												setActiveContent(
@@ -708,10 +659,10 @@ export default function Home() {
 											isIconOnly
 											radius="full"
 											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isLoading
-													? "text-l3 bg-red"
-													: inputText.trim() !== "" || images.problem.length > 0
-														? "text-l3 bg-blue"
-														: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
+												? "text-l3 bg-red"
+												: inputText.trim() !== "" || images.problem.length > 0
+													? "text-l3 bg-blue"
+													: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
 												}`}
 											onPress={() => (isLoading ? handleAbort() : handleSend())}
 											disabled={
