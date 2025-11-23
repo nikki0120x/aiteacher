@@ -23,7 +23,7 @@ function ensureCredentials() {
 }
 
 export async function POST(req: NextRequest) {
-	const { prompt, options, sliders, images, history }: PostPayload =
+	const { prompt, options, sliders, images, history, model = "gemini-2.5-pro" }: PostPayload =
 		await req.json();
 
 	if (!prompt && !images?.problem?.length) {
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 	(async () => {
 		try {
 			const stream = await ai.models.generateContentStream({
-				model: "gemini-2.5-pro",
+				model: model,
 				contents,
 			});
 

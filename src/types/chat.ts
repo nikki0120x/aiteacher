@@ -44,6 +44,7 @@ export type PostPayload = {
 	options?: SwitchState;
 	images?: ImageSet;
 	history?: Content[];
+	model: AIModel;
 };
 
 // ================================================================
@@ -51,6 +52,8 @@ export type PostPayload = {
 // ================================================================
 
 export type ResponseMode = "learning" | "standard";
+
+export type AIModel = "gemini-2.5-pro" | "gemini-3-pro-preview";
 
 export type MessageItem = {
 	id: string;

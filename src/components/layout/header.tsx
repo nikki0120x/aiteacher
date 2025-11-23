@@ -2,9 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Progress } from "@heroui/react";
+import { Progress, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
+import { ChevronDown } from "lucide-react";
+import { useChatSettings, aiModels } from "@/hooks/useChatSettings";
 
 export default function Header() {
+	const {
+		aiModel,
+		selectedModelLabel,
+		handleAIModelSelection,
+	} = useChatSettings();
+
 	const [loading, setLoading] = useState(false);
 	const pathname = usePathname();
 
@@ -21,7 +29,7 @@ export default function Header() {
 	}, [pathname]);
 
 	return (
-		<header className="flex flex-row items-center z-70 w-full h-16 backdrop-blur-xs bg-transparent">
+		<header className="flex flex-row justify-center items-center z-70 w-full h-16 backdrop-blur-xs bg-transparent">
 			{loading && (
 				<Progress
 					isIndeterminate
@@ -31,6 +39,45 @@ export default function Header() {
 					className="absolute left-0 bottom-0 w-full"
 				/>
 			)}
+			<Dropdown
+				placement="bottom"
+				classNames={{
+					content:
+						"shadow-lg shadow-l3 dark:shadow-d3 bg-l3 dark:bg-d3 text-d3 dark:text-l3",
+				}}
+			>
+				<DropdownTrigger>
+					<Button
+						aria-label="Select a AI Option Button"
+						radius="full"
+						className="w-auto h-12 shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-lg font-medium text-d3 dark:text-l3 hover:bg-l3 hover:dark:bg-d3"
+					>
+						{selectedModelLabel}
+						<ChevronDown size={16} />
+					</Button>
+				</DropdownTrigger>
+				<DropdownMenu
+					disallowEmptySelection
+					aria-label="AI Options Menu"
+					selectedKeys={[aiModel]}
+					selectionMode="single"
+					onSelectionChange={handleAIModelSelection}
+					itemClasses={{
+						base: [],
+					}}
+				>
+					<DropdownItem
+						key="gemini-2.5-pro"
+					>
+						{aiModels["gemini-2.5-pro"].label}
+					</DropdownItem>
+					<DropdownItem
+						key="gemini-3-pro-preview"
+					>
+						{aiModels["gemini-3-pro-preview"].label}
+					</DropdownItem>
+				</DropdownMenu>
+			</Dropdown>
 		</header>
 	);
 }

@@ -604,19 +604,17 @@ export default function Home() {
 										>
 											<DropdownTrigger>
 												<Button
-													aria-label="Select a Mode Button"
+													aria-label="Select a Response Mode Button"
 													radius="full"
 													className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-base font-medium text-d3 dark:text-l3 hover:bg-l3 hover:dark:bg-d3"
 												>
-													<span className="text-base font-medium mr-1">
-														{selectedModeLabel}
-													</span>
+													{selectedModeLabel}
 													<ChevronDown size={16} />
 												</Button>
 											</DropdownTrigger>
 											<DropdownMenu
 												disallowEmptySelection
-												aria-label="Response Mode Options"
+												aria-label="Response Modes Menu"
 												selectedKeys={[responseMode]}
 												selectionMode="single"
 												onSelectionChange={handleResponseModeSelection}
@@ -627,14 +625,12 @@ export default function Home() {
 												<DropdownItem
 													key="standard"
 													description={responseModes.standard.description}
-													className=""
 												>
 													{responseModes.standard.label}
 												</DropdownItem>
 												<DropdownItem
 													key="learning"
 													description={responseModes.learning.description}
-													className=""
 												>
 													{responseModes.learning.label}
 												</DropdownItem>

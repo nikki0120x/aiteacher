@@ -1,25 +1,38 @@
 // src/hooks/useChatSettings.ts
 import { useState } from "react";
 import type { SharedSelection } from "@heroui/react";
-import type { ResponseMode } from "@/types/chat";
+import type { ResponseMode, AIModel } from "@/types/chat";
 
 // ================================================================
-//     1. 
+//     1. 応答方式
 // ================================================================
 
 export const responseModes = {
-	standard: {
+	"standard": {
 		label: "標準",
 		description: "会話に適したモード",
 	},
-	learning: {
+	"learning": {
 		label: "学習",
 		description: "問題解決に特化したモード",
 	},
 };
 
 // ================================================================
-//     1.
+//     2. AI の選択肢
+// ================================================================
+
+export const aiModels = {
+	"gemini-2.5-pro": {
+		label: "Gemini 2.5 Pro",
+	},
+	"gemini-3-pro-preview": {
+		label: "Gemini 3 Pro Preview",
+	},
+};
+
+// ================================================================
+//     3. スイッチとスライダーの状態管理
 // ================================================================
 
 export type SwitchState = {
@@ -34,7 +47,7 @@ export type SliderState = {
 };
 
 // ================================================================
-//     1.
+//     4. カスタムフック
 // ================================================================
 
 export const useChatSettings = () => {
@@ -42,12 +55,25 @@ export const useChatSettings = () => {
 
 	const [responseMode, setResponseMode] = useState<ResponseMode>("learning");
 
-	const selectedModeLabel = responseModes[responseMode]?.label ?? "標準";
+	const selectedModeLabel = responseModes[responseMode]?.label ?? "学習";
 
 	const handleResponseModeSelection = (keys: SharedSelection) => {
 		const selectedKey = Array.from(keys)[0] as ResponseMode;
 		if (selectedKey === "standard" || selectedKey === "learning") {
 			setResponseMode(selectedKey);
+		}
+	};
+
+	// ---------- AI の選択肢 ---------- //
+
+	const [aiModel, setAIModel] = useState<AIModel>("gemini-2.5-pro");
+
+	const selectedModelLabel = aiModels[aiModel]?.label ?? "Gemini 2.5 Pro";
+
+	const handleAIModelSelection = (keys: SharedSelection) => {
+		const selectedKey = Array.from(keys)[0] as AIModel;
+		if (selectedKey === "gemini-2.5-pro" || selectedKey === "gemini-3-pro-preview") {
+			setAIModel(selectedKey);
 		}
 	};
 
@@ -92,6 +118,9 @@ export const useChatSettings = () => {
 		responseMode,
 		selectedModeLabel,
 		handleResponseModeSelection,
+		aiModel,
+		selectedModelLabel,
+		handleAIModelSelection,
 		switchState,
 		handleSwitchChange,
 		sliders,
