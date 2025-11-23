@@ -23,12 +23,18 @@ export const responseModes = {
 // ================================================================
 
 export const aiModels = {
-	"gemini-2.5-pro": {
-		label: "Gemini 2.5 Pro",
-	},
 	"gemini-3-pro-preview": {
 		label: "Gemini 3 Pro Preview",
 	},
+	"gemini-2.5-pro": {
+		label: "Gemini 2.5 Pro",
+	},
+	"gemini-2.5-flash": {
+		label: "Gemini 2.5 Flash",
+	},
+	"gemini-2.5-flash-lite": {
+		label: "Gemini 2.5 Flash Lite",
+	}
 };
 
 // ================================================================
@@ -72,7 +78,7 @@ export const useChatSettings = () => {
 
 	const handleAIModelSelection = (keys: SharedSelection) => {
 		const selectedKey = Array.from(keys)[0] as AIModel;
-		if (selectedKey === "gemini-2.5-pro" || selectedKey === "gemini-3-pro-preview") {
+		if (selectedKey === "gemini-2.5-pro" || selectedKey === "gemini-3-pro-preview" || selectedKey === "gemini-2.5-flash" || selectedKey === "gemini-2.5-flash-lite") {
 			setAIModel(selectedKey);
 		}
 	};

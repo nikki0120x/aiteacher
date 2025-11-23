@@ -50,7 +50,7 @@ export default function Header() {
 					<Button
 						aria-label="Select a AI Option Button"
 						radius="full"
-						className="w-auto h-12 shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-lg font-medium text-d3 dark:text-l3 hover:bg-l3 hover:dark:bg-d3"
+						className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-base font-medium text-d3 dark:text-l3 hover:bg-l3 hover:dark:bg-d3"
 					>
 						{selectedModelLabel}
 						<ChevronDown size={16} />
@@ -67,14 +67,24 @@ export default function Header() {
 					}}
 				>
 					<DropdownItem
+						key="gemini-3-pro-preview"
+					>
+						{aiModels["gemini-3-pro-preview"].label}
+					</DropdownItem>
+					<DropdownItem
 						key="gemini-2.5-pro"
 					>
 						{aiModels["gemini-2.5-pro"].label}
 					</DropdownItem>
 					<DropdownItem
-						key="gemini-3-pro-preview"
+						key="gemini-2.5-flash"
 					>
-						{aiModels["gemini-3-pro-preview"].label}
+						{aiModels["gemini-2.5-flash"].label}
+					</DropdownItem>
+					<DropdownItem
+						key="gemini-2.5-flash-lite"
+					>
+						{aiModels["gemini-2.5-flash-lite"].label}
 					</DropdownItem>
 				</DropdownMenu>
 			</Dropdown>
