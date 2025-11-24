@@ -12,6 +12,7 @@ import NProgress from "nprogress";
 import Server from "./server";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
+import AuthModal from "@/features/auth/components/auth-modal";
 import "./globals.css";
 
 function TopProgress() {
@@ -65,6 +66,7 @@ export default function RootLayout({
 								</main>
 							</div>
 						</div>
+						<AuthModal />
 					</HeroUIProvider>
 				</ThemeProvider>
 				<Analytics />

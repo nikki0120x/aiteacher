@@ -1,5 +1,5 @@
+/* src\components\layout\header.tsx */
 "use client";
-
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Progress, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
