@@ -108,13 +108,20 @@ export default function Sidebar() {
 				>
 					<div className="flex flex-row justify-between items-center w-full h-16">
 						<div className="overflow-hidden shrink-0 w-16 h-full"></div>
-						<Button aria-label="Account Button" className={`overflow-hidden flex flex-row gap-4 justify-start items-center w-auto h-full rounded-none transition-all duration-500 outline-none bg-l3 dark:bg-d3 hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 ${isOpen || isMobile ? "rounded-bl-4xl" : "rounded-bl-none"}`}>
+						<Button aria-label="Account Button" className={`overflow-hidden flex flex-row gap-4 justify-start items-center w-auto h-full rounded-none transition-all duration-500 outline-none bg-blue text-l1 ${isOpen || isMobile ? "rounded-bl-4xl" : "rounded-bl-none"}`}>
 							<CircleUserRound className="p-0.5 w-16 h-16 shrink-0" />
-							<span className="text-lg font-medium text-d2 dark:text-l2">ログイン</span>
+							<span className="text-lg font-black text-l1">ログイン</span>
 						</Button>
 					</div>
-					<div className="flex flex-col justify-start items-start flex-1 w-full h-full"></div>
-					<Button aria-label="Settings Button" className="overflow-hidden flex flex-row gap-4 justify-start items-center w-full h-16 rounded-none outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4">
+					<div className={`p-4 flex flex-col justify-start items-start flex-1 w-full h-full transition-all duration-500 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+						<div className="overflow-hidden p-4 flex flex-col gap-4 w-88 h-auto rounded-2xl bg-l3 dark:bg-d3">
+							<span className="select-text text-lg font-medium text-d3 dark:text-l3">ログインするとチャット履歴を保存できます。<br />ログイン後はここから最新のチャット履歴と作成したチャット履歴を利用できます。</span>
+							<Button aria-label="Login Button" className="overflow-hidden flex flex-row gap-4 justify-center items-center w-auto h-12 rounded-4xl transition-all duration-500 outline-none bg-blue">
+								<span className="text-lg font-black text-l1">ログイン</span>
+							</Button>
+						</div>
+					</div>
+					<Button aria-label="Settings Button" className="overflow-hidden flex flex-row gap-4 justify-start items-center w-full h-16 rounded-none outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2">
 						<Settings className="p-0.5 w-16 h-16 shrink-0" />
 						<span className="text-lg font-medium text-d2 dark:text-l2">設定</span>
 					</Button>
