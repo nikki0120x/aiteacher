@@ -23,8 +23,14 @@ function ensureCredentials() {
 }
 
 export async function POST(req: NextRequest) {
-	const { prompt, options, sliders, images, history, model = "gemini-2.5-pro" }: PostPayload =
-		await req.json();
+	const {
+		prompt,
+		options,
+		sliders,
+		images,
+		history,
+		model = "gemini-2.5-pro",
+	}: PostPayload = await req.json();
 
 	if (!prompt && !images?.problem?.length) {
 		return NextResponse.json(

@@ -2,16 +2,20 @@
 "use client";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Progress, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
+import {
+	Progress,
+	Dropdown,
+	DropdownTrigger,
+	DropdownMenu,
+	DropdownItem,
+	Button,
+} from "@heroui/react";
 import { ChevronDown } from "lucide-react";
 import { useChatSettings, aiModels } from "@/hooks/useChatSettings";
 
 export default function Header() {
-	const {
-		aiModel,
-		selectedModelLabel,
-		handleAIModelSelection,
-	} = useChatSettings();
+	const { aiModel, selectedModelLabel, handleAIModelSelection } =
+		useChatSettings();
 
 	const [loading, setLoading] = useState(false);
 	const pathname = usePathname();

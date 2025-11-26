@@ -50,24 +50,16 @@ export function buildPrompt(
 	];
 
 	if (switches.summary)
-		sections.push(
-			`### 要約\n問題の要約(問題の要点)のみ返答`,
-		);
+		sections.push(`### 要約\n問題の要約(問題の要点)のみ返答`);
 
 	if (switches.guidance)
-		sections.push(
-			`### 指針\n問題の指針(問題を解くためのヒント)のみ返答`,
-		);
+		sections.push(`### 指針\n問題の指針(問題を解くためのヒント)のみ返答`);
 
 	if (switches.explanation)
-		sections.push(
-			`### 解説\n問題の解説(問題の答えまで導く説明)のみ返答`,
-		);
+		sections.push(`### 解説\n問題の解説(問題の答えまで導く説明)のみ返答`);
 
 	if (switches.answer)
-		sections.push(
-			`### 解答\n問題の解答(問題の答え)のみ返答`,
-		);
+		sections.push(`### 解答\n問題の解答(問題の答え)のみ返答`);
 
 	sections.push(`今回の質問: ${userPrompt}`);
 	return sections.join("\n\n");

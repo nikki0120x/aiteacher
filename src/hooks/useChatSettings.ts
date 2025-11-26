@@ -38,7 +38,7 @@ export const aiModels = {
 	"gemini-2.5-flash-lite": {
 		label: "Gemini 2.5 Flash Lite",
 		description: "最も軽量で高速なモデル",
-	}
+	},
 };
 
 // ================================================================
@@ -82,7 +82,12 @@ export const useChatSettings = () => {
 
 	const handleAIModelSelection = (keys: SharedSelection) => {
 		const selectedKey = Array.from(keys)[0] as AIModel;
-		if (selectedKey === "gemini-2.5-pro" || selectedKey === "gemini-3-pro-preview" || selectedKey === "gemini-2.5-flash" || selectedKey === "gemini-2.5-flash-lite") {
+		if (
+			selectedKey === "gemini-2.5-pro" ||
+			selectedKey === "gemini-3-pro-preview" ||
+			selectedKey === "gemini-2.5-flash" ||
+			selectedKey === "gemini-2.5-flash-lite"
+		) {
 			setAIModel(selectedKey);
 		}
 	};

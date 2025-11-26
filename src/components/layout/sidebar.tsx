@@ -19,10 +19,7 @@ export default function Sidebar() {
 		setAbortController,
 	} = useChatStore();
 
-	const {
-		isLoggedIn,
-		openModal,
-	} = useAuthStore();
+	const { isLoggedIn, openModal } = useAuthStore();
 
 	// ---------- メニュー ---------- //
 
@@ -31,7 +28,7 @@ export default function Sidebar() {
 	const [isSmallScreen, setIsSmallScreen] = useState(false);
 	useEffect(() => {
 		const checkScreens = () => {
-			setIsMobile(window.innerWidth < 1024);
+			setIsMobile(window.innerWidth < 768);
 			setIsSmallScreen(window.innerWidth < 448);
 		};
 		checkScreens();
@@ -75,7 +72,12 @@ export default function Sidebar() {
 				size="lg"
 				radius="full"
 				onPress={() => setIsOpen(!isOpen)}
-				className={`fixed top-0 left-0 z-100 w-16 h-16 rounded-none transition-all duration-500 outline-none bg-l1 dark:bg-d1 hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2 ${isOpen || isMobile ? "rounded-br-4xl" : "rounded-br-none"}`}
+				className={`fixed top-0 left-0 z-100 w-16 h-16 rounded-none transition-all duration-500 outline-none hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2
+					${isOpen ?
+						"md:rounded-br-4xl md:bg-l2 md:dark:bg-d2 max-md:rounded-br-4xl max-md:bg-l2 max-md:dark:bg-d2"
+						:
+						"md:rounded-none md:bg-l2 md:dark:bg-d2 max-md:rounded-br-4xl max-md:bg-l1 max-md:dark:bg-d1"
+					}`}
 			>
 				<Menu />
 			</Button>
@@ -85,7 +87,10 @@ export default function Sidebar() {
 				size="lg"
 				radius="full"
 				onPress={handleNewChat}
-				className={`absolute top-0 right-0 z-100 w-16 h-16 rounded-none transition-all duration-500 outline-none bg-l1 dark:bg-d1 hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2 ${isOpen && isSmallScreen ? "rounded-bl-none" : "rounded-bl-4xl"}`}
+				className={`absolute top-0 right-0 z-100 w-16 h-16 rounded-none transition-all duration-500 outline-none bg-l1 dark:bg-d1 hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2
+					${isOpen && isSmallScreen ?
+						"rounded-bl-none" : "rounded-bl-4xl"
+					}`}
 			>
 				<SquarePen />
 			</Button>
@@ -106,12 +111,16 @@ export default function Sidebar() {
 					initial={false}
 					animate={{
 						width: isOpen
-							? (isMobile ? "min(calc(100vw - 4rem), 24rem)" : "24rem")
-							: isMobile ? 0 : "4rem"
+							? isMobile
+								? "min(calc(100vw - 4rem), 24rem)"
+								: "24rem"
+							: isMobile
+								? 0
+								: "4rem",
 					}}
 					exit={{ width: isMobile ? 0 : "4rem" }}
 					transition={{ duration: 0.5, ease: easeInOut }}
-					className={`flex flex-col w-auto h-full overflow-hidden bg-l2 dark:bg-d2 ${isMobile ? "fixed top-0 left-0 z-90" : "relative"}`}
+					className="md:relative max-md:fixed max-md:top-0 max-md:left-0 max-md:z-90 flex flex-col w-auto h-full overflow-hidden bg-l2 dark:bg-d2"
 				>
 					<div className="flex flex-row justify-between items-center w-full h-16">
 						<div className="overflow-hidden shrink-0 w-16 h-full"></div>
@@ -126,10 +135,16 @@ export default function Sidebar() {
 							</Button>
 						)}
 					</div>
-					<div className={`p-4 flex flex-col justify-start items-start flex-1 w-full h-full transition-all duration-500 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+					<div
+						className={`p-4 flex flex-col justify-start items-start flex-1 w-full h-full transition-all duration-500 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+					>
 						{!isLoggedIn && (
 							<div className="overflow-hidden p-4 flex flex-col gap-4 w-88 h-auto rounded-2xl bg-l3 dark:bg-d3">
-								<span className="select-text text-lg font-medium text-d3 dark:text-l3">ログインするとチャット履歴を保存できます。<br />ログイン後はここから最新のチャット履歴と作成したチャット履歴を利用できます。</span>
+								<span className="select-text text-lg font-medium text-d3 dark:text-l3">
+									ログインするとチャット履歴を保存できます。
+									<br />
+									ログイン後はここから最新のチャット履歴と作成したチャット履歴を利用できます。
+								</span>
 								<Button
 									aria-label="Login Button"
 									className="overflow-hidden flex flex-row gap-4 justify-center items-center w-auto h-12 rounded-4xl transition-all duration-500 outline-none bg-blue"
@@ -140,9 +155,14 @@ export default function Sidebar() {
 							</div>
 						)}
 					</div>
-					<Button aria-label="Settings Button" className="overflow-hidden flex flex-row gap-4 justify-start items-center w-full h-16 rounded-none outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2">
+					<Button
+						aria-label="Settings Button"
+						className="overflow-hidden flex flex-row gap-4 justify-start items-center w-full h-16 rounded-none outline-none bg-transparent hover:bg-l4 hover:dark:bg-d4 active:bg-l3 active:dark:bg-d3 focus-visible:bg-l4 focus-visible:dark:bg-d4 text-d2 dark:text-l2"
+					>
 						<Settings className="p-0.5 w-16 h-16 shrink-0" />
-						<span className="text-lg font-medium text-d2 dark:text-l2">設定</span>
+						<span className="text-lg font-medium text-d2 dark:text-l2">
+							設定
+						</span>
 					</Button>
 				</motion.aside>
 			</AnimatePresence>

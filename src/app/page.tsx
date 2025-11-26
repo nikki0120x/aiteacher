@@ -128,7 +128,7 @@ export default function Home() {
 				images.problem,
 				sliders,
 				switchState,
-				() => { },
+				() => {},
 				setImages,
 			);
 		},
@@ -190,8 +190,9 @@ export default function Home() {
 			setIsDragActive(false);
 		};
 
-		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${isDragActive ? "border-blue bg-blue/25" : "border-ld"
-			}`;
+		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
+			isDragActive ? "border-blue bg-blue/25" : "border-ld"
+		}`;
 
 		return (
 			<div
@@ -267,11 +268,11 @@ export default function Home() {
 								key: keyof typeof switchState;
 								title: string;
 							}[] = [
-									{ key: "summary", title: "要約" },
-									{ key: "guidance", title: "指針" },
-									{ key: "explanation", title: "解説" },
-									{ key: "answer", title: "解答" },
-								];
+								{ key: "summary", title: "要約" },
+								{ key: "guidance", title: "指針" },
+								{ key: "explanation", title: "解説" },
+								{ key: "answer", title: "解答" },
+							];
 
 							const enabledSections = allSectionDefs.filter(
 								(s) => state[s.key],
@@ -389,10 +390,11 @@ export default function Home() {
 																className={`
                             text-xl font-medium no-select
                             ${sec.title === "要約" ? "text-sky-500" : ""}
-                            ${sec.title === "指針" || sec.title === "応答"
-																		? "text-orange-500"
-																		: ""
-																	}
+                            ${
+															sec.title === "指針" || sec.title === "応答"
+																? "text-orange-500"
+																: ""
+														}
                             ${sec.title === "解説" ? "text-rose-500" : ""}
                             ${sec.title === "解答" ? "text-lime-500" : ""}
 																			`}
@@ -521,10 +523,11 @@ export default function Home() {
 										aria-label="Mic Button"
 										isIconOnly
 										radius="full"
-										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isListening
-											? "text-l3 bg-red"
-											: "text-d3 dark:text-l3 bg-transparent"
-											}`}
+										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
+											isListening
+												? "text-l3 bg-red"
+												: "text-d3 dark:text-l3 bg-transparent"
+										}`}
 										onPress={toggleListening}
 									>
 										{isListening ? <Mic /> : <MicOff />}
@@ -536,10 +539,11 @@ export default function Home() {
 											aria-label="Sliders Button"
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "sliders"
-												? "bg-l3 dark:bg-d3"
-												: "bg-transparent"
-												}`}
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
+												activeContent === "sliders"
+													? "bg-l3 dark:bg-d3"
+													: "bg-transparent"
+											}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "sliders" ? null : "sliders",
@@ -552,10 +556,11 @@ export default function Home() {
 											aria-label="Image Button"
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "images"
-												? "bg-l3 dark:bg-d3"
-												: "bg-transparent"
-												}`}
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
+												activeContent === "images"
+													? "bg-l3 dark:bg-d3"
+													: "bg-transparent"
+											}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "images" ? null : "images",
@@ -611,12 +616,13 @@ export default function Home() {
 											aria-label={isLoading ? "Abort Button" : "Send Button"}
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isLoading
-												? "text-l3 bg-red"
-												: inputText.trim() !== "" || images.problem.length > 0
-													? "text-l3 bg-blue"
-													: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
-												}`}
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
+												isLoading
+													? "text-l3 bg-red"
+													: inputText.trim() !== "" || images.problem.length > 0
+														? "text-l3 bg-blue"
+														: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
+											}`}
 											onPress={() => (isLoading ? handleAbort() : handleSend())}
 											disabled={
 												!isLoading &&
