@@ -128,7 +128,7 @@ export default function Home() {
 				images.problem,
 				sliders,
 				switchState,
-				() => {},
+				() => { },
 				setImages,
 			);
 		},
@@ -190,9 +190,8 @@ export default function Home() {
 			setIsDragActive(false);
 		};
 
-		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
-			isDragActive ? "border-blue bg-blue/25" : "border-ld"
-		}`;
+		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${isDragActive ? "border-blue bg-blue/25" : "border-ld"
+			}`;
 
 		return (
 			<div
@@ -268,11 +267,11 @@ export default function Home() {
 								key: keyof typeof switchState;
 								title: string;
 							}[] = [
-								{ key: "summary", title: "要約" },
-								{ key: "guidance", title: "指針" },
-								{ key: "explanation", title: "解説" },
-								{ key: "answer", title: "解答" },
-							];
+									{ key: "summary", title: "要約" },
+									{ key: "guidance", title: "指針" },
+									{ key: "explanation", title: "解説" },
+									{ key: "answer", title: "解答" },
+								];
 
 							const enabledSections = allSectionDefs.filter(
 								(s) => state[s.key],
@@ -323,11 +322,11 @@ export default function Home() {
 									<Card
 										shadow="none"
 										radius="lg"
-										className="rounded-2xl rounded-tr-sm w-full h-auto mb-2 bg-l3 dark:bg-d3"
+										className="rounded-4xl w-full h-auto mb-2 bg-l2 dark:bg-d2"
 									>
 										<CardBody>
 											<div
-												className="overflow-x-hidden select-text prose dark:prose-invert max-w-full wrap-break-word text-lg font-medium text-d3 dark:text-l3"
+												className="px-2 flex justify-start items-center overflow-x-hidden select-text prose dark:prose-invert max-w-full wrap-break-word text-lg font-medium text-d3 dark:text-l3"
 												style={{
 													minHeight: "2rem",
 													maxHeight: `calc(2rem * 3)`,
@@ -349,7 +348,7 @@ export default function Home() {
 										<Accordion
 											selectionMode="multiple"
 											variant="bordered"
-											className="border-1 border-l3 dark:border-d3 bg-l3 dark:bg-d3 text-base font-medium text-d3 dark:text-l3"
+											className="rounded-4xl border-2 border-l2 dark:border-d2 bg-l2 dark:bg-d2 text-base font-medium text-d2 dark:text-l2"
 										>
 											{sections.map((sec, i) => {
 												let icon = null;
@@ -390,11 +389,10 @@ export default function Home() {
 																className={`
                             text-xl font-medium no-select
                             ${sec.title === "要約" ? "text-sky-500" : ""}
-                            ${
-															sec.title === "指針" || sec.title === "応答"
-																? "text-orange-500"
-																: ""
-														}
+                            ${sec.title === "指針" || sec.title === "応答"
+																		? "text-orange-500"
+																		: ""
+																	}
                             ${sec.title === "解説" ? "text-rose-500" : ""}
                             ${sec.title === "解答" ? "text-lime-500" : ""}
 																			`}
@@ -403,10 +401,10 @@ export default function Home() {
 															</span>
 														}
 														startContent={icon}
-														classNames={{ trigger: "cursor-pointer" }}
+														classNames={{ trigger: "px-2 cursor-pointer" }}
 													>
 														<div
-															className="prose dark:prose-invert max-w-full wrap-break-word text-lg font-normal text-d3 dark:text-l3"
+															className="px-2 prose dark:prose-invert max-w-full wrap-break-word text-lg font-normal text-d3 dark:text-l3"
 															style={{ lineHeight: "2" }}
 														>
 															<ReactMarkdown
@@ -483,7 +481,7 @@ export default function Home() {
 						</motion.div>
 					)}
 				</AnimatePresence>
-				<div className="flex flex-col justify-center p-2 w-full rounded-2xl shadow-lg/50 shadow-l5 dark:shadow-d5 border-1 border-l5 dark:border-d5">
+				<div className="flex flex-col justify-center p-2 w-full rounded-4xl shadow-lg/50 shadow-l5 dark:shadow-d5 border-1 border-l5 dark:border-d5">
 					<AnimatePresence>
 						{isPanelOpen && (
 							<motion.div
@@ -499,7 +497,7 @@ export default function Home() {
 								className="flex flex-col justify-center"
 								onAnimationComplete={() => setHasMounted(true)}
 							>
-								<div className="flex flex-row pl-2 pb-2">
+								<div className="px-2 flex flex-row">
 									<Textarea
 										isRequired
 										cacheMeasurements={true}
@@ -509,7 +507,7 @@ export default function Home() {
 										variant="underlined"
 										validationBehavior="aria"
 										placeholder="AI に訊きたい質問はある？"
-										className="text-d1 dark:text-l1"
+										className="text-d1 dark:text-l1 no-after-content"
 										value={inputText}
 										onChange={(e) => setInputText(e.target.value)}
 										onKeyDown={(e) => {
@@ -523,11 +521,10 @@ export default function Home() {
 										aria-label="Mic Button"
 										isIconOnly
 										radius="full"
-										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
-											isListening
+										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isListening
 												? "text-l3 bg-red"
 												: "text-d3 dark:text-l3 bg-transparent"
-										}`}
+											}`}
 										onPress={toggleListening}
 									>
 										{isListening ? <Mic /> : <MicOff />}
@@ -539,11 +536,10 @@ export default function Home() {
 											aria-label="Sliders Button"
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
-												activeContent === "sliders"
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "sliders"
 													? "bg-l3 dark:bg-d3"
 													: "bg-transparent"
-											}`}
+												}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "sliders" ? null : "sliders",
@@ -556,11 +552,10 @@ export default function Home() {
 											aria-label="Image Button"
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${
-												activeContent === "images"
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "images"
 													? "bg-l3 dark:bg-d3"
 													: "bg-transparent"
-											}`}
+												}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "images" ? null : "images",
@@ -616,13 +611,12 @@ export default function Home() {
 											aria-label={isLoading ? "Abort Button" : "Send Button"}
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${
-												isLoading
+											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isLoading
 													? "text-l3 bg-red"
 													: inputText.trim() !== "" || images.problem.length > 0
 														? "text-l3 bg-blue"
 														: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
-											}`}
+												}`}
 											onPress={() => (isLoading ? handleAbort() : handleSend())}
 											disabled={
 												!isLoading &&
