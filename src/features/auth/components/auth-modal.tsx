@@ -56,9 +56,9 @@ export default function AuthModal() {
 							exit="exit"
 							transition={{ duration: 0.25, ease: easeOut }}
 							onClick={(e) => e.stopPropagation()}
-							className="flex h-[75%] max-h-[calc(448px*1.25)] flex-col items-center justify-start gap-12 bg-l2 p-4 max-md:w-full max-md:rounded-t-4xl md:w-md md:rounded-4xl dark:bg-d2"
+							className="flex h-[75%] max-h-[calc(448px*1.25)] flex-col items-center justify-start gap-12 bg-l2 p-8 max-md:w-full max-md:rounded-t-4xl md:w-md md:rounded-4xl dark:bg-d2"
 						>
-							<div className="relative flex h-12 w-full items-center justify-center rounded-2xl">
+							<div className="relative flex w-full items-center justify-center rounded-2xl">
 								<span className="font-bold text-2xl text-d2 dark:text-l2">
 									ログイン
 								</span>
@@ -71,12 +71,12 @@ export default function AuthModal() {
 									<X size="24" />
 								</Button>
 							</div>
-							<div className="flex h-auto w-full flex-col items-center justify-start gap-6">
+							<div className="flex w-full flex-col items-center justify-start gap-6">
 								<Input
 									isRequired
 									label="メールアドレス"
 									type="email"
-									className="[&>div]:rounded-2xl [&>div]:bg-l3 [&>div]:dark:bg-d3"
+									className="[&>div:first-child]:h-16 [&>div]:rounded-2xl [&>div]:bg-l3 [&>div]:dark:bg-d3 [&_input]:text-base"
 								/>
 								<Input
 									isRequired
@@ -92,7 +92,7 @@ export default function AuthModal() {
 											{isVisible ? <Eye size="20" /> : <EyeClosed size="20" />}
 										</Button>
 									}
-									className="[&>div]:rounded-2xl [&>div]:bg-l3 [&>div]:dark:bg-d3"
+									className="[&>div:first-child]:h-16 [&>div]:rounded-2xl [&>div]:bg-l3 [&>div]:dark:bg-d3 [&_input]:text-base"
 								/>
 							</div>
 							<div className="flex h-auto w-full flex-col items-center justify-start">
