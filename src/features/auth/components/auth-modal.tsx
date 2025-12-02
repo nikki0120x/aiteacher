@@ -5,7 +5,7 @@ import { useMediaQuery } from "react-responsive";
 import { motion, AnimatePresence, easeOut } from "motion/react";
 import { useAuthStore } from "@/stores/useAuth";
 import { Button, Input } from "@heroui/react";
-import { X, Mail, KeyRound, Eye, EyeClosed } from "lucide-react";
+import { X, Eye, EyeClosed } from "lucide-react";
 
 export default function AuthModal() {
 	const { isModalOpen, closeModal } = useAuthStore();
@@ -58,7 +58,7 @@ export default function AuthModal() {
 							onClick={(e) => e.stopPropagation()}
 							className="flex h-[75%] max-h-[calc(448px*1.25)] flex-col items-center justify-start gap-12 bg-l2 p-8 max-md:w-full max-md:rounded-t-4xl md:w-md md:rounded-4xl dark:bg-d2"
 						>
-							<div className="relative flex w-full items-center justify-center rounded-2xl">
+							<div className="relative flex w-full items-center justify-center">
 								<span className="font-bold text-2xl text-d2 dark:text-l2">
 									ログイン
 								</span>
@@ -76,7 +76,7 @@ export default function AuthModal() {
 									isRequired
 									label="メールアドレス"
 									type="email"
-									className="[&>div:first-child]:h-16 [&>div]:rounded-2xl [&>div]:bg-l3 [&>div]:dark:bg-d3 [&_input]:text-base"
+									className="[&>div:first-child]:h-16 [&>div:first-child]:px-4 [&>div]:rounded-3xl [&>div]:bg-l3 [&>div]:dark:bg-d3 [&_input]:text-base"
 								/>
 								<Input
 									isRequired
@@ -87,20 +87,20 @@ export default function AuthModal() {
 											aria-label="Toggle password visibility"
 											isIconOnly
 											onPress={toggleVisibility}
-											className="h-full w-auto rounded-2xl bg-transparent text-d3 transition-all duration-250 dark:text-l3"
+											className="h-full w-12 rounded-2xl bg-transparent text-d3 transition-all duration-250 dark:text-l3"
 										>
 											{isVisible ? <Eye size="20" /> : <EyeClosed size="20" />}
 										</Button>
 									}
-									className="[&>div:first-child]:h-16 [&>div]:rounded-2xl [&>div]:bg-l3 [&>div]:dark:bg-d3 [&_input]:text-base"
+									className="[&>div:first-child]:h-16 [&>div:first-child]:px-4 [&>div]:rounded-3xl [&>div]:bg-l3 [&>div]:dark:bg-d3 [&_input]:text-base"
 								/>
 							</div>
 							<div className="flex h-auto w-full flex-col items-center justify-start">
 								<Button
-									aria-label="Send login information"
-									className="h-16 w-full rounded-2xl bg-blue text-l1 transition-all duration-250"
+									aria-label="Submit login information"
+									className="h-16 w-full rounded-3xl bg-blue text-l1 transition-all duration-250"
 								>
-									<span className="text-xl font-medium">ログイン</span>
+									<span className="font-medium text-xl">ログイン</span>
 								</Button>
 							</div>
 						</motion.div>
