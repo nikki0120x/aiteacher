@@ -55,12 +55,12 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<HeroUIProvider>
-						<div className="flex flex-row w-dvw h-dvh">
+						<div className="flex h-dvh w-dvw flex-row">
 							<Sidebar />
-							<div className="flex flex-col w-full h-full">
+							<div className="flex h-full w-full flex-col">
 								<Header />
-								<main className="flex flex-col justify-center items-center w-full h-full overflow-hidden">
-									<div className="flex flex-col p-4 w-full max-w-3xl h-full">
+								<main className="flex h-full w-full flex-col items-center justify-center overflow-hidden">
+									<div className="flex h-full w-full max-w-3xl flex-col p-4">
 										{children}
 									</div>
 								</main>

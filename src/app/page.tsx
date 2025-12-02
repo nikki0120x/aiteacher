@@ -128,7 +128,7 @@ export default function Home() {
 				images.problem,
 				sliders,
 				switchState,
-				() => { },
+				() => {},
 				setImages,
 			);
 		},
@@ -190,8 +190,9 @@ export default function Home() {
 			setIsDragActive(false);
 		};
 
-		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${isDragActive ? "border-blue bg-blue/25" : "border-ld"
-			}`;
+		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
+			isDragActive ? "border-blue bg-blue/25" : "border-ld"
+		}`;
 
 		return (
 			<div
@@ -225,7 +226,7 @@ export default function Home() {
 	// ---------- フロントエンド ---------- //
 
 	return (
-		<motion.div className="flex flex-col w-full h-full relative">
+		<motion.div className="relative flex h-full w-full flex-col">
 			<motion.div
 				initial={{ flex: 0, height: 0, opacity: 0 }}
 				animate={{
@@ -237,10 +238,10 @@ export default function Home() {
 					duration: 0.5,
 					ease: "easeInOut",
 				}}
-				className="flex flex-col w-full h-full overflow-hidden"
+				className="flex h-full w-full flex-col overflow-hidden"
 				ref={chatHistoryRef}
 			>
-				<ScrollShadow hideScrollBar visibility="none" className="w-full h-full">
+				<ScrollShadow hideScrollBar visibility="none" className="h-full w-full">
 					<AnimatePresence mode="sync">
 						{turns.map((turn) => {
 							const isLatestTurn = turn.user.id === lastTurnId;
@@ -267,11 +268,11 @@ export default function Home() {
 								key: keyof typeof switchState;
 								title: string;
 							}[] = [
-									{ key: "summary", title: "要約" },
-									{ key: "guidance", title: "指針" },
-									{ key: "explanation", title: "解説" },
-									{ key: "answer", title: "解答" },
-								];
+								{ key: "summary", title: "要約" },
+								{ key: "guidance", title: "指針" },
+								{ key: "explanation", title: "解説" },
+								{ key: "answer", title: "解答" },
+							];
 
 							const enabledSections = allSectionDefs.filter(
 								(s) => state[s.key],
@@ -322,11 +323,11 @@ export default function Home() {
 									<Card
 										shadow="none"
 										radius="lg"
-										className="rounded-4xl w-full h-auto mb-2 bg-l2 dark:bg-d2"
+										className="mb-2 h-auto w-full rounded-4xl bg-l2 dark:bg-d2"
 									>
 										<CardBody>
 											<div
-												className="px-2 flex justify-start items-center overflow-x-hidden select-text prose dark:prose-invert max-w-full wrap-break-word text-lg font-medium text-d3 dark:text-l3"
+												className="prose dark:prose-invert wrap-break-word flex max-w-full select-text items-center justify-start overflow-x-hidden px-2 font-medium text-d3 text-lg dark:text-l3"
 												style={{
 													minHeight: "2rem",
 													maxHeight: `calc(2rem * 3)`,
@@ -348,7 +349,7 @@ export default function Home() {
 										<Accordion
 											selectionMode="multiple"
 											variant="bordered"
-											className="rounded-4xl border-2 border-l2 dark:border-d2 bg-l2 dark:bg-d2 text-base font-medium text-d2 dark:text-l2"
+											className="rounded-4xl border-2 border-l2 bg-l2 font-medium text-base text-d2 dark:border-d2 dark:bg-d2 dark:text-l2"
 										>
 											{sections.map((sec, i) => {
 												let icon = null;
@@ -386,13 +387,12 @@ export default function Home() {
 														aria-label={sec.title}
 														title={
 															<span
-																className={`
-                            text-xl font-medium no-select
-                            ${sec.title === "要約" ? "text-sky-500" : ""}
-                            ${sec.title === "指針" || sec.title === "応答"
-																		? "text-orange-500"
-																		: ""
-																	}
+																className={`no-select font-medium text-xl ${sec.title === "要約" ? "text-sky-500" : ""}
+                            ${
+															sec.title === "指針" || sec.title === "応答"
+																? "text-orange-500"
+																: ""
+														}
                             ${sec.title === "解説" ? "text-rose-500" : ""}
                             ${sec.title === "解答" ? "text-lime-500" : ""}
 																			`}
@@ -404,7 +404,7 @@ export default function Home() {
 														classNames={{ trigger: "px-2 cursor-pointer" }}
 													>
 														<div
-															className="px-2 prose dark:prose-invert max-w-full wrap-break-word text-lg font-normal text-d3 dark:text-l3"
+															className="prose dark:prose-invert wrap-break-word max-w-full px-2 font-normal text-d3 text-lg dark:text-l3"
 															style={{ lineHeight: "2" }}
 														>
 															<ReactMarkdown
@@ -437,7 +437,7 @@ export default function Home() {
 					duration: 0.5,
 					ease: "easeInOut",
 				}}
-				className="flex flex-col justify-center items-center gap-10 w-full h-full no-select"
+				className="no-select flex h-full w-full flex-col items-center justify-center gap-10"
 			>
 				<AnimatePresence>
 					{!isSent && (
@@ -447,11 +447,11 @@ export default function Home() {
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							transition={{ duration: 0.5, ease: "easeInOut" }}
-							className="flex flex-row justify-center items-center gap-4 w-full h-auto"
+							className="flex h-auto w-full flex-row items-center justify-center gap-4"
 						>
 							<Divider
 								orientation="horizontal"
-								className="flex-1 mr-8 bg-d5 dark:bg-l5"
+								className="mr-8 flex-1 bg-d5 dark:bg-l5"
 							/>
 							<Image
 								src="/logos/dark.webp"
@@ -465,23 +465,23 @@ export default function Home() {
 								alt="Logo (Light)"
 								width={128}
 								height={128}
-								className="object-contain hidden dark:block"
+								className="hidden object-contain dark:block"
 							/>
 							<Divider
 								orientation="vertical"
 								className="max-h-10 bg-d5 dark:bg-l5"
 							/>
-							<span className="overflow-hidden whitespace-nowrap text-ellipsis text-center text-xl font-medium text-d5 dark:text-l5">
+							<span className="overflow-hidden text-ellipsis whitespace-nowrap text-center font-medium text-d5 text-xl dark:text-l5">
 								Ver. {packageJson.version}
 							</span>
 							<Divider
 								orientation="horizontal"
-								className="flex-1 ml-8 bg-d5 dark:bg-l5"
+								className="ml-8 flex-1 bg-d5 dark:bg-l5"
 							/>
 						</motion.div>
 					)}
 				</AnimatePresence>
-				<div className="flex flex-col justify-center p-2 w-full rounded-4xl shadow-lg/50 shadow-l5 dark:shadow-d5 border-1 border-l5 dark:border-d5">
+				<div className="flex w-full flex-col justify-center rounded-4xl border-1 border-l5 p-2 shadow-l5 shadow-lg/50 dark:border-d5 dark:shadow-d5">
 					<AnimatePresence>
 						{isPanelOpen && (
 							<motion.div
@@ -497,7 +497,7 @@ export default function Home() {
 								className="flex flex-col justify-center"
 								onAnimationComplete={() => setHasMounted(true)}
 							>
-								<div className="px-2 flex flex-row">
+								<div className="flex flex-row px-2">
 									<Textarea
 										isRequired
 										cacheMeasurements={true}
@@ -507,7 +507,7 @@ export default function Home() {
 										variant="underlined"
 										validationBehavior="aria"
 										placeholder="AI に訊きたい質問はある？"
-										className="text-d1 dark:text-l1 no-after-content"
+										className="no-after-content text-d1 dark:text-l1"
 										value={inputText}
 										onChange={(e) => setInputText(e.target.value)}
 										onKeyDown={(e) => {
@@ -521,10 +521,11 @@ export default function Home() {
 										aria-label="Mic Button"
 										isIconOnly
 										radius="full"
-										className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isListening
-												? "text-l3 bg-red"
-												: "text-d3 dark:text-l3 bg-transparent"
-											}`}
+										className={`border-1 border-l3 shadow-l3 shadow-lg dark:border-d3 dark:shadow-d3 ${
+											isListening
+												? "bg-red text-l3"
+												: "bg-transparent text-d3 dark:text-l3"
+										}`}
 										onPress={toggleListening}
 									>
 										{isListening ? <Mic /> : <MicOff />}
@@ -536,10 +537,11 @@ export default function Home() {
 											aria-label="Sliders Button"
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "sliders"
+											className={`border-1 border-l3 text-d3 shadow-l3 shadow-lg dark:border-d3 dark:text-l3 dark:shadow-d3 ${
+												activeContent === "sliders"
 													? "bg-l3 dark:bg-d3"
 													: "bg-transparent"
-												}`}
+											}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "sliders" ? null : "sliders",
@@ -552,10 +554,11 @@ export default function Home() {
 											aria-label="Image Button"
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 text-d3 dark:text-l3 ${activeContent === "images"
+											className={`border-1 border-l3 text-d3 shadow-l3 shadow-lg dark:border-d3 dark:text-l3 dark:shadow-d3 ${
+												activeContent === "images"
 													? "bg-l3 dark:bg-d3"
 													: "bg-transparent"
-												}`}
+											}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "images" ? null : "images",
@@ -577,7 +580,7 @@ export default function Home() {
 												<Button
 													aria-label="Select a Response Mode Button"
 													radius="full"
-													className="shadow-lg shadow-l3 dark:shadow-d3 bg-transparent border-1 border-l3 dark:border-d3 text-base font-medium text-d3 dark:text-l3 hover:bg-l3 hover:dark:bg-d3"
+													className="border-1 border-l3 bg-transparent font-medium text-base text-d3 shadow-l3 shadow-lg hover:bg-l3 dark:border-d3 dark:text-l3 dark:shadow-d3 hover:dark:bg-d3"
 												>
 													{selectedModeLabel}
 													<ChevronDown size={16} />
@@ -611,12 +614,13 @@ export default function Home() {
 											aria-label={isLoading ? "Abort Button" : "Send Button"}
 											isIconOnly
 											radius="full"
-											className={`shadow-lg shadow-l3 dark:shadow-d3 border-1 border-l3 dark:border-d3 ${isLoading
-													? "text-l3 bg-red"
+											className={`border-1 border-l3 shadow-l3 shadow-lg dark:border-d3 dark:shadow-d3 ${
+												isLoading
+													? "bg-red text-l3"
 													: inputText.trim() !== "" || images.problem.length > 0
-														? "text-l3 bg-blue"
-														: "text-d3 dark:text-l3 bg-l3 dark:bg-d3"
-												}`}
+														? "bg-blue text-l3"
+														: "bg-l3 text-d3 dark:bg-d3 dark:text-l3"
+											}`}
 											onPress={() => (isLoading ? handleAbort() : handleSend())}
 											disabled={
 												!isLoading &&
@@ -639,10 +643,10 @@ export default function Home() {
 											<ScrollShadow
 												hideScrollBar
 												visibility="none"
-												className="w-full h-full"
+												className="h-full w-full"
 											>
 												{activeContent === "sliders" && (
-													<div className="flex flex-col gap-8 justify-center p-2 w-full h-full">
+													<div className="flex h-full w-full flex-col justify-center gap-8 p-2">
 														<Slider
 															className="w-full"
 															value={sliders.politeness}
@@ -704,25 +708,25 @@ export default function Home() {
 
 												{activeContent === "images" && (
 													<DndContext>
-														<div className="w-full h-full">
+														<div className="h-full w-full">
 															<DroppableArea
 																tabKey="problem"
 																inputRef={problemInputRef}
 															>
 																{images.problem.length === 0 ? (
-																	<div className="flex flex-col gap-2 justify-center items-center p-8 w-full h-full">
+																	<div className="flex h-full w-full flex-col items-center justify-center gap-2 p-8">
 																		<Button
 																			aria-label="Upload Images Button"
 																			size="lg"
 																			radius="full"
-																			className="text-center text-xl font-medium text-l1 bg-blue"
+																			className="bg-blue text-center font-medium text-l1 text-xl"
 																			onPress={() =>
 																				problemInputRef.current?.click()
 																			}
 																		>
 																			画像アップロード
 																		</Button>
-																		<span className="text-lg font-medium text-ld">
+																		<span className="font-medium text-ld text-lg">
 																			ファイルをドラッグ&ドロップ
 																		</span>
 																	</div>
@@ -749,14 +753,14 @@ export default function Home() {
 																						alt={item.fileName}
 																						width={160}
 																						height={160}
-																						className="rounded-lg object-cover aspect-square"
+																						className="aspect-square rounded-lg object-cover"
 																					/>
 																					<Button
 																						aria-label="Remove Image Button"
 																						isIconOnly
 																						size="sm"
 																						radius="full"
-																						className="absolute top-1 right-1 z-10 text-l3 bg-red"
+																						className="absolute top-1 right-1 z-10 bg-red text-l3"
 																						onPress={() =>
 																							handleImageRemove(
 																								"problem",
