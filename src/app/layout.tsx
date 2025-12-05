@@ -1,7 +1,5 @@
 /* src\app\layout.tsx */
-
 "use client";
-
 import { useEffect, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
@@ -56,6 +54,7 @@ export default function RootLayout({
 				>
 					<HeroUIProvider>
 						<div className="flex h-dvh w-dvw flex-row">
+							<AuthModal />
 							<Sidebar />
 							<div className="flex h-full w-full flex-col">
 								<Header />

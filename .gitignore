@@ -60,3 +60,5 @@ Thumbs.db
 .idea/
 .vscode/
 .env*.local
+
+/src/generated/prisma

@@ -1,6 +1,7 @@
 import { heroui } from "@heroui/react";
 
 const colorBlue = "#00a6f4";
+const colorRed = "#ff2815";
 
 export default heroui({
 	themes: {
@@ -9,6 +10,9 @@ export default heroui({
 				primary: {
 					DEFAULT: colorBlue,
 				},
+				danger: {
+					DEFAULT: colorRed,
+				},
 			},
 		},
 
@@ -16,6 +20,9 @@ export default heroui({
 			colors: {
 				primary: {
 					DEFAULT: colorBlue,
+				},
+				danger: {
+					DEFAULT: colorRed,
 				},
 			},
 		},

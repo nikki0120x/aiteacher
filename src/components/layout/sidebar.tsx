@@ -137,15 +137,15 @@ export default function Sidebar() {
 						className={`flex h-full w-full flex-1 flex-col items-start justify-start p-4 transition-all duration-250 ${isOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
 					>
 						{!isLoggedIn && (
-							<div className="flex h-auto w-88 flex-col gap-4 overflow-hidden rounded-2xl bg-l3 p-4 dark:bg-d3">
-								<span className="select-text font-medium text-d3 text-lg dark:text-l3">
+							<div className="flex h-60 w-auto flex-col gap-4 overflow-hidden rounded-2xl bg-l3 p-4 dark:bg-d3">
+								<span className="select-text overflow-hidden font-medium text-d3 text-lg dark:text-l3">
 									ログインするとチャット履歴を保存できます。
 									<br />
 									ログイン後はここから最新のチャット履歴と作成したチャット履歴を利用できます。
 								</span>
 								<Button
 									aria-label="Login Button"
-									className="flex h-12 w-auto flex-row items-center justify-center gap-4 overflow-hidden rounded-4xl bg-blue outline-none transition-all duration-250"
+									className="flex h-12 w-auto shrink-0 flex-row items-center justify-center gap-4 overflow-hidden rounded-4xl bg-blue outline-none transition-all duration-250"
 									onPress={openModal}
 								>
 									<span className="font-black text-l1 text-lg">ログイン</span>
