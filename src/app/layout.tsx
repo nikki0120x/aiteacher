@@ -62,6 +62,7 @@ export default function RootLayout({
 								<main className="flex h-full w-full flex-col items-center justify-center overflow-hidden">
 									<div className="flex h-full w-full max-w-3xl flex-col p-4">
 										{children}
+										<AuthModal />
 									</div>
 								</main>
 							</div>

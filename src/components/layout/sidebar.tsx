@@ -19,7 +19,7 @@ export default function Sidebar() {
 		setAbortController,
 	} = useChatStore();
 
-	const { isLoggedIn, openModal } = useAuthStore();
+	const { openModal } = useAuthStore();
 
 	// ---------- メニュー ---------- //
 
@@ -72,11 +72,10 @@ export default function Sidebar() {
 				size="lg"
 				radius="full"
 				onPress={() => setIsOpen(!isOpen)}
-				className={`fixed top-0 left-0 z-100 h-16 w-16 rounded-none text-d2 outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4 ${
-					isOpen
+				className={`fixed top-0 left-0 z-100 h-16 w-16 rounded-none text-d2 outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4 ${isOpen
 						? "max-md:rounded-br-4xl max-md:bg-l2 md:rounded-br-4xl md:bg-l2 md:dark:bg-d2 max-md:dark:bg-d2"
 						: "max-md:rounded-br-4xl max-md:bg-l1 md:rounded-none md:bg-l2 md:dark:bg-d2 max-md:dark:bg-d1"
-				}`}
+					}`}
 			>
 				<Menu />
 			</Button>
@@ -86,9 +85,8 @@ export default function Sidebar() {
 				size="lg"
 				radius="full"
 				onPress={handleNewChat}
-				className={`absolute top-0 right-0 z-100 h-16 w-16 rounded-none bg-l1 text-d2 outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:bg-d1 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4 ${
-					isOpen && isSmallScreen ? "rounded-bl-none" : "rounded-bl-4xl"
-				}`}
+				className={`absolute top-0 right-0 z-100 h-16 w-16 rounded-none bg-l1 text-d2 outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:bg-d1 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4 ${isOpen && isSmallScreen ? "rounded-bl-none" : "rounded-bl-4xl"
+					}`}
 			>
 				<SquarePen />
 			</Button>
@@ -122,36 +120,32 @@ export default function Sidebar() {
 				>
 					<div className="flex h-16 w-full flex-row items-center justify-between">
 						<div className="h-full w-16 shrink-0 overflow-hidden"></div>
-						{!isLoggedIn && (
-							<Button
-								aria-label="Account Button"
-								className={`flex h-full w-auto flex-row items-center justify-start gap-4 overflow-hidden rounded-none bg-blue text-l1 outline-none transition-all duration-250 ${isOpen || isMobile ? "rounded-bl-4xl" : "rounded-bl-none"}`}
-								onPress={openModal}
-							>
-								<CircleUserRound className="h-16 w-16 shrink-0 p-0.5" />
-								<span className="font-black text-l1 text-lg">ログイン</span>
-							</Button>
-						)}
+						<Button
+							aria-label="Account Button"
+							className={`flex h-full w-auto flex-row items-center justify-start gap-4 overflow-hidden rounded-none bg-blue text-l1 outline-none transition-all duration-250 ${isOpen || isMobile ? "rounded-bl-4xl" : "rounded-bl-none"}`}
+							onPress={openModal}
+						>
+							<CircleUserRound className="h-16 w-16 shrink-0 p-0.5" />
+							<span className="font-black text-l1 text-lg">ログイン</span>
+						</Button>
 					</div>
 					<div
 						className={`flex h-full w-full flex-1 flex-col items-start justify-start p-4 transition-all duration-250 ${isOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
 					>
-						{!isLoggedIn && (
-							<div className="flex h-auto w-88 flex-col gap-4 overflow-hidden rounded-2xl bg-l3 p-4 dark:bg-d3">
-								<span className="select-text font-medium text-d3 text-lg dark:text-l3">
-									ログインするとチャット履歴を保存できます。
-									<br />
-									ログイン後はここから最新のチャット履歴と作成したチャット履歴を利用できます。
-								</span>
-								<Button
-									aria-label="Login Button"
-									className="flex h-12 w-auto flex-row items-center justify-center gap-4 overflow-hidden rounded-4xl bg-blue outline-none transition-all duration-250"
-									onPress={openModal}
-								>
-									<span className="font-black text-l1 text-lg">ログイン</span>
-								</Button>
-							</div>
-						)}
+						<div className="flex h-auto w-88 flex-col gap-4 overflow-hidden rounded-2xl bg-l3 p-4 dark:bg-d3">
+							<span className="select-text font-medium text-d3 text-lg dark:text-l3">
+								ログインするとチャット履歴を保存できます。
+								<br />
+								ログイン後はここから最新のチャット履歴と作成したチャット履歴を利用できます。
+							</span>
+							<Button
+								aria-label="Login Button"
+								className="flex h-12 w-auto flex-row items-center justify-center gap-4 overflow-hidden rounded-4xl bg-blue outline-none transition-all duration-250"
+								onPress={openModal}
+							>
+								<span className="font-black text-l1 text-lg">ログイン</span>
+							</Button>
+						</div>
 					</div>
 					<Button
 						aria-label="Settings Button"

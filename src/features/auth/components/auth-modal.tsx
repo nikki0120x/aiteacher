@@ -2,10 +2,13 @@
 "use client";
 import { useState } from "react";
 import { useMediaQuery } from "react-responsive";
-import { motion, AnimatePresence, easeOut } from "motion/react";
+import { motion, AnimatePresence, easeOut, type PanInfo } from "motion/react";
 import { useAuthStore } from "@/stores/useAuth";
-import { Button, Input } from "@heroui/react";
-import { X, Mail, KeyRound, Eye, EyeClosed } from "lucide-react";
+import { Divider, Button } from "@heroui/react";
+import { X } from "lucide-react";
+import Image from "next/image";
+import SignInForm from "./signIn";
+import SignUpForm from "./signUp";
 
 export default function AuthModal() {
 	const { isModalOpen, closeModal } = useAuthStore();
@@ -29,11 +32,34 @@ export default function AuthModal() {
 	const isMobile = useMediaQuery({ maxWidth: 768 });
 	const variants = isMobile ? mobileVariants : desktopVariants;
 
-	const [isVisible, setIsVisible] = useState(false);
+	// ================================================================
+	//     2. ドラッグ終了時の処理
+	// ================================================================
 
-	const toggleVisibility = () => setIsVisible(!isVisible);
+	const [isDragging, setIsDragging] = useState(false);
 
-	// ---------- フロントエンド ---------- //
+	const VELOCITY_THRESHOLD = 500;
+
+	const handleDragEnd = (_: unknown, info: PanInfo) => {
+		setIsDragging(false);
+		if (isMobile) {
+			if (info.velocity.y > VELOCITY_THRESHOLD) {
+				closeModal();
+			}
+		}
+	};
+
+	// ================================================================
+	//     3. フォーム切り替え
+	// ================================================================
+
+	const [mode, setMode] = useState<"login" | "register">("login");
+	const switchToSignUp = () => setMode("register");
+	const switchToSignIn = () => setMode("login");
+
+	// ================================================================
+	//     0. フロントエンド
+	// ================================================================
 
 	return (
 		<div className="no-select">
@@ -45,8 +71,8 @@ export default function AuthModal() {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.25, ease: easeOut }}
-						onClick={closeModal}
-						className="fixed inset-0 z-500 flex h-full w-full justify-center bg-ld/50 backdrop-blur-[2px] max-md:items-end md:items-center"
+						onMouseDown={closeModal}
+						className="fixed z-500 flex h-full w-full justify-center bg-l3/50 backdrop-blur-[2px] max-md:items-end md:items-center dark:bg-d3/50"
 					>
 						<motion.div
 							key="auth-modal"
@@ -55,13 +81,40 @@ export default function AuthModal() {
 							animate="animate"
 							exit="exit"
 							transition={{ duration: 0.25, ease: easeOut }}
-							onClick={(e) => e.stopPropagation()}
-							className="flex h-[75%] max-h-[calc(448px*1.25)] flex-col items-center justify-start gap-12 bg-l2 p-4 max-md:w-full max-md:rounded-t-4xl md:w-md md:rounded-4xl dark:bg-d2"
+							drag={isMobile ? "y" : false}
+							dragConstraints={isMobile ? { top: 0 } : false}
+							onDragStart={() => setIsDragging(true)}
+							onDragEnd={handleDragEnd}
+							dragElastic={{ top: 0, bottom: 0.5 }}
+							dragSnapToOrigin={true}
+							dragTransition={{
+								bounceStiffness: 1000,
+								bounceDamping: 100,
+							}}
+							onMouseDown={(e) => e.stopPropagation()}
+							className={`relative z-500 flex h-[75%] max-h-[calc(448px*1.25)] flex-col items-center justify-start overflow-y-auto overflow-x-hidden bg-l2 p-8 shadow-ld shadow-lg/50 max-md:w-full max-md:rounded-t-4xl md:w-md md:rounded-4xl dark:bg-d2 ${isMobile ? (isDragging ? "cursor-grabbing" : "cursor-grab") : ""}`}
 						>
-							<div className="relative flex h-12 w-full items-center justify-center rounded-2xl">
-								<span className="font-bold text-2xl text-d2 dark:text-l2">
-									ログイン
-								</span>
+							{isMobile && (
+								<Divider
+									orientation="horizontal"
+									className={`mb-4 h-1 w-16 rounded-4xl transition-colors duration-250 ${isDragging ? "bg-d2 dark:bg-l2" : "bg-ld"}`}
+								/>
+							)}
+							<div className="relative flex h-16 w-full items-center justify-center">
+								<Image
+									src="/logos/dark.webp"
+									alt="Logo (Dark)"
+									width={96}
+									height={128}
+									className="object-contain dark:hidden"
+								/>
+								<Image
+									src="/logos/light.webp"
+									alt="Logo (Light)"
+									width={96}
+									height={96}
+									className="hidden object-contain dark:block"
+								/>
 								<Button
 									aria-label="Close Modal"
 									isIconOnly
@@ -71,38 +124,17 @@ export default function AuthModal() {
 									<X size="24" />
 								</Button>
 							</div>
-							<div className="flex h-auto w-full flex-col items-center justify-start gap-6">
-								<Input
-									isRequired
-									label="メールアドレス"
-									type="email"
-									className="[&>div]:rounded-2xl [&>div]:bg-l3 [&>div]:dark:bg-d3"
+							{mode === "login" ? (
+								<SignInForm
+									closeModal={closeModal}
+									switchToSignUp={switchToSignUp}
 								/>
-								<Input
-									isRequired
-									label="パスワード"
-									type={isVisible ? "text" : "password"}
-									endContent={
-										<Button
-											aria-label="Toggle password visibility"
-											isIconOnly
-											onPress={toggleVisibility}
-											className="h-full w-auto rounded-2xl bg-transparent text-d3 transition-all duration-250 dark:text-l3"
-										>
-											{isVisible ? <Eye size="20" /> : <EyeClosed size="20" />}
-										</Button>
-									}
-									className="[&>div]:rounded-2xl [&>div]:bg-l3 [&>div]:dark:bg-d3"
+							) : (
+								<SignUpForm
+									closeModal={closeModal}
+									switchToSignIn={switchToSignIn}
 								/>
-							</div>
-							<div className="flex h-auto w-full flex-col items-center justify-start">
-								<Button
-									aria-label="Send login information"
-									className="h-16 w-full rounded-2xl bg-blue text-l1 transition-all duration-250"
-								>
-									<span className="text-xl font-medium">ログイン</span>
-								</Button>
-							</div>
+							)}
 						</motion.div>
 					</motion.div>
 				)}
