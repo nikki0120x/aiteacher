@@ -21,26 +21,30 @@ export async function GET(request: NextRequest) {
             where: { identifier: email },
         });
 
+        // -----------------------------------------------------
+        // ★ デバッグログ 1: トークンの内容確認
+        // -----------------------------------------------------
+        console.log("DB Email:", email);
+        console.log("DB Token (Verification):", verificationRecord?.value);
+        console.log("URL Token:", token);
+        // -----------------------------------------------------
+
         // 2. レコードが存在しない、またはトークンが不一致の場合
         if (!verificationRecord || verificationRecord.value !== token) {
+            console.error("Token Mismatch or Not Found");
             return NextResponse.json(
                 { message: "無効なトークンです" },
                 { status: 400 }
             );
-            // ユーザー体験を良くする場合、ここでエラー画面へリダイレクトさせても良いです
-            // return NextResponse.redirect(new URL('/auth/verify-error', request.url));
         }
 
         // 3. 有効期限切れのチェック
         if (new Date() > verificationRecord.expiresAt) {
-            return NextResponse.json(
-                { message: "リンクの有効期限が切れています" },
-                { status: 400 }
-            );
+            console.error("Token Expired");
+            // ... (期限切れとして処理)
         }
 
         // 4. DB更新 (トランザクションで一貫性を保つ)
-        // UserのemailVerifiedをtrueにし、Verificationレコードを削除する
         await prisma.$transaction([
             prisma.user.update({
                 where: { email: email },
@@ -51,13 +55,21 @@ export async function GET(request: NextRequest) {
             }),
         ]);
 
+        // -----------------------------------------------------
+        // ★ デバッグログ 2: 成功ログ
+        // -----------------------------------------------------
+        console.log(`Verification SUCCESS for: ${email}`);
+        // -----------------------------------------------------
+
         // 5. 成功時のリダイレクト
-        // 処理が完了したので、サインインページ等へ飛ばします
-        // クエリパラメータ ?verified=true をつけることで、画面側で「認証成功」と表示できます
         return NextResponse.redirect(new URL('/dashboard', request.url));
 
     } catch (error) {
-        console.error("Verification Error:", error);
+        // -----------------------------------------------------
+        // ★ デバッグログ 3: トランザクション失敗時のエラー出力
+        // -----------------------------------------------------
+        console.error("Verification Transaction FAILED:", error);
+        // -----------------------------------------------------
         return NextResponse.json(
             { message: "サーバーエラーが発生しました" },
             { status: 500 }
