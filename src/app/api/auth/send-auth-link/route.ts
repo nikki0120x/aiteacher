@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
         const verificationUrl =
             `${process.env.NEXT_PUBLIC_BASE_URL}` +
-            `/api/verify-auth-link?token=${verificationToken}&email=${email}`;
+            `/api/auth/verify-auth-link?token=${verificationToken}&email=${email}`;
 
         await resend.emails.send({
             from: "FoCalrina <noreply@focalrina.com>",
