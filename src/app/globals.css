@@ -21,6 +21,7 @@
 	--color-blue: oklch(0.75 0.15 240);
 	--color-orange: oklch(70.5% 0.213 47.604);
 	--color-red: oklch(64.5% 0.246 16.439);
+	--color-yellow: oklch(0.9 0.2 90);
 	--color-lime: oklch(76.8% 0.233 130.85);
 }
 

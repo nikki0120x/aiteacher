@@ -203,15 +203,15 @@ export type VerificationOrderByWithRelationInput = {
 
 export type VerificationWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  identifier?: string
   AND?: Prisma.VerificationWhereInput | Prisma.VerificationWhereInput[]
   OR?: Prisma.VerificationWhereInput[]
   NOT?: Prisma.VerificationWhereInput | Prisma.VerificationWhereInput[]
-  identifier?: Prisma.StringFilter<"Verification"> | string
   value?: Prisma.StringFilter<"Verification"> | string
   expiresAt?: Prisma.DateTimeFilter<"Verification"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"Verification"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Verification"> | Date | string
-}, "id">
+}, "id" | "identifier">
 
 export type VerificationOrderByWithAggregationInput = {
   id?: Prisma.SortOrder

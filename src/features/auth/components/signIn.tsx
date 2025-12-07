@@ -1,126 +1,204 @@
-/* src\features\auth\components\login-form.tsx */
+/* src\features\auth\components\signIn.tsx */
 "use client";
 import type React from "react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Divider, Button, Form, Input, Spinner } from "@heroui/react";
-import { Eye, EyeClosed } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Divider, Button, Spinner } from "@heroui/react";
+import { Mail, KeyRound, X, TriangleAlert } from "lucide-react";
+import { Input, InputTips } from "@/components/ui";
 import { signIn } from "@/lib/auth-client";
+import { useAuthStore } from "@/stores/useAuth";
 
 interface SignInFormProps {
-    closeModal: () => void;
-    switchToSignUp: () => void;
+	closeModal: () => void;
+	switchToSignUp: () => void;
 }
 
-export default function SignInForm({
-    closeModal,
-    switchToSignUp,
-}: SignInFormProps) {
-    // ================================================================
-    //     1. サインインフォーム
-    // ================================================================
+type InputRef = React.ComponentRef<"input">;
 
-    const router = useRouter();
-    const [error, setError] = useState<string | null>(null);
+export default function SignInForm({ switchToSignUp }: SignInFormProps) {
+	const { closeModal } = useAuthStore();
 
-    // ================================================================
-    //     2. パスワード 表示 / 非表示 切り替え
-    // ================================================================
+	// ================================================================
+	//     1. サインインフォーム
+	// ================================================================
 
-    const [isVisible, setIsVisible] = useState(false);
-    const toggleVisibility = () => setIsVisible(!isVisible);
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
-        setError(null);
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const emailInputRef = useRef<InputRef>(null);
+	const passwordInputRef = useRef<InputRef>(null);
 
-        const formData = new FormData(e.currentTarget);
+	const handleClearEmail = () => {
+		setEmail("");
+		emailInputRef.current?.focus();
+	};
 
-        const res = await signIn.email({
-            email: formData.get("email") as string,
-            password: formData.get("password") as string,
-        });
+	const handleClearPassword = () => {
+		setPassword("");
+		passwordInputRef.current?.focus();
+	};
 
-        if (res.error) {
-            setError(res.error.message || "Something went wrong.");
-        } else {
-            router.push("/dashboard");
-        }
-    }
+	// ================================================================
+	//     2. パスワード 表示 / 非表示 切り替え
+	// ================================================================
 
-    // ================================================================
-    //     0. フロントエンド
-    // ================================================================
+	async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+		e.preventDefault();
+		setIsLoading(true);
+		setError(null);
 
-    return (
-        <div className="h-full w-full">
-            <div className="relative mt-2 mb-6 flex h-8 w-full flex-row items-center justify-center">
-                <Divider
-                    orientation="horizontal"
-                    className="h-px w-full flex-1 rounded-4xl bg-d2 dark:bg-l2"
-                />
-                <span className="mx-4 font-bold text-d2 text-xl dark:text-l2">
-                    アカウントサインイン
-                </span>
-                <Divider
-                    orientation="horizontal"
-                    className="h-px w-full flex-1 rounded-4xl bg-d2 dark:bg-l2"
-                />
-            </div>
-            <Form
-                onSubmit={handleSubmit}
-                className="flex w-full flex-col items-center justify-start gap-4"
-            >
-                <Input
-                    isRequired
-                    label="メールアドレス"
-                    type="email"
-                    maxLength={255}
-                    className="[&>div:first-child]:h-16 [&>div:first-child]:px-4 [&>div:nth-child(2)]:bg-transparent [&>div]:rounded-3xl [&>div]:bg-l3 [&>div]:dark:bg-d3 [&_input]:text-base"
-                />
-                <Input
-                    isRequired
-                    label="パスワード"
-                    type={isVisible ? "text" : "password"}
-                    minLength={8}
-                    maxLength={32}
-                    endContent={
-                        <Button
-                            aria-label="Toggle Password Visibility"
-                            isIconOnly
-                            onPress={toggleVisibility}
-                            className="h-full w-12 rounded-2xl bg-transparent text-d3 transition-all duration-250 dark:text-l3"
-                        >
-                            {isVisible ? <Eye size="20" /> : <EyeClosed size="20" />}
-                        </Button>
-                    }
-                    className="[&>div:first-child]:h-16 [&>div:first-child]:px-4 [&>div:nth-child(2)]:bg-transparent [&>div]:rounded-3xl [&>div]:bg-l3 [&>div]:dark:bg-d3 [&_input]:text-base"
-                />
-                <Button
-                    aria-label="Submit SignIn Information"
-                    type="submit"
-                    className="my-4 h-16 w-full rounded-3xl bg-blue text-l1 transition-all duration-250"
-                >
-                    <span className="font-medium text-xl">サインイン</span>
-                </Button>
-            </Form>
-            <div className="flex flex-row items-center justify-between">
-                <Button
-                    aria-label="Forgot Password"
-                    className="bg-transparent hover:bg-blue/10 focus-visible:bg-blue/10 active:bg-blue/10"
-                >
-                    <span className="font-medium text-base text-blue">
-                        パスワードを忘れた
-                    </span>
-                </Button>
-                <Button
-                    aria-label="SignUp Now"
-                    onPress={switchToSignUp}
-                    className="bg-transparent hover:bg-blue/10 focus-visible:bg-blue/10 active:bg-blue/10"
-                >
-                    <span className="font-medium text-base text-blue">サインアップ</span>
-                </Button>
-            </div>
-        </div>
-    );
+		const formData = new FormData(e.currentTarget);
+
+		const res = await signIn.email({
+			email: formData.get("email") as string,
+			password: formData.get("password") as string,
+		});
+
+		if (res.error) {
+			setError(res.error.message || "Something went wrong.");
+		} else {
+			closeModal();
+		}
+
+		setIsLoading(false);
+	}
+
+	const isFormValid = useMemo(() => {
+		return email.length > 0 && password.length > 0;
+	}, [email, password]);
+
+	// ================================================================
+	//     0. フロントエンド
+	// ================================================================
+
+	return (
+		<div className="h-full w-full overflow-y-auto overflow-x-hidden px-4">
+			<div className="relative mt-2 mb-6 flex h-8 w-full flex-row items-center justify-center">
+				<Divider
+					orientation="horizontal"
+					className="h-px w-full flex-1 rounded-4xl bg-d3 dark:bg-l3"
+				/>
+				<span className="mx-4 font-bold text-d3 text-xl dark:text-l3">
+					アカウント / サインイン
+				</span>
+				<Divider
+					orientation="horizontal"
+					className="h-px w-full flex-1 rounded-4xl bg-d3 dark:bg-l3"
+				/>
+			</div>
+			<form
+				onSubmit={handleSubmit}
+				className="flex w-full flex-col items-center justify-start gap-4"
+			>
+				<div className="flex h-auto w-full flex-col items-center justify-center gap-4">
+					<Input
+						required
+						name="email"
+						type="email"
+						maxLength={254}
+						autoComplete="email"
+						Icon={Mail}
+						label="メールアドレス"
+						value={email}
+						ref={emailInputRef}
+						onChange={(e) => setEmail(e.target.value)}
+						inputClassName={`${error ? "border-red" : ""} ${email ? "pr-12" : ""}`}
+						dynamicIconClassName={`${error ? "text-red!" : ""}`}
+						labelClassName={`${error ? "text-red!" : ""}`}
+						rightContent={
+							email ? (
+								<Button
+									isIconOnly
+									type="button"
+									onPress={handleClearEmail}
+									className="h-10 w-10 rounded-4xl bg-transparent transition-all duration-250 hover:bg-ld"
+								>
+									<X className="text-d1 dark:text-l1" />
+								</Button>
+							) : undefined
+						}
+					/>
+					<Input
+						required
+						name="password"
+						type="password"
+						minLength={8}
+						maxLength={32}
+						autoComplete="current-password"
+						Icon={KeyRound}
+						label="パスワード"
+						value={password}
+						ref={passwordInputRef}
+						onChange={(e) => setPassword(e.target.value)}
+						inputClassName={`${error ? "border-red" : ""}`}
+						dynamicIconClassName={`${error ? "text-red!" : ""}`}
+						labelClassName={`${error ? "text-red!" : ""}`}
+						rightContent={
+							password ? (
+								<Button
+									isIconOnly
+									type="button"
+									onPress={handleClearPassword}
+									className="h-10 w-10 rounded-4xl bg-transparent transition-all duration-250 hover:bg-ld"
+								>
+									<X className="text-d1 dark:text-l1" />
+								</Button>
+							) : undefined
+						}
+					/>
+					<AnimatePresence>
+						{error && (
+							<motion.div
+								key="error-tip"
+								initial={{ height: 0, opacity: 0 }}
+								animate={{ height: "auto", opacity: 1 }}
+								exit={{ height: 0, opacity: 0 }}
+								transition={{ duration: 0.25 }}
+								className="w-full"
+							>
+								<InputTips
+									Icon={TriangleAlert}
+									spanText={error || ""}
+									dynamicIconClassName="text-red"
+									spanClassName="text-red"
+								/>
+							</motion.div>
+						)}
+					</AnimatePresence>
+				</div>
+				<Button
+					aria-label="Submit SignIn Information"
+					type="submit"
+					isDisabled={isLoading || !isFormValid}
+					className="my-4 h-16 w-full rounded-3xl bg-blue text-l1 transition-all duration-250"
+				>
+					{isLoading ? (
+						<Spinner variant="dots" color="white" />
+					) : (
+						<span className="font-bold text-l1 text-xl">サインイン</span>
+					)}
+				</Button>
+			</form>
+			<div className="flex flex-row items-center justify-between">
+				<Button
+					aria-label="Forgot Password"
+					className="bg-transparent hover:bg-blue/10 focus-visible:bg-blue/10 active:bg-blue/10"
+				>
+					<span className="font-medium text-base text-blue">
+						パスワードを忘れた
+					</span>
+				</Button>
+				<Button
+					aria-label="SignUp Now"
+					onPress={switchToSignUp}
+					className="bg-transparent hover:bg-blue/10 focus-visible:bg-blue/10 active:bg-blue/10"
+				>
+					<span className="font-medium text-base text-blue">サインアップ</span>
+				</Button>
+			</div>
+		</div>
+	);
 }

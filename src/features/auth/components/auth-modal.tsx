@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useMediaQuery } from "react-responsive";
 import { motion, AnimatePresence, easeOut, type PanInfo } from "motion/react";
-import { useAuthStore } from "@/stores/useAuth";
 import { Divider, Button } from "@heroui/react";
 import { X } from "lucide-react";
+import { useAuthStore } from "@/stores/useAuth";
 import Image from "next/image";
 import SignInForm from "./signIn";
 import SignUpForm from "./signUp";
@@ -53,9 +53,9 @@ export default function AuthModal() {
 	//     3. フォーム切り替え
 	// ================================================================
 
-	const [mode, setMode] = useState<"login" | "register">("login");
-	const switchToSignUp = () => setMode("register");
-	const switchToSignIn = () => setMode("login");
+	const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
+	const switchToSignUp = () => setMode("signUp");
+	const switchToSignIn = () => setMode("signIn");
 
 	// ================================================================
 	//     0. フロントエンド
@@ -71,8 +71,7 @@ export default function AuthModal() {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.25, ease: easeOut }}
-						onMouseDown={closeModal}
-						className="fixed z-500 flex h-full w-full justify-center bg-l3/50 backdrop-blur-[2px] max-md:items-end md:items-center dark:bg-d3/50"
+						className="fixed inset-0 z-500 flex h-full w-full justify-center bg-l3/50 backdrop-blur-[2px] max-md:items-end md:items-center dark:bg-d3/50"
 					>
 						<motion.div
 							key="auth-modal"
@@ -92,7 +91,7 @@ export default function AuthModal() {
 								bounceDamping: 100,
 							}}
 							onMouseDown={(e) => e.stopPropagation()}
-							className={`relative z-500 flex h-[75%] max-h-[calc(448px*1.25)] flex-col items-center justify-start overflow-y-auto overflow-x-hidden bg-l2 p-8 shadow-ld shadow-lg/50 max-md:w-full max-md:rounded-t-4xl md:w-md md:rounded-4xl dark:bg-d2 ${isMobile ? (isDragging ? "cursor-grabbing" : "cursor-grab") : ""}`}
+							className={`relative z-500 flex h-auto max-h-[75%] flex-col items-center justify-start bg-l2 p-4 shadow-ld shadow-lg/50 max-md:w-full max-md:rounded-t-4xl md:w-md md:rounded-4xl dark:bg-d2 ${isMobile ? (isDragging ? "cursor-grabbing" : "cursor-grab") : ""}`}
 						>
 							{isMobile && (
 								<Divider
@@ -119,12 +118,12 @@ export default function AuthModal() {
 									aria-label="Close Modal"
 									isIconOnly
 									onPress={closeModal}
-									className="absolute right-0 h-12 w-12 rounded-2xl bg-l2 text-d2 transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:bg-d2 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4"
+									className="absolute right-0 h-12 w-12 rounded-4xl bg-l2 text-d2 transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:bg-d2 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4"
 								>
 									<X size="24" />
 								</Button>
 							</div>
-							{mode === "login" ? (
+							{mode === "signIn" ? (
 								<SignInForm
 									closeModal={closeModal}
 									switchToSignUp={switchToSignUp}

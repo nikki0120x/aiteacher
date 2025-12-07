@@ -72,10 +72,11 @@ export default function Sidebar() {
 				size="lg"
 				radius="full"
 				onPress={() => setIsOpen(!isOpen)}
-				className={`fixed top-0 left-0 z-100 h-16 w-16 rounded-none text-d2 outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4 ${isOpen
+				className={`fixed top-0 left-0 z-100 h-16 w-16 rounded-none text-d2 outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4 ${
+					isOpen
 						? "max-md:rounded-br-4xl max-md:bg-l2 md:rounded-br-4xl md:bg-l2 md:dark:bg-d2 max-md:dark:bg-d2"
 						: "max-md:rounded-br-4xl max-md:bg-l1 md:rounded-none md:bg-l2 md:dark:bg-d2 max-md:dark:bg-d1"
-					}`}
+				}`}
 			>
 				<Menu />
 			</Button>
@@ -85,8 +86,9 @@ export default function Sidebar() {
 				size="lg"
 				radius="full"
 				onPress={handleNewChat}
-				className={`absolute top-0 right-0 z-100 h-16 w-16 rounded-none bg-l1 text-d2 outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:bg-d1 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4 ${isOpen && isSmallScreen ? "rounded-bl-none" : "rounded-bl-4xl"
-					}`}
+				className={`absolute top-0 right-0 z-100 h-16 w-16 rounded-none bg-l1 text-d2 outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:bg-d1 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4 ${
+					isOpen && isSmallScreen ? "rounded-bl-none" : "rounded-bl-4xl"
+				}`}
 			>
 				<SquarePen />
 			</Button>
