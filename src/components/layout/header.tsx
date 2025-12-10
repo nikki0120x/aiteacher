@@ -71,18 +71,6 @@ export default function Header() {
 					}}
 				>
 					<DropdownItem
-						key="gemini-3-pro-preview"
-						description={aiModels["gemini-3-pro-preview"].description}
-					>
-						{aiModels["gemini-3-pro-preview"].label}
-					</DropdownItem>
-					<DropdownItem
-						key="gemini-2.5-pro"
-						description={aiModels["gemini-2.5-pro"].description}
-					>
-						{aiModels["gemini-2.5-pro"].label}
-					</DropdownItem>
-					<DropdownItem
 						key="gemini-2.5-flash"
 						description={aiModels["gemini-2.5-flash"].description}
 					>

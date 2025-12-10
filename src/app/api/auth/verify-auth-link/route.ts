@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
 
     try {
         const verificationRecord = await prisma.verification.findUnique({
-            where: { identifier: email },
+            where: {
+                value: token,
+                identifier: email,
+            },
         });
 
         if (!verificationRecord || verificationRecord.value !== token) {
