@@ -53,7 +53,7 @@ export type PostPayload = {
 
 export type ResponseMode = "learning" | "standard";
 
-export type AIModel = "gemini-2.5-pro" | "gemini-3-pro-preview";
+export type AIModel = "gemini-2.5-flash" | "gemini-2.5-flash-lite";
 
 export type MessageItem = {
 	id: string;
