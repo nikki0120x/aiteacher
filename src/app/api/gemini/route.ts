@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 		sliders,
 		images,
 		history,
-		model = "gemini-2.5-pro",
+		model = "gemini-2.5-flash",
 	}: PostPayload = await req.json();
 
 	if (!prompt && !images?.problem?.length) {
