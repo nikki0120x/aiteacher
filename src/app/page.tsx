@@ -472,7 +472,7 @@ export default function Home() {
 								className="max-h-10 bg-d5 dark:bg-l5"
 							/>
 							<span className="overflow-hidden text-ellipsis whitespace-nowrap text-center font-medium text-d5 text-xl dark:text-l5">
-								Ver. {packageJson.version}
+								Ver. β-{packageJson.version}
 							</span>
 							<Divider
 								orientation="horizontal"
