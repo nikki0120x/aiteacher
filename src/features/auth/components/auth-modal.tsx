@@ -1,12 +1,12 @@
 /* src\features\auth\components\auth-modal.tsx */
 "use client";
+import { Button, Divider } from "@heroui/react";
+import { X } from "lucide-react";
+import { AnimatePresence, easeOut, motion, type PanInfo } from "motion/react";
+import Image from "next/image";
 import { useState } from "react";
 import { useMediaQuery } from "react-responsive";
-import { motion, AnimatePresence, easeOut, type PanInfo } from "motion/react";
-import { Divider, Button } from "@heroui/react";
-import { X } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuth";
-import Image from "next/image";
 import SignInForm from "./signIn";
 import SignUpForm from "./signUp";
 
@@ -71,7 +71,7 @@ export default function AuthModal() {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.25, ease: easeOut }}
-						className="fixed inset-0 z-500 flex h-full w-full justify-center bg-l3/50 backdrop-blur-[2px] max-md:items-end md:items-center dark:bg-d3/50"
+						className="flex fixed inset-0 z-500 justify-center max-md:items-end md:items-center size-full backdrop-blur-xs bg-l3/50 dark:bg-d3/50"
 					>
 						<motion.div
 							key="auth-modal"
@@ -91,34 +91,41 @@ export default function AuthModal() {
 								bounceDamping: 100,
 							}}
 							onMouseDown={(e) => e.stopPropagation()}
-							className={`relative z-500 flex h-auto max-h-[75%] flex-col items-center justify-start bg-l2 p-4 shadow-ld shadow-lg/50 max-md:w-full max-md:rounded-t-4xl md:w-md md:rounded-4xl dark:bg-d2 ${isMobile ? (isDragging ? "cursor-grabbing" : "cursor-grab") : ""}`}
+							className={`flex relative z-500 flex-col justify-start items-center p-4 md:w-md max-md:w-full max-h-[75%] md:rounded-4xl max-md:rounded-t-4xl bg-l2 dark:bg-d2
+								${
+									isMobile
+										? isDragging
+											? "cursor-grabbing"
+											: "cursor-grab"
+										: ""
+								}`}
 						>
 							{isMobile && (
 								<Divider
 									orientation="horizontal"
-									className={`mb-4 h-1 w-16 rounded-4xl transition-colors duration-250 ${isDragging ? "bg-d2 dark:bg-l2" : "bg-ld"}`}
+									className={`mb-4 w-16 h-1 rounded-4xl transition-colors duration-250 ${isDragging ? "bg-d2 dark:bg-l2" : "bg-ld"}`}
 								/>
 							)}
-							<div className="relative flex h-16 w-full items-center justify-center">
+							<div className="flex relative justify-center items-center w-full h-16">
 								<Image
 									src="/logos/dark.webp"
 									alt="Logo (Dark)"
 									width={96}
 									height={128}
-									className="object-contain dark:hidden"
+									className="dark:hidden object-contain"
 								/>
 								<Image
 									src="/logos/light.webp"
 									alt="Logo (Light)"
 									width={96}
 									height={96}
-									className="hidden object-contain dark:block"
+									className="dark:block hidden object-contain"
 								/>
 								<Button
 									aria-label="Close Modal"
 									isIconOnly
 									onPress={closeModal}
-									className="absolute right-0 h-12 w-12 rounded-4xl bg-l2 text-d2 transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:bg-d2 dark:text-l2 active:dark:bg-d3 focus-visible:dark:bg-d4 hover:dark:bg-d4"
+									className="absolute right-0 w-12 h-12 text-d2 dark:text-l2 rounded-4xl transition-colors duration-250 bg-l2 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 dark:bg-d2 hover:dark:bg-d4 focus-visible:dark:bg-d4 active:dark:bg-d3"
 								>
 									<X size="24" />
 								</Button>

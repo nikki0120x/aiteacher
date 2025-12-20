@@ -1,8 +1,8 @@
 /* src\hooks\useChatLogic.ts */
 import { invoke } from "@tauri-apps/api/core";
 import { useChatStore } from "@/stores/useChat";
-import type { Part, Content, ImageItem } from "@/types/chat";
-import type { SwitchState, SliderState } from "./useChatSettings";
+import type { Content, ImageItem, Part } from "@/types/chat";
+import type { SliderState, SwitchState } from "./useChatSettings";
 
 declare global {
 	interface Window {
@@ -103,7 +103,10 @@ export const useChatLogic = () => {
 				if (!controller.signal.aborted && data) {
 					updateMessage(tempId, data);
 					addContentToHistory(userContent);
-					addContentToHistory({ role: "model", parts: [{ text: data }] });
+					addContentToHistory({
+						role: "model",
+						parts: [{ text: data }],
+					});
 				}
 			} else {
 				const payloadImages = {

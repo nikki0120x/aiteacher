@@ -1,7 +1,8 @@
 /* src\components\ui\InputTips.tsx */
+
+import type { LucideIcon } from "lucide-react";
 import type React from "react";
 import { cn } from "@/utils/cn";
-import type { LucideIcon } from "lucide-react";
 
 type InputTipsProps = React.InputHTMLAttributes<HTMLInputElement> & {
 	Icon: LucideIcon;
@@ -25,16 +26,16 @@ export const InputTips = ({
 	// ================================================================
 
 	const wrapperClasses = cn(
-		"p-2 flex flex-row items-center w-full h-auto rounded-4xl bg-transparent transition-colors duration-250",
+		"flex flex-row items-center p-2 w-full h-auto bg-transparent rounded-4xl transition-colors duration-250",
 		wrapperClassName,
 	);
 
 	const dynamicIconClasses = cn(
-		"mr-2 shrink-0 w-6 h-6 cursor-pointer",
+		"shrink-0 mr-2 w-6 h-6 cursor-pointer",
 		dynamicIconClassName,
 	);
 
-	const spanClasses = cn("select-all text-base text-medium", spanClassName);
+	const spanClasses = cn("text-base text-medium select-all", spanClassName);
 
 	// ================================================================
 	//     フロントエンド

@@ -1,18 +1,16 @@
 /* src\app\layout.tsx */
-
 "use client";
-
-import { useEffect, Suspense } from "react";
-import { usePathname } from "next/navigation";
-import { ThemeProvider } from "next-themes";
 import { HeroUIProvider } from "@heroui/react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { usePathname } from "next/navigation";
+import { ThemeProvider } from "next-themes";
 import NProgress from "nprogress";
-import Server from "./server";
-import Sidebar from "@/components/layout/sidebar";
+import { Suspense, useEffect } from "react";
 import Header from "@/components/layout/header";
+import Sidebar from "@/components/layout/sidebar";
 import AuthModal from "@/features/auth/components/auth-modal";
+import Server from "./server";
 import "./globals.css";
 
 function TopProgress() {
@@ -55,15 +53,11 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<HeroUIProvider>
-						<div className="flex h-dvh w-dvw flex-row">
+						<div className="flex flex-row w-dvw h-dvh">
 							<Sidebar />
-							<div className="flex h-full w-full flex-col">
+							<div className="flex flex-col size-full">
 								<Header />
-								<main className="flex h-full w-full flex-col items-center justify-center overflow-hidden">
-									<div className="flex h-full w-full max-w-3xl flex-col p-4">
-										{children}
-									</div>
-								</main>
+								<main className="size-full">{children}</main>
 							</div>
 						</div>
 						<AuthModal />

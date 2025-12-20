@@ -1,14 +1,13 @@
-// src\app\api\gemini\route.ts
-
+/* src\app\api\gemini\route.ts */
 import * as fs from "node:fs";
-import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import type { NextRequest } from "next/server";
-import type { PostPayload, Part, Content } from "@/types/chat";
+import { NextResponse } from "next/server";
+import type { Content, Part, PostPayload } from "@/types/chat";
 import {
+	buildPrompt,
 	getPolitenessInstruction,
 	normalizeSwitchOptions,
-	buildPrompt,
 } from "@/utils/chat";
 
 export const runtime = "nodejs";

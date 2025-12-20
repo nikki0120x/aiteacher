@@ -1,5 +1,5 @@
 /* src\utils\chat.ts */
-import type { SwitchState, NormalizedSwitchState } from "@/types/chat";
+import type { NormalizedSwitchState, SwitchState } from "@/types/chat";
 
 // ================================================================
 //     1. スライダー

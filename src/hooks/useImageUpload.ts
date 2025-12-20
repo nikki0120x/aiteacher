@@ -1,5 +1,5 @@
 /* src\hooks\useImageUpload.ts */
-import { useState, useRef, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ImageItem } from "@/types/chat";
 
 const compressImage = (

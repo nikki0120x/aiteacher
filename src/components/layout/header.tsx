@@ -1,17 +1,17 @@
 /* src\components\layout\header.tsx */
 "use client";
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
 import {
-	Progress,
-	Dropdown,
-	DropdownTrigger,
-	DropdownMenu,
-	DropdownItem,
 	Button,
+	Dropdown,
+	DropdownItem,
+	DropdownMenu,
+	DropdownTrigger,
+	Progress,
 } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
-import { useChatSettings, aiModels } from "@/hooks/useChatSettings";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { aiModels, useChatSettings } from "@/hooks/useChatSettings";
 
 export default function Header() {
 	const { aiModel, selectedModelLabel, handleAIModelSelection } =
@@ -33,7 +33,7 @@ export default function Header() {
 	}, [pathname]);
 
 	return (
-		<header className="z-70 flex h-16 w-full flex-row items-center justify-center bg-transparent backdrop-blur-xs">
+		<header className="flex z-70 flex-row justify-center items-center w-full h-16 bg-transparent backdrop-blur-xs">
 			{loading && (
 				<Progress
 					isIndeterminate
@@ -54,7 +54,7 @@ export default function Header() {
 					<Button
 						aria-label="Select a AI Option Button"
 						radius="full"
-						className="border-1 border-l3 bg-transparent font-medium text-base text-d3 shadow-l3 shadow-lg hover:bg-l3 dark:border-d3 dark:text-l3 dark:shadow-d3 hover:dark:bg-d3"
+						className="text-base font-medium text-d3 dark:text-l3 bg-transparent border-1 border-l3 dark:border-d3 shadow-lg shadow-l3 hover:bg-l3 dark:shadow-d3 hover:dark:bg-d3"
 					>
 						{selectedModelLabel}
 						<ChevronDown size={16} />

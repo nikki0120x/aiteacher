@@ -12,23 +12,29 @@ export default function Server() {
 			<title>AITeacher</title>
 			<script
 				type="application/ld+json"
-				// biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LDは静的で制御されたデータであるため
-				dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaMarkup) }}
+				dangerouslySetInnerHTML={{
+					__html: JSON.stringify(schemaMarkup),
+				}}
 			/>
-			<meta name="description" content="AIと共に学び逢おう！" />
+			<meta
+				name="description"
+				content="勉強に浪漫と好奇心を。そして、智慧と伴に未だ見ぬ未来を切り拓け！"
+			/>
 			<meta charSet="UTF-8" />
 			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 			<meta property="og:site_name" content="AITeacher" />
 			<meta property="og:title" content="AITeacher" />
 			<meta property="og:url" content="https://www.focalrina.com/" />
 			<meta property="og:type" content="website" />
-			<meta property="og:description" content="AIと共に学び逢おう！" />
+			<meta
+				property="og:description"
+				content="勉強に浪漫と好奇心を。そして、智慧と伴に未だ見ぬ未来を切り拓け！"
+			/>
 			<script
 				async
 				src="https://www.googletagmanager.com/gtag/js?id=G-P7BN0KQ1YQ"
 			></script>
 			<script
-				// biome-ignore lint/security/noDangerouslySetInnerHtml: Google Analyticsの静的な初期化コードであるため
 				dangerouslySetInnerHTML={{
 					__html: `
             window.dataLayer = window.dataLayer || [];

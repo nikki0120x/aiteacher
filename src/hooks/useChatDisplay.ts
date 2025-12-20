@@ -1,10 +1,10 @@
 /* src\hooks\useChatDisplay.ts */
 import {
-	useState,
-	useEffect,
-	useRef,
-	useLayoutEffect,
 	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
 } from "react";
 import { useChatStore } from "@/stores/useChat";
 import type { ChatTurn } from "@/types/chat";
@@ -77,7 +77,7 @@ export const useChatDisplay = () => {
 			// 新しいターンが追加されたら、一番下へスクロール
 			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
 		}
-	}, [turns.length]); // 依存配列に `turns.length` を指定
+	}, []); // 依存配列に `turns.length` を指定
 
 	// chatHistoryHeight の動的計測 (ResizeObserverとDebounceを使用)
 	useLayoutEffect(() => {

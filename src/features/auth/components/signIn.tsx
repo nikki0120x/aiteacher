@@ -1,10 +1,10 @@
 /* src\features\auth\components\signIn.tsx */
 "use client";
+import { Button, Divider, Spinner } from "@heroui/react";
+import { AnimatePresence, motion } from "framer-motion";
+import { KeyRound, Mail, TriangleAlert, X } from "lucide-react";
 import type React from "react";
-import { useState, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Divider, Button, Spinner } from "@heroui/react";
-import { Mail, KeyRound, X, TriangleAlert } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { Input, InputTips } from "@/components/ui";
 import { signIn } from "@/lib/auth-client";
 import { useAuthStore } from "@/stores/useAuth";
@@ -75,25 +75,25 @@ export default function SignInForm({ switchToSignUp }: SignInFormProps) {
 	// ================================================================
 
 	return (
-		<div className="h-full w-full overflow-y-auto overflow-x-hidden px-4">
-			<div className="relative mt-2 mb-6 flex h-8 w-full flex-row items-center justify-center">
+		<div className="overflow-y-auto overflow-x-hidden px-4 w-full h-full">
+			<div className="flex relative flex-row justify-center items-center mt-2 mb-6 w-full h-8">
 				<Divider
 					orientation="horizontal"
-					className="h-px w-full flex-1 rounded-4xl bg-d3 dark:bg-l3"
+					className="flex-1 w-full h-px rounded-4xl bg-d3 dark:bg-l3"
 				/>
-				<span className="mx-4 font-bold text-d3 text-xl dark:text-l3">
+				<span className="mx-4 text-xl font-bold text-d3 dark:text-l3">
 					アカウント / サインイン
 				</span>
 				<Divider
 					orientation="horizontal"
-					className="h-px w-full flex-1 rounded-4xl bg-d3 dark:bg-l3"
+					className="flex-1 w-full h-px rounded-4xl bg-d3 dark:bg-l3"
 				/>
 			</div>
 			<form
 				onSubmit={handleSubmit}
-				className="flex w-full flex-col items-center justify-start gap-4"
+				className="flex flex-col gap-4 justify-start items-center w-full"
 			>
-				<div className="flex h-auto w-full flex-col items-center justify-center gap-4">
+				<div className="flex flex-col gap-4 justify-center items-center w-full h-auto">
 					<Input
 						required
 						name="email"
@@ -114,7 +114,7 @@ export default function SignInForm({ switchToSignUp }: SignInFormProps) {
 									isIconOnly
 									type="button"
 									onPress={handleClearEmail}
-									className="h-10 w-10 rounded-4xl bg-transparent transition-all duration-250 hover:bg-ld"
+									className="w-10 h-10 bg-transparent rounded-4xl transition-all duration-250 hover:bg-ld"
 								>
 									<X className="text-d1 dark:text-l1" />
 								</Button>
@@ -142,7 +142,7 @@ export default function SignInForm({ switchToSignUp }: SignInFormProps) {
 									isIconOnly
 									type="button"
 									onPress={handleClearPassword}
-									className="h-10 w-10 rounded-4xl bg-transparent transition-all duration-250 hover:bg-ld"
+									className="w-10 h-10 bg-transparent rounded-4xl transition-all duration-250 hover:bg-ld"
 								>
 									<X className="text-d1 dark:text-l1" />
 								</Button>
@@ -173,21 +173,21 @@ export default function SignInForm({ switchToSignUp }: SignInFormProps) {
 					aria-label="Submit SignIn Information"
 					type="submit"
 					isDisabled={isLoading || !isFormValid}
-					className="my-4 h-16 w-full rounded-3xl bg-blue text-l1 transition-all duration-250"
+					className="my-4 w-full h-16 text-l1 rounded-3xl transition-all duration-250 bg-blue"
 				>
 					{isLoading ? (
 						<Spinner variant="dots" color="white" />
 					) : (
-						<span className="font-bold text-l1 text-xl">サインイン</span>
+						<span className="text-xl font-bold text-l1">サインイン</span>
 					)}
 				</Button>
 			</form>
-			<div className="flex flex-row items-center justify-between">
+			<div className="flex flex-row justify-between items-center">
 				<Button
 					aria-label="Forgot Password"
 					className="bg-transparent hover:bg-blue/10 focus-visible:bg-blue/10 active:bg-blue/10"
 				>
-					<span className="font-medium text-base text-blue">
+					<span className="text-base font-medium text-blue">
 						パスワードを忘れた
 					</span>
 				</Button>
@@ -196,7 +196,7 @@ export default function SignInForm({ switchToSignUp }: SignInFormProps) {
 					onPress={switchToSignUp}
 					className="bg-transparent hover:bg-blue/10 focus-visible:bg-blue/10 active:bg-blue/10"
 				>
-					<span className="font-medium text-base text-blue">サインアップ</span>
+					<span className="text-base font-medium text-blue">サインアップ</span>
 				</Button>
 			</div>
 		</div>

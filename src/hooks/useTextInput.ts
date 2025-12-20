@@ -1,5 +1,5 @@
 /* src\hooks\useTextInput.ts */
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const useChatInput = (onSend: (text: string) => void) => {
 	// ================================================================
