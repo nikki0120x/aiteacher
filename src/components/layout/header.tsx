@@ -55,7 +55,7 @@ export default function Header() {
 	// ================================================================
 
 	return (
-		<header className="flex flex-row justify-between items-center w-full h-16 bg-transparent backdrop-blur-xs">
+		<header className="flex flex-row justify-end items-center w-full h-16 bg-transparent backdrop-blur-xs">
 			{loading && (
 				<Progress
 					isIndeterminate
