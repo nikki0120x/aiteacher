@@ -74,7 +74,7 @@ export default function Sidebar() {
 					key={`sidebar-${isMobile}`}
 					initial={false}
 					animate={{
-						width: isOpen ? "24rem" : isMobile ? 0 : "4rem",
+						width: isOpen ? "min(calc(100% - 4rem), 24rem)" : isMobile ? 0 : "4rem",
 					}}
 					exit={{ width: isMobile ? 0 : "4rem" }}
 					transition={{ duration: 0.25, ease: easeOut }}

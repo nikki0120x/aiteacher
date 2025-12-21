@@ -76,47 +76,6 @@ export default function Header() {
 					className="absolute -bottom-2 left-0 w-full"
 				/>
 			)}
-			<Dropdown
-				placement="bottom"
-				classNames={{
-					content:
-						"shadow-lg shadow-l3 dark:shadow-d3 bg-l3 dark:bg-d3 text-d3 dark:text-l3",
-				}}
-			>
-				<DropdownTrigger>
-					<Button
-						aria-label="Select a AI Option Button"
-						radius="full"
-						className="text-base font-medium text-d3 dark:text-l3 bg-transparent border-1 border-l3 dark:border-d3 shadow-lg shadow-l3 hover:bg-l3 dark:shadow-d3 hover:dark:bg-d3"
-					>
-						{selectedModelLabel}
-						<ChevronDown size={16} />
-					</Button>
-				</DropdownTrigger>
-				<DropdownMenu
-					disallowEmptySelection
-					aria-label="AI Options Menu"
-					selectedKeys={[aiModel]}
-					selectionMode="single"
-					onSelectionChange={handleAIModelSelection}
-					itemClasses={{
-						base: [],
-					}}
-				>
-					<DropdownItem
-						key="gemini-2.5-flash"
-						description={aiModels["gemini-2.5-flash"].description}
-					>
-						{aiModels["gemini-2.5-flash"].label}
-					</DropdownItem>
-					<DropdownItem
-						key="gemini-2.5-flash-lite"
-						description={aiModels["gemini-2.5-flash-lite"].description}
-					>
-						{aiModels["gemini-2.5-flash-lite"].label}
-					</DropdownItem>
-				</DropdownMenu>
-			</Dropdown>
 			<Button
 				aria-label="New Chat Button"
 				isIconOnly

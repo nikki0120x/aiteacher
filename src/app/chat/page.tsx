@@ -221,7 +221,7 @@ export default function Chat() {
 	// ================================================================
 
 	return (
-		<div className="flex justify-center items-center p-4 size-full">
+		<div className="flex overflow-hidden flex-none justify-center items-center p-4 pt-0 size-full">
 			<motion.div className="flex flex-col justify-center items-center size-full max-w-3xl">
 				<motion.div
 					initial={{ flex: 0, height: 0, opacity: 0 }}
