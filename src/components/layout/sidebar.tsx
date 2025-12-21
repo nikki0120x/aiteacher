@@ -50,11 +50,10 @@ export default function Sidebar() {
 				size="lg"
 				radius="full"
 				onPress={() => setIsOpen(!isOpen)}
-				className={`fixed top-0 left-0 z-30 w-16 h-16 text-d2 dark:text-l2 rounded-none outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 hover:dark:bg-d4 focus-visible:dark:bg-d4 active:dark:bg-d3 ${
-					isOpen
+				className={`fixed top-0 left-0 z-30 w-16 h-16 text-d2 dark:text-l2 rounded-none outline-none transition-all duration-250 hover:bg-l4 focus-visible:bg-l4 active:bg-l3 hover:dark:bg-d4 focus-visible:dark:bg-d4 active:dark:bg-d3 ${isOpen
 						? "max-md:rounded-br-4xl max-md:bg-l2 md:rounded-br-4xl md:bg-l2 md:dark:bg-d2 max-md:dark:bg-d2"
 						: "max-md:rounded-br-4xl max-md:bg-l1 md:rounded-none md:bg-l2 md:dark:bg-d2 max-md:dark:bg-d1"
-				}`}
+					}`}
 			>
 				<Menu />
 			</Button>
@@ -75,7 +74,9 @@ export default function Sidebar() {
 					initial={false}
 					animate={{
 						width: isOpen
-							? "min(calc(100% - 4rem), 24rem)"
+							? isMobile
+								? "min(calc(100% - 4rem), 24rem)"
+								: "24rem"
 							: isMobile
 								? 0
 								: "4rem",
