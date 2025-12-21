@@ -69,7 +69,6 @@ export const useImageUpload = (initialImages: ImageSet = { problem: [] }) => {
 			reader.onload = async () => {
 				const base64Src = reader.result?.toString();
 				if (base64Src) {
-					// 圧縮ロジックを独立関数として使用
 					const { base64: compressedBase64, mimeType } =
 						await compressImage(base64Src);
 
@@ -88,9 +87,6 @@ export const useImageUpload = (initialImages: ImageSet = { problem: [] }) => {
 		});
 	}, []);
 
-	/**
-	 * ドラッグ&ドロップイベントを処理
-	 */
 	const handleDrop = useCallback(
 		(tabKey: string, event: React.DragEvent<HTMLDivElement>) => {
 			event.preventDefault();
@@ -99,9 +95,6 @@ export const useImageUpload = (initialImages: ImageSet = { problem: [] }) => {
 		[handleFiles],
 	);
 
-	/**
-	 * 画像を状態から削除
-	 */
 	const handleImageRemove = useCallback(
 		(tabKey: string, idToRemove: string) => {
 			setImages((prev) => ({

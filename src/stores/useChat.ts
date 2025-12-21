@@ -10,7 +10,6 @@ import { normalizeSwitchOptions } from "@/utils/chat";
 interface ChatState {
 	isSent: boolean;
 	isLoading: boolean;
-	isPanelOpen: boolean;
 	message: MessageItem[];
 	activeContent: "sliders" | "images" | null;
 	history: Content[];
@@ -38,8 +37,7 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set) => ({
 	isSent: false,
 	isLoading: false,
-	isPanelOpen: true,
-	activeContent: null,
+	activeContent: "sliders",
 	message: [],
 	history: [],
 	abortController: null,

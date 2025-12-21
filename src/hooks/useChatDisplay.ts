@@ -38,7 +38,6 @@ export const useChatDisplay = () => {
 	const prevHeightRef = useRef<number | undefined>(undefined);
 	const [currentLoadingIndex, setCurrentLoadingIndex] = useState(0);
 
-	// チャット履歴のターンを計算
 	const calculateTurns = useCallback((): ChatTurn[] => {
 		const turns: ChatTurn[] = [];
 		for (let i = 0; i < message.length; i++) {
@@ -56,7 +55,6 @@ export const useChatDisplay = () => {
 	const turns = calculateTurns();
 	const lastTurnId = turns.slice(-1)[0]?.user.id;
 
-	// ローディングフレーズの切り替え
 	useEffect(() => {
 		const isCurrentlyLoadingWithPlaceholder =
 			isLoading && message.slice(-1)[0]?.text === "#LOADING_PHRASE#";
@@ -70,16 +68,12 @@ export const useChatDisplay = () => {
 		}
 	}, [isLoading, message]);
 
-	// 自動スクロール
 	useLayoutEffect(() => {
-		// `turns.length` が変わったとき（つまり新しいユーザーメッセージが追加されたとき）に実行される
 		if (messagesEndRef.current) {
-			// 新しいターンが追加されたら、一番下へスクロール
 			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
 		}
-	}, []); // 依存配列に `turns.length` を指定
+	}, []);
 
-	// chatHistoryHeight の動的計測 (ResizeObserverとDebounceを使用)
 	useLayoutEffect(() => {
 		const chatElement = chatHistoryRef.current;
 		if (!chatElement) return;

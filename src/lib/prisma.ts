@@ -1,9 +1,9 @@
 /* src/lib/prisma.ts */
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
-import type { DriverAdapter } from "@prisma/client/runtime/library";
 import { Pool } from "pg";
+import { PrismaClient } from "../../generated/prisma";
+import type { DriverAdapter } from "../../generated/prisma/runtime/library";
 
 const connectionString = process.env.DATABASE_URL;
 

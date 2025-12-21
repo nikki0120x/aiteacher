@@ -86,9 +86,9 @@ export const useChatSettings = () => {
 	// ---------- スイッチの状態管理 ---------- //
 
 	const [switchState, setSwitchState] = useState<SwitchState>({
-		summary: false,
-		guidance: false,
-		explanation: false,
+		summary: true,
+		guidance: true,
+		explanation: true,
 		answer: true,
 	});
 
@@ -97,7 +97,6 @@ export const useChatSettings = () => {
 			Object.values(switchState).filter(Boolean).length;
 
 		setSwitchState((prev) => {
-			// 最後の1つがfalseになるのを防ぐ
 			if (prev[key] && currentlyTrueCount === 1) return prev;
 			return { ...prev, [key]: !prev[key] };
 		});

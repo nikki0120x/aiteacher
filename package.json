@@ -10,7 +10,7 @@
 		"build:tauri": "cross-env TAURI_BUILD_MODE=true next build && dotenv tauri build",
 		"start": "next start",
 		"email": "npx react-email dev --dir src/emails --port 3001",
-		"sort": "tsx twsort.config.ts && npx @biomejs/biome check --write --unsafe .",
+		"sort": "tsx twsort.config.ts && npx @biomejs/biome check --write --unsafe src",
 		"prepare": "husky",
 		"test": "vitest --passWithNoTests",
 		"postinstall": "prisma generate"

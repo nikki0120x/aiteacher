@@ -34,24 +34,24 @@ export const useChatLogic = () => {
 	// ================================================================
 
 	const handleSend = async (
-		inputText: string, // ユーザーが入力したテキスト
-		images: ImageItem[], // ユーザーがアップロードした画像データ
-		sliders: SliderState, // スライダーの値
-		switchState: SwitchState, // スイッチの値
-		setInputText: (text: string) => void, // 入力欄をクリア
-		setImages: (images: { [key: string]: ImageItem[] }) => void, // 画像欄をクリア
+		inputText: string,
+		images: ImageItem[],
+		sliders: SliderState,
+		switchState: SwitchState,
+		setInputText: (text: string) => void,
+		setImages: (images: { [key: string]: ImageItem[] }) => void,
 	) => {
-		if (inputText.trim() === "" && images.length === 0) return; // 入力も画像も空なら何もしない
+		if (inputText.trim() === "" && images.length === 0) return;
 
 		// ================================================================
 		//     1. 画面状態を更新
 		// ================================================================
 
-		setIsSent(true); // 初回送信済みフラグをON
-		setIsLoading(true); // ローディング開始
-		setActiveContent(null); // 設定パネルを閉じる
-		setInputText(""); // 入力欄をクリア
-		setImages({ problem: [] }); // 画像欄をクリア
+		setIsSent(true);
+		setIsLoading(true);
+		setActiveContent(null);
+		setInputText("");
+		setImages({ problem: [] });
 
 		// ================================================================
 		//     2. リクエストを準備
@@ -73,23 +73,23 @@ export const useChatLogic = () => {
 		//     4. API送信用のデータを準備
 		// ================================================================
 
-		const userParts: Part[] = [{ text: userText }]; // テキスト部分
+		const userParts: Part[] = [{ text: userText }];
 
 		images.forEach((img) => {
-			const base64Data = img.src.split(",")[1] || img.src; // 画像のBase64データ（画像本体）を抽出
+			const base64Data = img.src.split(",")[1] || img.src;
 			userParts.push({
 				inlineData: { mimeType: "image/webp", data: base64Data },
-			}); // 画像データをAPI送信用の形式（inlineData）で追加
+			});
 		});
 
-		const userContent: Content = { role: "user", parts: userParts }; // ユーザーの完全なContentオブジェクト
+		const userContent: Content = { role: "user", parts: userParts };
 
 		// ===============================================================
 		//     5. AIへのリクエスト送信
 		// ===============================================================
 
 		try {
-			let data: string; // AIからの最終応答テキストを格納する変数
+			let data: string;
 
 			if (typeof window.__TAURI__ !== "undefined") {
 				const imageSources = images.map((item) => item.src);
@@ -169,9 +169,9 @@ export const useChatLogic = () => {
 
 	const handleAbort = () => {
 		if (abortController) {
-			abortController.abort(); //  進行中のリクエストを中止
-			setAbortController(null); //  コントローラーの状態をクリア
-			setIsLoading(false); //  ローディング状態を解除
+			abortController.abort();
+			setAbortController(null);
+			setIsLoading(false);
 		}
 	};
 

@@ -9,6 +9,7 @@ import NProgress from "nprogress";
 import { Suspense, useEffect } from "react";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
+import Toolbar from "@/components/layout/toolbar";
 import AuthModal from "@/features/auth/components/auth-modal";
 import Server from "./server";
 import "./globals.css";
@@ -53,12 +54,15 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<HeroUIProvider>
-						<div className="flex flex-row w-dvw h-dvh">
-							<Sidebar />
-							<div className="flex flex-col size-full">
-								<Header />
-								<main className="size-full">{children}</main>
+						<div className="flex md:flex-row flex-col w-dvw h-dvh">
+							<div className="flex relative flex-row flex-1">
+								<Sidebar />
+								<div className="flex flex-col size-full">
+									<Header />
+									<main className="size-full">{children}</main>
+								</div>
 							</div>
+							<Toolbar />
 						</div>
 						<AuthModal />
 					</HeroUIProvider>

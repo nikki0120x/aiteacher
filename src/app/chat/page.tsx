@@ -55,14 +55,8 @@ declare global {
 }
 
 export default function Chat() {
-	const {
-		isSent,
-		isLoading,
-		isPanelOpen,
-		activeContent,
-		message,
-		setActiveContent,
-	} = useChatStore();
+	const { isSent, isLoading, activeContent, message, setActiveContent } =
+		useChatStore();
 
 	const {
 		images,
@@ -227,266 +221,270 @@ export default function Chat() {
 	// ================================================================
 
 	return (
-		<motion.div className="flex justify-center items-center p-4 size-full">
-			<motion.div
-				initial={{ flex: 0, height: 0, opacity: 0 }}
-				animate={{
-					flex: isSent ? 1 : 0,
-					height: isSent ? "auto" : 0,
-					opacity: isSent ? 1 : 0,
-				}}
-				transition={{
-					duration: 0.5,
-					ease: "easeInOut",
-				}}
-				className="flex overflow-hidden flex-col w-full h-full"
-				ref={chatHistoryRef}
-			>
-				<ScrollShadow hideScrollBar visibility="none" className="w-full h-full">
-					<AnimatePresence mode="sync">
-						{turns.map((turn) => {
-							const isLatestTurn = turn.user.id === lastTurnId;
-							const msg = turn.model;
-							const latestMessage = message.slice(-1)[0];
-							const isCurrentLoadingTurn =
-								isLoading && turn.model?.id === latestMessage?.id;
+		<div className="flex justify-center items-center p-4 size-full">
+			<motion.div className="flex flex-col justify-center items-center size-full max-w-3xl">
+				<motion.div
+					initial={{ flex: 0, height: 0, opacity: 0 }}
+					animate={{
+						flex: isSent ? 1 : 0,
+						height: isSent ? "auto" : 0,
+						opacity: isSent ? 1 : 0,
+					}}
+					transition={{
+						duration: 0.5,
+						ease: "easeInOut",
+					}}
+					className="flex overflow-hidden flex-col size-full"
+					ref={chatHistoryRef}
+				>
+					<ScrollShadow
+						hideScrollBar
+						visibility="none"
+						className="w-full h-full"
+					>
+						<AnimatePresence mode="sync">
+							{turns.map((turn) => {
+								const isLatestTurn = turn.user.id === lastTurnId;
+								const msg = turn.model;
+								const latestMessage = message.slice(-1)[0];
+								const isCurrentLoadingTurn =
+									isLoading && turn.model?.id === latestMessage?.id;
 
-							const hasImages = (images.problem?.length || 0) > 0;
+								const hasImages = (images.problem?.length || 0) > 0;
 
-							const state = msg?.sectionsState ?? switchState;
-							const sections: { title: string; text: string }[] = [];
+								const state = msg?.sectionsState ?? switchState;
+								const sections: { title: string; text: string }[] = [];
 
-							const extractSection = (header: string) => {
-								if (!msg?.text) return undefined;
-								const regex = new RegExp(
-									`###\\s*${header}\\s*([\\s\\S]*?)(?=\\n###|$)`,
+								const extractSection = (header: string) => {
+									if (!msg?.text) return undefined;
+									const regex = new RegExp(
+										`###\\s*${header}\\s*([\\s\\S]*?)(?=\\n###|$)`,
+										"i",
+									);
+									return msg.text.match(regex)?.[1]?.trim();
+								};
+
+								const allSectionDefs: {
+									key: keyof typeof switchState;
+									title: string;
+								}[] = [
+									{ key: "summary", title: "要約" },
+									{ key: "guidance", title: "指針" },
+									{ key: "explanation", title: "解説" },
+									{ key: "answer", title: "解答" },
+								];
+
+								const enabledSections = allSectionDefs.filter(
+									(s) => state[s.key],
+								);
+
+								enabledSections.forEach(({ title }) => {
+									const text = extractSection(title);
+									sections.push({
+										title,
+										text: text ?? "",
+									});
+								});
+
+								const enabledTitles = enabledSections.map((s) => s.title);
+								const anyHeaderRegex = new RegExp(
+									`###\\s*(${enabledTitles.join("|")})`,
 									"i",
 								);
-								return msg.text.match(regex)?.[1]?.trim();
-							};
 
-							const allSectionDefs: {
-								key: keyof typeof switchState;
-								title: string;
-							}[] = [
-								{ key: "summary", title: "要約" },
-								{ key: "guidance", title: "指針" },
-								{ key: "explanation", title: "解説" },
-								{ key: "answer", title: "解答" },
-							];
+								if (
+									msg &&
+									sections.length > 0 &&
+									!msg.text.match(anyHeaderRegex)
+								) {
+									sections[0].text = msg.text;
+								}
+								if (msg && sections.length === 0) {
+									sections.push({
+										title: "応答",
+										text: msg.text,
+									});
+								}
 
-							const enabledSections = allSectionDefs.filter(
-								(s) => state[s.key],
-							);
-
-							enabledSections.forEach(({ title }) => {
-								const text = extractSection(title);
-								sections.push({
-									title,
-									text: text ?? "",
-								});
-							});
-
-							const enabledTitles = enabledSections.map((s) => s.title);
-							const anyHeaderRegex = new RegExp(
-								`###\\s*(${enabledTitles.join("|")})`,
-								"i",
-							);
-
-							if (
-								msg &&
-								sections.length > 0 &&
-								!msg.text.match(anyHeaderRegex)
-							) {
-								sections[0].text = msg.text;
-							}
-							if (msg && sections.length === 0) {
-								sections.push({
-									title: "応答",
-									text: msg.text,
-								});
-							}
-
-							return (
-								<motion.div
-									key={turn.user.id}
-									initial={{ opacity: 0, y: 50 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: 50 }}
-									transition={{
-										duration: 0.5,
-										ease: "easeInOut",
-									}}
-									style={{
-										height:
-											isLatestTurn && chatHistoryHeight
-												? `${chatHistoryHeight}px`
-												: "auto",
-									}}
-								>
-									<Card
-										shadow="none"
-										radius="lg"
-										className="mb-2 w-full h-auto rounded-4xl bg-l2 dark:bg-d2"
+								return (
+									<motion.div
+										key={turn.user.id}
+										initial={{ opacity: 0, y: 50 }}
+										animate={{ opacity: 1, y: 0 }}
+										exit={{ opacity: 0, y: 50 }}
+										transition={{
+											duration: 0.5,
+											ease: "easeInOut",
+										}}
+										style={{
+											height:
+												isLatestTurn && chatHistoryHeight
+													? `${chatHistoryHeight}px`
+													: "auto",
+										}}
 									>
-										<CardBody>
-											<div
-												className="flex overflow-x-hidden justify-start items-center px-2 max-w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word select-text prose dark:prose-invert"
-												style={{
-													minHeight: "2rem",
-													maxHeight: `calc(2rem * 3)`,
-													lineHeight: "normal",
-													overflowY: "auto",
-												}}
-											>
-												<ReactMarkdown
-													remarkPlugins={[remarkGfm, remarkMath]}
-													rehypePlugins={[rehypeRaw, rehypeKatex]}
-												>
-													{turn.user.text}
-												</ReactMarkdown>
-											</div>
-										</CardBody>
-									</Card>
-
-									{turn.model && (
-										<Accordion
-											selectionMode="multiple"
-											variant="bordered"
-											className="text-base font-medium text-d2 dark:text-l2 rounded-4xl border-2 border-l2 dark:border-d2 bg-l2 dark:bg-d2"
+										<Card
+											shadow="none"
+											radius="lg"
+											className="mb-2 w-full rounded-4xl bg-l2 dark:bg-d2"
 										>
-											{sections.map((sec, i) => {
-												let icon = null;
-												switch (sec.title) {
-													case "要約":
-														icon = <ScrollText className="text-blue" />;
-														break;
-													case "指針":
-														icon = <BowArrow className="text-orange" />;
-														break;
-													case "解説":
-														icon = <BookText className="text-red" />;
-														break;
-													case "解答":
-														icon = <BookCheck className="text-lime" />;
-														break;
-												}
-
-												const isInitialPlaceholder =
-													sec.text === "#LOADING_PHRASE#";
-												let displayContent = sec.text;
-
-												if (isInitialPlaceholder) {
-													if (isCurrentLoadingTurn && hasImages) {
-														displayContent = "画像分析中...";
-													} else if (isCurrentLoadingTurn) {
-														displayContent = getLoadingPhrase(i);
-													}
-												}
-
-												return (
-													<AccordionItem
-														key={sec.title}
-														aria-label={sec.title}
-														title={
-															<span
-																className={`text-xl font-medium no-select ${sec.title === "要約" ? "text-sky-500" : ""} ${
-																	sec.title === "指針" || sec.title === "応答"
-																		? "text-orange-500"
-																		: ""
-																} ${sec.title === "解説" ? "text-rose-500" : ""} ${sec.title === "解答" ? "text-lime-500" : ""} `}
-															>
-																{sec.title}
-															</span>
-														}
-														startContent={icon}
-														classNames={{
-															trigger: "px-2 cursor-pointer",
-														}}
+											<CardBody>
+												<div
+													className="flex overflow-x-hidden justify-start items-center px-2 max-w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word select-text prose dark:prose-invert"
+													style={{
+														minHeight: "2rem",
+														maxHeight: `calc(2rem * 3)`,
+														lineHeight: "normal",
+														overflowY: "auto",
+													}}
+												>
+													<ReactMarkdown
+														remarkPlugins={[remarkGfm, remarkMath]}
+														rehypePlugins={[rehypeRaw, rehypeKatex]}
 													>
-														<div
-															className="px-2 max-w-full text-lg font-normal text-d3 dark:text-l3 wrap-break-word prose dark:prose-invert"
-															style={{
-																lineHeight: "2",
+														{turn.user.text}
+													</ReactMarkdown>
+												</div>
+											</CardBody>
+										</Card>
+
+										{turn.model && (
+											<Accordion
+												selectionMode="multiple"
+												variant="bordered"
+												className="text-base font-medium text-d2 dark:text-l2 rounded-4xl border-2 border-l2 dark:border-d2 bg-l2 dark:bg-d2"
+											>
+												{sections.map((sec, i) => {
+													let icon = null;
+													switch (sec.title) {
+														case "要約":
+															icon = <ScrollText className="text-blue" />;
+															break;
+														case "指針":
+															icon = <BowArrow className="text-orange" />;
+															break;
+														case "解説":
+															icon = <BookText className="text-red" />;
+															break;
+														case "解答":
+															icon = <BookCheck className="text-lime" />;
+															break;
+													}
+
+													const isInitialPlaceholder =
+														sec.text === "#LOADING_PHRASE#";
+													let displayContent = sec.text;
+
+													if (isInitialPlaceholder) {
+														if (isCurrentLoadingTurn && hasImages) {
+															displayContent = "画像分析中...";
+														} else if (isCurrentLoadingTurn) {
+															displayContent = getLoadingPhrase(i);
+														}
+													}
+
+													return (
+														<AccordionItem
+															key={sec.title}
+															aria-label={sec.title}
+															title={
+																<span
+																	className={`text-xl font-medium no-select ${sec.title === "要約" ? "text-sky-500" : ""} ${
+																		sec.title === "指針" || sec.title === "応答"
+																			? "text-orange-500"
+																			: ""
+																	} ${sec.title === "解説" ? "text-rose-500" : ""} ${sec.title === "解答" ? "text-lime-500" : ""} `}
+																>
+																	{sec.title}
+																</span>
+															}
+															startContent={icon}
+															classNames={{
+																trigger: "px-2 cursor-pointer",
 															}}
 														>
-															<ReactMarkdown
-																remarkPlugins={[remarkGfm, remarkMath]}
-																rehypePlugins={[rehypeRaw, rehypeKatex]}
+															<div
+																className="px-2 max-w-full text-lg font-normal text-d3 dark:text-l3 wrap-break-word prose dark:prose-invert"
+																style={{
+																	lineHeight: "2",
+																}}
 															>
-																{displayContent}
-															</ReactMarkdown>
-														</div>
-													</AccordionItem>
-												);
-											})}
-										</Accordion>
-									)}
-								</motion.div>
-							);
-						})}
-					</AnimatePresence>
-					<div ref={messagesEndRef} />
-				</ScrollShadow>
-			</motion.div>
-			<motion.div
-				initial={{ flex: 1, height: 1, opacity: 1 }}
-				animate={{
-					flex: isSent ? 0 : 1,
-					height: isPanelOpen ? "auto" : 0,
-					opacity: isPanelOpen ? 1 : 0,
-				}}
-				transition={{
-					duration: 0.5,
-					ease: "easeInOut",
-				}}
-				className="flex flex-col gap-10 justify-center items-center size-full no-select"
-			>
-				<AnimatePresence>
-					{!isSent && (
-						<motion.div
-							key="heading"
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							exit={{ opacity: 0 }}
-							transition={{ duration: 0.5, ease: "easeInOut" }}
-							className="flex flex-row gap-4 justify-center items-center w-full h-auto"
-						>
-							<Divider
-								orientation="horizontal"
-								className="flex-1 mr-8 bg-d5 dark:bg-l5"
-							/>
-							<Image
-								src="/logos/dark.webp"
-								alt="Logo (Dark)"
-								width={128}
-								height={128}
-								className="dark:hidden object-contain"
-							/>
-							<Image
-								src="/logos/light.webp"
-								alt="Logo (Light)"
-								width={128}
-								height={128}
-								className="dark:block hidden object-contain"
-							/>
-							<Divider
-								orientation="vertical"
-								className="max-h-10 bg-d5 dark:bg-l5"
-							/>
-							<span className="overflow-hidden text-xl font-medium text-d5 dark:text-l5 text-center text-ellipsis whitespace-nowrap">
-								Ver. β-{packageJson.version}
-							</span>
-							<Divider
-								orientation="horizontal"
-								className="flex-1 ml-8 bg-d5 dark:bg-l5"
-							/>
-						</motion.div>
-					)}
-				</AnimatePresence>
-				<div className="flex flex-col justify-center p-4 w-full rounded-4xl border-1 border-l5 dark:border-d5">
+																<ReactMarkdown
+																	remarkPlugins={[remarkGfm, remarkMath]}
+																	rehypePlugins={[rehypeRaw, rehypeKatex]}
+																>
+																	{displayContent}
+																</ReactMarkdown>
+															</div>
+														</AccordionItem>
+													);
+												})}
+											</Accordion>
+										)}
+									</motion.div>
+								);
+							})}
+						</AnimatePresence>
+						<div ref={messagesEndRef} />
+					</ScrollShadow>
+				</motion.div>
+				<motion.div
+					initial={{ flex: 1, height: 1, opacity: 1 }}
+					animate={{
+						flex: isSent ? 0 : 1,
+						height: "auto",
+						opacity: 1,
+					}}
+					transition={{
+						duration: 0.5,
+						ease: "easeInOut",
+					}}
+					className="flex flex-col gap-10 justify-center items-center size-full no-select"
+				>
 					<AnimatePresence>
-						{isPanelOpen && (
+						{!isSent && (
+							<motion.div
+								key="heading"
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
+								transition={{ duration: 0.5, ease: "easeInOut" }}
+								className="flex flex-row gap-4 justify-center items-center w-full"
+							>
+								<Divider
+									orientation="horizontal"
+									className="flex-1 mr-8 bg-d5 dark:bg-l5"
+								/>
+								<Image
+									src="/logos/dark.webp"
+									alt="Logo (Dark)"
+									width={128}
+									height={128}
+									className="dark:hidden object-contain"
+								/>
+								<Image
+									src="/logos/light.webp"
+									alt="Logo (Light)"
+									width={128}
+									height={128}
+									className="dark:block hidden object-contain"
+								/>
+								<Divider
+									orientation="vertical"
+									className="max-h-10 bg-d5 dark:bg-l5"
+								/>
+								<span className="overflow-hidden text-xl font-medium text-d5 dark:text-l5 text-center text-ellipsis whitespace-nowrap">
+									Ver. β-{packageJson.version}
+								</span>
+								<Divider
+									orientation="horizontal"
+									className="flex-1 ml-8 bg-d5 dark:bg-l5"
+								/>
+							</motion.div>
+						)}
+					</AnimatePresence>
+					<div className="flex flex-col justify-center px-4 py-2 w-full rounded-4xl border-1 border-l5 dark:border-d5">
+						<AnimatePresence>
 							<motion.div
 								key="chatArea"
 								initial={
@@ -802,10 +800,10 @@ export default function Chat() {
 									)}
 								</AnimatePresence>
 							</motion.div>
-						)}
-					</AnimatePresence>
-				</div>
+						</AnimatePresence>
+					</div>
+				</motion.div>
 			</motion.div>
-		</motion.div>
+		</div>
 	);
 }

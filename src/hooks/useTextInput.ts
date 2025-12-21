@@ -1,6 +1,5 @@
 /* src\hooks\useTextInput.ts */
 import { useEffect, useRef, useState } from "react";
-
 export const useChatInput = (onSend: (text: string) => void) => {
 	// ================================================================
 	//     1. 状態管理
@@ -32,7 +31,7 @@ export const useChatInput = (onSend: (text: string) => void) => {
 		if (typeof navigator !== "undefined") {
 			setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
 		}
-	}, []); // ユーザーエージェントからモバイルデバイス（iPhone/iPad/iPod/Android）を判定
+	}, []);
 
 	// ================================================================
 	//     4. 音声認識の初期化とイベント設定
