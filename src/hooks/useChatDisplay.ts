@@ -28,7 +28,7 @@ const NUM_PHRASES = LOADING_PHRASES.length;
 // ================================================================
 
 export const useChatDisplay = () => {
-	const { message, isLoading, isPanelOpen } = useChatStore();
+	const { message, isLoading } = useChatStore();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const chatHistoryRef = useRef<HTMLDivElement>(null);
 
@@ -118,6 +118,5 @@ export const useChatDisplay = () => {
 		messagesEndRef,
 		chatHistoryHeight,
 		getLoadingPhrase,
-		isPanelOpen,
 	};
 };
