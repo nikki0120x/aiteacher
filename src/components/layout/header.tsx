@@ -1,17 +1,9 @@
 /* src\components\layout\header.tsx */
 "use client";
-import {
-	Button,
-	Dropdown,
-	DropdownItem,
-	DropdownMenu,
-	DropdownTrigger,
-	Progress,
-} from "@heroui/react";
-import { ChevronDown, SquarePen } from "lucide-react";
+import { Button, Progress } from "@heroui/react";
+import { SquarePen } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { aiModels, useChatSettings } from "@/hooks/useChatSettings";
 import { useChatStore } from "@/stores/useChat";
 
 export default function Header() {
@@ -25,11 +17,8 @@ export default function Header() {
 	} = useChatStore();
 
 	// ================================================================
-	//     AI 選択
+	//     ローディング
 	// ================================================================
-
-	const { aiModel, selectedModelLabel, handleAIModelSelection } =
-		useChatSettings();
 
 	const [loading, setLoading] = useState(false);
 	const pathname = usePathname();
