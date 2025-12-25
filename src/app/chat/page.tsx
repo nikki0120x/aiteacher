@@ -274,18 +274,22 @@ export default function Chat() {
 			const blockKey = `block-${idx}`;
 			if (block.type === "formula") {
 				return (
-					<div
-						key={blockKey}
-						className="flex overflow-x-auto justify-center items-center p-2 my-2 w-full text-xl font-medium text-d3 dark:text-l3 rounded-4xl bg-l3 dark:bg-d3"
-					>
-						<BlockMath math={block.content} />
+					<div key={blockKey} className="p-2 my-2 w-full min-w-0">
+						<div
+							className="overflow-x-auto overflow-y-hidden text-d3 dark:text-l3 rounded-4xl bg-l3 dark:bg-d3"
+							style={{ display: "grid" }}
+						>
+							<div className="p-4 mx-auto w-fit min-w-full text-xl font-medium">
+								<BlockMath math={block.content} />
+							</div>
+						</div>
 					</div>
 				);
 			}
 			return (
 				<div
 					key={blockKey}
-					className="max-w-none text-lg font-medium text-d2 dark:text-l2 prose dark:prose-invert"
+					className="text-lg font-medium text-d2 dark:text-l2 prose dark:prose-invert"
 				>
 					<ReactMarkdown
 						remarkPlugins={[remarkGfm, remarkMath]}
@@ -332,7 +336,7 @@ export default function Chat() {
 													? `${chatHistoryHeight}px`
 													: "auto",
 										}}
-										className="flex flex-col gap-4 items-center"
+										className="flex flex-col gap-4 items-center w-full"
 									>
 										<Card
 											shadow="none"
@@ -433,7 +437,7 @@ export default function Chat() {
 																title={displayTitle}
 																classNames={{ trigger: "px-2 cursor-pointer" }}
 															>
-																<div className="p-2 max-w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
+																<div className="p-2 w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
 																	{isNotProblem ? (
 																		<div className="flex flex-col gap-4 justify-center items-center p-8 rounded-4xl bg-l3 dark:bg-d3">
 																			<p className="text-lg font-bold text-d3 dark:text-l3 text-center">
@@ -523,7 +527,7 @@ export default function Chat() {
 																startContent={icon}
 																classNames={{ trigger: "px-2 cursor-pointer" }}
 															>
-																<div className="p-2 max-w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
+																<div className="p-2 w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
 																	{isInitialPlaceholder ? (
 																		<div className="animate-pulse"></div>
 																	) : (
