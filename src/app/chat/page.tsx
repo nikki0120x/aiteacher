@@ -1,4 +1,4 @@
-/* src\app\chat\page.tsx */
+/* src/app/chat/page.tsx */
 "use client";
 import { DndContext } from "@dnd-kit/core";
 import {
@@ -13,7 +13,9 @@ import {
 	DropdownMenu,
 	DropdownTrigger,
 	ScrollShadow,
+	type SharedSelection,
 	Slider,
+	Spinner,
 	Switch,
 	Textarea,
 	Tooltip,
@@ -30,11 +32,13 @@ import {
 	ScrollText,
 	SendHorizontal,
 	Settings2,
+	TriangleAlert,
 	X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BlockMath } from "react-katex";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -54,9 +58,37 @@ declare global {
 	}
 }
 
+type ContentBlock = {
+	type: "text" | "formula";
+	content: string;
+};
+
+const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
+	try {
+		const parsed = JSON.parse(jsonString);
+		return Array.isArray(parsed[key]) ? parsed[key] : [];
+	} catch {}
+
+	const regex = new RegExp(`"${key}"\\s*:\\s*\\[(.*?)(?:\\]|$)`, "s");
+	const match = jsonString.match(regex);
+	if (!match) return [];
+
+	const innerContent = match[1];
+	const objectMatches = innerContent.match(/\{[^{}]+\}/g);
+
+	if (!objectMatches) return [];
+
+	const results: ContentBlock[] = [];
+	for (const objStr of objectMatches) {
+		try {
+			results.push(JSON.parse(objStr));
+		} catch {}
+	}
+	return results;
+};
+
 export default function Chat() {
-	const { isSent, isLoading, activeContent, message, setActiveContent } =
-		useChatStore();
+	const { isSent, isLoading, activeContent, setActiveContent } = useChatStore();
 
 	const {
 		images,
@@ -83,11 +115,10 @@ export default function Chat() {
 		chatHistoryRef,
 		messagesEndRef,
 		chatHistoryHeight,
-		getLoadingPhrase,
 	} = useChatDisplay();
 
 	// ================================================================
-	//     1. 送信と中断（handleSend, handleAbort）
+	//     送信と中断
 	// ================================================================
 
 	const { handleSend: chatLogicHandleSend, handleAbort: chatLogicHandleAbort } =
@@ -111,7 +142,7 @@ export default function Chat() {
 	};
 
 	// ================================================================
-	//     2. 入力欄
+	//     入力欄
 	// ================================================================
 
 	const wrappedHandleSend = useCallback(
@@ -132,7 +163,7 @@ export default function Chat() {
 		useChatInput(wrappedHandleSend);
 
 	// ================================================================
-	//     3. 画像欄
+	//     画像欄
 	// ================================================================
 
 	const DroppableArea = ({
@@ -158,34 +189,23 @@ export default function Chat() {
 			e.preventDefault();
 			e.stopPropagation();
 			dragCounter.current++;
-
-			if (dragCounter.current === 1) {
-				setIsDragActive(true);
-			}
+			if (dragCounter.current === 1) setIsDragActive(true);
 		};
 
 		const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
 			e.preventDefault();
 			e.stopPropagation();
 			dragCounter.current--;
-
-			if (dragCounter.current === 0) {
-				setIsDragActive(false);
-			}
+			if (dragCounter.current === 0) setIsDragActive(false);
 		};
 
 		const handleDropAndReset = (e: React.DragEvent<HTMLDivElement>) => {
 			e.preventDefault();
 			e.stopPropagation();
 			handleDrop(tabKey, e);
-
 			dragCounter.current = 0;
 			setIsDragActive(false);
 		};
-
-		const containerClasses = `flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
-			isDragActive ? "border-blue bg-blue/25" : "border-ld"
-		}`;
 
 		return (
 			<div
@@ -199,7 +219,9 @@ export default function Chat() {
 				onDragEnter={handleDragEnter}
 				onDragLeave={handleDragLeave}
 				onKeyDown={handleKeyDown}
-				className={containerClasses}
+				className={`flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
+					isDragActive ? "border-blue bg-blue/25" : "border-ld"
+				}`}
 			>
 				{children}
 				<input
@@ -217,11 +239,71 @@ export default function Chat() {
 	const [hasMounted, setHasMounted] = useState(false);
 
 	// ================================================================
+	//     アコーディオン制御ロジック
+	// ================================================================
+
+	const [accordionKeys, setAccordionKeys] = useState<
+		Record<string, SharedSelection>
+	>({});
+
+	const prevTurnsLengthRef = useRef(turns.length);
+
+	useEffect(() => {
+		if (turns.length === 0 || turns.length <= prevTurnsLengthRef.current) {
+			prevTurnsLengthRef.current = turns.length;
+			return;
+		}
+
+		prevTurnsLengthRef.current = turns.length;
+
+		setAccordionKeys(() => {
+			const newKeys: Record<string, SharedSelection> = {};
+			for (const turn of turns) {
+				newKeys[turn.user.id] = new Set([]) as unknown as SharedSelection;
+			}
+			return newKeys;
+		});
+	}, [turns]);
+
+	// ================================================================
+	//     レンダリングヘルパー
+	// ================================================================
+
+	const renderContentBlocks = (blocks: ContentBlock[]) => {
+		return blocks.map((block, idx) => {
+			const blockKey = `block-${idx}`;
+			if (block.type === "formula") {
+				return (
+					<div
+						key={blockKey}
+						className="flex overflow-x-auto justify-center items-center p-2 my-2 w-full text-xl font-medium text-d3 dark:text-l3 rounded-4xl bg-l3 dark:bg-d3"
+					>
+						<BlockMath math={block.content} />
+					</div>
+				);
+			}
+			return (
+				<div
+					key={blockKey}
+					className="max-w-none text-lg font-medium text-d2 dark:text-l2 prose dark:prose-invert"
+				>
+					<ReactMarkdown
+						remarkPlugins={[remarkGfm, remarkMath]}
+						rehypePlugins={[rehypeRaw, rehypeKatex]}
+					>
+						{block.content}
+					</ReactMarkdown>
+				</div>
+			);
+		});
+	};
+
+	// ================================================================
 	//     フロントエンド
 	// ================================================================
 
 	return (
-		<div className="flex overflow-hidden flex-none justify-center items-center p-4 pt-0 size-full">
+		<div className="flex flex-none justify-center items-center p-4 pt-0 size-full">
 			<motion.div className="flex flex-col justify-center items-center size-full max-w-3xl">
 				<motion.div
 					initial={{ flex: 0, height: 0, opacity: 0 }}
@@ -230,114 +312,34 @@ export default function Chat() {
 						height: isSent ? "auto" : 0,
 						opacity: isSent ? 1 : 0,
 					}}
-					transition={{
-						duration: 0.5,
-						ease: "easeInOut",
-					}}
+					transition={{ duration: 0.5, ease: "easeInOut" }}
 					className="flex overflow-hidden flex-col size-full"
 					ref={chatHistoryRef}
 				>
-					<ScrollShadow
-						hideScrollBar
-						visibility="none"
-						className="w-full h-full"
-					>
+					<ScrollShadow hideScrollBar visibility="none" className="size-full">
 						<AnimatePresence mode="sync">
-							{turns.map((turn) => {
+							{turns.map((turn, index) => {
 								const isLatestTurn = turn.user.id === lastTurnId;
 								const msg = turn.model;
-								const latestMessage = message.slice(-1)[0];
-								const isCurrentLoadingTurn =
-									isLoading && turn.model?.id === latestMessage?.id;
-
-								const hasImages = (images.problem?.length || 0) > 0;
-
-								const state = msg?.sectionsState ?? switchState;
-								const sections: { title: string; text: string }[] = [];
-
-								const extractSection = (header: string) => {
-									if (!msg?.text) return undefined;
-									const regex = new RegExp(
-										`###\\s*${header}\\s*([\\s\\S]*?)(?=\\n###|$)`,
-										"i",
-									);
-									return msg.text.match(regex)?.[1]?.trim();
-								};
-
-								const allSectionDefs: {
-									key: keyof typeof switchState;
-									title: string;
-								}[] = [
-									{ key: "summary", title: "要約" },
-									{ key: "guidance", title: "指針" },
-									{ key: "explanation", title: "解説" },
-									{ key: "answer", title: "解答" },
-								];
-
-								const enabledSections = allSectionDefs.filter(
-									(s) => state[s.key],
-								);
-
-								enabledSections.forEach(({ title }) => {
-									const text = extractSection(title);
-									sections.push({
-										title,
-										text: text ?? "",
-									});
-								});
-
-								const enabledTitles = enabledSections.map((s) => s.title);
-								const anyHeaderRegex = new RegExp(
-									`###\\s*(${enabledTitles.join("|")})`,
-									"i",
-								);
-
-								if (
-									msg &&
-									sections.length > 0 &&
-									!msg.text.match(anyHeaderRegex)
-								) {
-									sections[0].text = msg.text;
-								}
-								if (msg && sections.length === 0) {
-									sections.push({
-										title: "応答",
-										text: msg.text,
-									});
-								}
+								const isLastItem = index === turns.length - 1;
 
 								return (
 									<motion.div
 										key={turn.user.id}
-										initial={{ opacity: 0, y: 50 }}
-										animate={{ opacity: 1, y: 0 }}
-										exit={{ opacity: 0, y: 50 }}
-										transition={{
-											duration: 0.5,
-											ease: "easeInOut",
-										}}
 										style={{
 											height:
 												isLatestTurn && chatHistoryHeight
 													? `${chatHistoryHeight}px`
 													: "auto",
 										}}
+										className="flex flex-col gap-4 items-center"
 									>
 										<Card
 											shadow="none"
-											radius="lg"
-											className="mb-2 w-full rounded-4xl bg-l2 dark:bg-d2"
+											className="shrink-0 p-2 w-full text-lg font-medium text-d2 dark:text-l2 rounded-4xl bg-l2 dark:bg-d2"
 										>
 											<CardBody>
-												<div
-													className="flex overflow-x-hidden justify-start items-center px-2 max-w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word select-text prose dark:prose-invert"
-													style={{
-														minHeight: "2rem",
-														maxHeight: `calc(2rem * 3)`,
-														lineHeight: "normal",
-														overflowY: "auto",
-													}}
-												>
+												<div>
 													<ReactMarkdown
 														remarkPlugins={[remarkGfm, remarkMath]}
 														rehypePlugins={[rehypeRaw, rehypeKatex]}
@@ -348,78 +350,197 @@ export default function Chat() {
 											</CardBody>
 										</Card>
 
-										{turn.model && (
+										{msg && (
 											<Accordion
 												selectionMode="multiple"
 												variant="bordered"
-												className="text-base font-medium text-d2 dark:text-l2 rounded-4xl border-2 border-l2 dark:border-d2 bg-l2 dark:bg-d2"
+												selectedKeys={
+													accordionKeys[turn.user.id] || new Set([])
+												}
+												onSelectionChange={(keys) => {
+													setAccordionKeys((prev) => ({
+														...prev,
+														[turn.user.id]: keys,
+													}));
+												}}
+												className="shrink-0 p-4 w-full rounded-4xl border-none bg-l2 dark:bg-d2"
 											>
-												{sections.map((sec, i) => {
-													let icon = null;
-													switch (sec.title) {
-														case "要約":
-															icon = <ScrollText className="text-blue" />;
-															break;
-														case "指針":
-															icon = <BowArrow className="text-orange" />;
-															break;
-														case "解説":
-															icon = <BookText className="text-red" />;
-															break;
-														case "解答":
-															icon = <BookCheck className="text-lime" />;
-															break;
-													}
+												{(() => {
+													const state = msg.sectionsState ?? switchState;
 
-													const isInitialPlaceholder =
-														sec.text === "#LOADING_PHRASE#";
-													let displayContent = sec.text;
+													const sectionDefs = [
+														{ key: "summary", title: "要約" },
+														{ key: "guidance", title: "指針" },
+														{ key: "explanation", title: "解説" },
+														{ key: "answer", title: "解答" },
+													] as const;
 
-													if (isInitialPlaceholder) {
-														if (isCurrentLoadingTurn && hasImages) {
-															displayContent = "画像分析中...";
-														} else if (isCurrentLoadingTurn) {
-															displayContent = getLoadingPhrase(i);
-														}
-													}
+													const isNotProblem =
+														msg.text.includes('"isProblem": false') ||
+														msg.text.includes('"isProblem":false');
 
-													return (
-														<AccordionItem
-															key={sec.title}
-															aria-label={sec.title}
-															title={
-																<span
-																	className={`text-xl font-medium no-select ${sec.title === "要約" ? "text-sky-500" : ""} ${
-																		sec.title === "指針" || sec.title === "応答"
-																			? "text-orange-500"
-																			: ""
-																	} ${sec.title === "解説" ? "text-rose-500" : ""} ${sec.title === "解答" ? "text-lime-500" : ""} `}
-																>
-																	{sec.title}
-																</span>
-															}
-															startContent={icon}
-															classNames={{
-																trigger: "px-2 cursor-pointer",
-															}}
-														>
-															<div
-																className="px-2 max-w-full text-lg font-normal text-d3 dark:text-l3 wrap-break-word prose dark:prose-invert"
-																style={{
-																	lineHeight: "2",
-																}}
-															>
-																<ReactMarkdown
-																	remarkPlugins={[remarkGfm, remarkMath]}
-																	rehypePlugins={[rehypeRaw, rehypeKatex]}
-																>
-																	{displayContent}
-																</ReactMarkdown>
-															</div>
-														</AccordionItem>
+													const hasStartedStructure = sectionDefs.some(
+														(def) =>
+															state[def.key] &&
+															msg.text.includes(`"${def.key}"`),
 													);
-												})}
+
+													const showGenericResponse =
+														isNotProblem || !hasStartedStructure;
+
+													if (showGenericResponse) {
+														let displayTitle: React.ReactNode;
+
+														if (isNotProblem) {
+															displayTitle = (
+																<div className="flex relative flex-row gap-4 items-center">
+																	<TriangleAlert
+																		size={32}
+																		className="text-yellow"
+																	/>
+																	<span className="text-xl font-bold text-yellow">
+																		失敗！
+																	</span>
+																</div>
+															);
+														} else {
+															displayTitle = (
+																<div className="flex flex-row gap-4 items-center">
+																	<Spinner
+																		variant="spinner"
+																		size="md"
+																		color="primary"
+																	/>
+																	<span className="text-xl font-bold text-blue animate-pulse">
+																		応答中
+																	</span>
+																	<Spinner
+																		variant="dots"
+																		size="sm"
+																		color="primary"
+																		className="top-2 right-4 animate-pulse"
+																	/>
+																</div>
+															);
+														}
+
+														/*  ================================================================
+																応答画面
+															================================================================ */
+
+														return (
+															<AccordionItem
+																title={displayTitle}
+																classNames={{ trigger: "px-2 cursor-pointer" }}
+															>
+																<div className="p-2 max-w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
+																	{isNotProblem ? (
+																		<div className="flex flex-col gap-4 justify-center items-center p-8 rounded-4xl bg-l3 dark:bg-d3">
+																			<p className="text-lg font-bold text-d3 dark:text-l3 text-center">
+																				質問を聴き取ることができませんでした
+																			</p>
+																			<p className="text-base font-medium text-d3/75 dark:text-l3/75 text-center">
+																				よかったら再度、AI
+																				に質問を訊いてみてね！
+																			</p>
+																		</div>
+																	) : (
+																		<div className="flex flex-col gap-4 justify-center items-center p-8 rounded-4xl bg-l3 dark:bg-d3">
+																			<Spinner
+																				variant="default"
+																				size="lg"
+																				color="primary"
+																			/>
+																			<div className="flex flex-row">
+																				<p className="text-lg font-bold text-blue text-center animate-pulse">
+																					先生が考えています
+																				</p>
+																				<Spinner
+																					variant="dots"
+																					size="sm"
+																					color="primary"
+																					className="top-2 animate-pulse"
+																				/>
+																			</div>
+																			<p className="text-base font-medium text-d3/75 dark:text-l3/75 text-center">
+																				返答を準備中ですから、少々お待ちください。
+																			</p>
+																		</div>
+																	)}
+																</div>
+															</AccordionItem>
+														);
+													}
+
+													const activeSections = sectionDefs.filter(
+														(def) => state[def.key],
+													);
+
+													return activeSections.map((sec) => {
+														let icon = null;
+														let titleClassName = "";
+
+														switch (sec.title) {
+															case "要約":
+																icon = (
+																	<ScrollText size={32} className="text-blue" />
+																);
+																titleClassName = "text-xl font-bold text-blue";
+																break;
+															case "指針":
+																icon = (
+																	<BowArrow size={32} className="text-orange" />
+																);
+																titleClassName =
+																	"text-xl font-bold text-orange";
+																break;
+															case "解説":
+																icon = (
+																	<BookText size={32} className="text-red" />
+																);
+																titleClassName = "text-xl font-bold text-red";
+																break;
+															case "解答":
+																icon = (
+																	<BookCheck size={32} className="text-lime" />
+																);
+																titleClassName = "text-xl font-bold text-lime";
+																break;
+														}
+
+														const blocks = extractJsonArray(msg.text, sec.key);
+														const isInitialPlaceholder = blocks.length === 0;
+
+														return (
+															<AccordionItem
+																key={sec.key}
+																aria-label={sec.title}
+																title={
+																	<span className={titleClassName}>
+																		{sec.title}
+																	</span>
+																}
+																startContent={icon}
+																classNames={{ trigger: "px-2 cursor-pointer" }}
+															>
+																<div className="p-2 max-w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
+																	{isInitialPlaceholder ? (
+																		<div className="animate-pulse"></div>
+																	) : (
+																		<div className="flex flex-col gap-4">
+																			{renderContentBlocks(blocks)}
+																		</div>
+																	)}
+																</div>
+															</AccordionItem>
+														);
+													});
+												})()}
 											</Accordion>
+										)}
+
+										{!isLastItem && (
+											<Divider className="shrink-0 mt-4 mb-8 w-[calc(100%-1rem)] bg-l4 dark:bg-d4" />
 										)}
 									</motion.div>
 								);
@@ -435,10 +556,7 @@ export default function Chat() {
 						height: "auto",
 						opacity: 1,
 					}}
-					transition={{
-						duration: 0.5,
-						ease: "easeInOut",
-					}}
+					transition={{ duration: 0.5, ease: "easeInOut" }}
 					className="flex flex-col gap-10 justify-center items-center size-full no-select"
 				>
 					<AnimatePresence>
@@ -451,10 +569,7 @@ export default function Chat() {
 								transition={{ duration: 0.5, ease: "easeInOut" }}
 								className="flex flex-row gap-4 justify-center items-center w-full"
 							>
-								<Divider
-									orientation="horizontal"
-									className="flex-1 mr-8 bg-d5 dark:bg-l5"
-								/>
+								<Divider className="flex-1 mr-8 bg-d5 dark:bg-l5" />
 								<Image
 									src="/logos/dark.webp"
 									alt="Logo (Dark)"
@@ -476,13 +591,11 @@ export default function Chat() {
 								<span className="overflow-hidden text-xl font-medium text-d5 dark:text-l5 text-center text-ellipsis whitespace-nowrap">
 									Ver. β-{packageJson.version}
 								</span>
-								<Divider
-									orientation="horizontal"
-									className="flex-1 ml-8 bg-d5 dark:bg-l5"
-								/>
+								<Divider className="flex-1 ml-8 bg-d5 dark:bg-l5" />
 							</motion.div>
 						)}
 					</AnimatePresence>
+
 					<div className="flex flex-col justify-center px-4 py-2 w-full rounded-4xl border-1 border-l5 dark:border-d5">
 						<AnimatePresence>
 							<motion.div
@@ -494,10 +607,7 @@ export default function Chat() {
 								}
 								animate={{ opacity: 1, height: "auto" }}
 								exit={{ opacity: 0, height: 0 }}
-								transition={{
-									duration: 0.5,
-									ease: "easeInOut",
-								}}
+								transition={{ duration: 0.5, ease: "easeInOut" }}
 								className="flex flex-col justify-center"
 								onAnimationComplete={() => setHasMounted(true)}
 							>
@@ -522,14 +632,9 @@ export default function Chat() {
 										}}
 									/>
 									<Button
-										aria-label="Mic Button"
 										isIconOnly
 										radius="full"
-										className={`${
-											isListening
-												? "bg-red text-l2"
-												: "bg-transparent hover:bg-l2 dark:hover:bg-d2 text-d2 dark:text-l2"
-										}`}
+										className={`${isListening ? "bg-red text-l2" : "bg-transparent hover:bg-l2 dark:hover:bg-d2 text-d2 dark:text-l2"}`}
 										onPress={toggleListening}
 									>
 										{isListening ? <Mic /> : <MicOff />}
@@ -538,14 +643,9 @@ export default function Chat() {
 								<div className="flex flex-row justify-between pb-2">
 									<div className="flex flex-row gap-2">
 										<Button
-											aria-label="Sliders Button"
 											isIconOnly
 											radius="full"
-											className={`text-d2 dark:text-l2 ${
-												activeContent === "sliders"
-													? "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3"
-													: "bg-transparent hover:bg-l2 dark:hover:bg-d2"
-											}`}
+											className={`text-d2 dark:text-l2 ${activeContent === "sliders" ? "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3" : "bg-transparent hover:bg-l2 dark:hover:bg-d2"}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "sliders" ? null : "sliders",
@@ -555,14 +655,9 @@ export default function Chat() {
 											<Settings2 />
 										</Button>
 										<Button
-											aria-label="Image Button"
 											isIconOnly
 											radius="full"
-											className={`text-d2 dark:text-l2 ${
-												activeContent === "images"
-													? "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3"
-													: "bg-transparent hover:bg-l2 dark:hover:bg-d2"
-											}`}
+											className={`text-d2 dark:text-l2 ${activeContent === "images" ? "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3" : "bg-transparent hover:bg-l2 dark:hover:bg-d2"}`}
 											onPress={() =>
 												setActiveContent(
 													activeContent === "images" ? null : "images",
@@ -581,23 +676,17 @@ export default function Chat() {
 										>
 											<DropdownTrigger>
 												<Button
-													aria-label="Select a Response Mode Button"
 													radius="full"
 													className="text-base font-medium text-d2 dark:text-l2 bg-transparent hover:bg-l2 dark:hover:bg-d2"
 												>
-													{selectedModeLabel}
-													<ChevronDown size={16} />
+													{selectedModeLabel} <ChevronDown size={16} />
 												</Button>
 											</DropdownTrigger>
 											<DropdownMenu
 												disallowEmptySelection
-												aria-label="Response Modes Menu"
 												selectedKeys={[responseMode]}
 												selectionMode="single"
 												onSelectionChange={handleResponseModeSelection}
-												itemClasses={{
-													base: [],
-												}}
 											>
 												<DropdownItem
 													key="standard"
@@ -614,23 +703,16 @@ export default function Chat() {
 											</DropdownMenu>
 										</Dropdown>
 										<Button
-											aria-label={isLoading ? "Abort Button" : "Send Button"}
 											isIconOnly
 											radius="full"
-											className={`${
-												isLoading
-													? "bg-red text-l2"
-													: inputText.trim() !== "" || images.problem.length > 0
-														? "bg-blue text-l2"
-														: "bg-l2 text-d2 dark:bg-d2 dark:text-l2"
-											}`}
+											className={`${isLoading ? "bg-red text-l2" : inputText.trim() !== "" || images.problem.length > 0 ? "bg-blue text-l2" : "bg-l2 text-d2 dark:bg-d2 dark:text-l2"}`}
 											onPress={() => (isLoading ? handleAbort() : handleSend())}
 											disabled={
 												!isLoading &&
 												!(inputText.trim() !== "" || images.problem.length > 0)
 											}
 										>
-											{isLoading ? <Pause /> : <SendHorizontal />}{" "}
+											{isLoading ? <Pause /> : <SendHorizontal />}
 										</Button>
 									</div>
 								</div>
@@ -638,14 +720,9 @@ export default function Chat() {
 									{activeContent && (
 										<motion.div
 											initial={{ height: 0 }}
-											animate={{
-												height: "var(--panel-height)",
-											}}
+											animate={{ height: "var(--panel-height)" }}
 											exit={{ height: 0 }}
-											transition={{
-												duration: 0.5,
-												ease: "easeInOut",
-											}}
+											transition={{ duration: 0.5, ease: "easeInOut" }}
 											className="overflow-hidden [--panel-height:15rem] lg:[--panel-height:12rem]"
 										>
 											<ScrollShadow
@@ -658,33 +735,22 @@ export default function Chat() {
 														<Slider
 															className="w-full"
 															value={sliders.politeness}
-															formatOptions={{
-																style: "percent",
-															}}
+															formatOptions={{ style: "percent" }}
 															label="丁寧度"
 															marks={[
-																{
-																	value: 0.25,
-																	label: "難しい",
-																},
-																{
-																	value: 0.5,
-																	label: "普通",
-																},
-																{
-																	value: 0.75,
-																	label: "易しい",
-																},
+																{ value: 0.25, label: "難しい" },
+																{ value: 0.5, label: "普通" },
+																{ value: 0.75, label: "易しい" },
 															]}
 															maxValue={1}
 															minValue={0}
+															step={0.25}
 															showSteps
 															showTooltip
-															step={0.25}
 															size="lg"
-															onChange={(value: number | number[]) => {
-																handleSliderChange("politeness", value);
-															}}
+															onChange={(v) =>
+																handleSliderChange("politeness", v)
+															}
 														/>
 														<Divider className="bg-l5 dark:bg-d5" />
 														<div className="flex flex-row flex-wrap gap-4">
@@ -721,7 +787,6 @@ export default function Chat() {
 														</div>
 													</div>
 												)}
-
 												{activeContent === "images" && (
 													<DndContext>
 														<div className="size-full">
@@ -732,7 +797,6 @@ export default function Chat() {
 																{images.problem.length === 0 ? (
 																	<div className="flex flex-col gap-2 justify-center items-center p-8 size-full">
 																		<Button
-																			aria-label="Upload Images Button"
 																			size="lg"
 																			radius="full"
 																			className="text-xl font-medium text-l2 text-center bg-blue"
@@ -760,10 +824,7 @@ export default function Chat() {
 																				shadow="md"
 																				color="primary"
 																			>
-																				<div
-																					key={item.id}
-																					className="relative shrink-0"
-																				>
+																				<div className="relative shrink-0">
 																					<Image
 																						src={item.src}
 																						alt={item.fileName}
@@ -772,7 +833,6 @@ export default function Chat() {
 																						className="aspect-square object-cover rounded-4xl"
 																					/>
 																					<Button
-																						aria-label="Remove Image Button"
 																						isIconOnly
 																						size="sm"
 																						radius="full"

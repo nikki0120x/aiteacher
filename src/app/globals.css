@@ -84,12 +84,6 @@ body,
   -webkit-tap-highlight-color: transparent;
 }
 
-mjx-container svg {
-  display: inline-block;
-  vertical-align: middle;
-  margin: 0 0.1em;
-}
-
 .no-select {
   user-select: none;
   -webkit-user-select: none;

@@ -9,7 +9,7 @@ export default function Toolbar() {
 	const pathname = usePathname();
 	const navItems = [
 		{ href: "/home", label: "ホーム", icon: House },
-		{ href: "/chat", label: "チャット", icon: Send },
+		{ href: "/chat", label: "質問", icon: Send },
 	];
 
 	return (
