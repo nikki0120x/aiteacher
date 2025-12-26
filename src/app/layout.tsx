@@ -1,6 +1,7 @@
 /* src\app\layout.tsx */
 "use client";
 import { HeroUIProvider } from "@heroui/react";
+import { ToastProvider } from "@heroui/toast";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { usePathname } from "next/navigation";
@@ -60,6 +61,7 @@ export default function RootLayout({
 								<div className="flex flex-col size-full">
 									<Header />
 									<main className="flex overflow-hidden flex-col size-full">
+										<ToastProvider placement="top-left" />
 										{children}
 									</main>
 								</div>
