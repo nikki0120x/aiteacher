@@ -69,7 +69,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	try {
 		const parsed = JSON.parse(jsonString);
 		return Array.isArray(parsed[key]) ? parsed[key] : [];
-	} catch { }
+	} catch {}
 
 	const regex = new RegExp(`"${key}"\\s*:\\s*\\[(.*?)(?:\\]|$)`, "s");
 	const match = jsonString.match(regex);
@@ -84,7 +84,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	for (const objStr of objectMatches) {
 		try {
 			results.push(JSON.parse(objStr));
-		} catch { }
+		} catch {}
 	}
 	return results;
 };
@@ -154,7 +154,7 @@ export default function Chat() {
 				images.problem,
 				sliders,
 				switchState,
-				() => { },
+				() => {},
 				setImages,
 			);
 		},
@@ -221,8 +221,9 @@ export default function Chat() {
 				onDragEnter={handleDragEnter}
 				onDragLeave={handleDragLeave}
 				onKeyDown={handleKeyDown}
-				className={`flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${isDragActive ? "border-blue bg-blue/25" : "border-ld"
-					}`}
+				className={`flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
+					isDragActive ? "border-blue bg-blue/25" : "border-ld"
+				}`}
 			>
 				{children}
 				<input
@@ -292,14 +293,20 @@ export default function Chat() {
 
 				return (
 					<div key={blockKey} className="relative p-2 my-2 w-full min-w-0">
-						<div className="flex flex-col rounded-4xl bg-l3 dark:bg-d3 overflow-hidden">
-							<div className="flex flex-row justify-between items-center w-full px-4 py-2 no-select border-b-2 border-l5 dark:border-d5">
-								<span className="mx-2 font-medium text-sm text-d3 dark:text-l3">数式</span>
-								<Button isIconOnly onPress={handleCopy} className="rounded-full bg-transparent">
+						<div className="flex overflow-hidden flex-col rounded-4xl bg-l3 dark:bg-d3">
+							<div className="flex flex-row justify-between items-center px-4 py-2 w-full border-b-2 border-l5 dark:border-d5 no-select">
+								<span className="mx-2 text-sm font-medium text-d3 dark:text-l3">
+									数式
+								</span>
+								<Button
+									isIconOnly
+									onPress={handleCopy}
+									className="bg-transparent rounded-full"
+								>
 									<Copy size={16} className="text-d3 dark:text-l3" />
 								</Button>
 							</div>
-							<div className="overflow-x-auto overflow-y-hidden grid">
+							<div className="grid overflow-x-auto overflow-y-hidden">
 								<div className="px-4 py-2 mx-auto w-fit min-w-full text-xl font-medium text-d3 dark:text-l3">
 									<BlockMath math={block.content} />
 								</div>

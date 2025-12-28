@@ -92,3 +92,7 @@ body,
 .no-after-content *::after {
   content: none;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
