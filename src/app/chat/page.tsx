@@ -159,8 +159,11 @@ const TurnItem = React.memo(
 					};
 
 					return (
-						<div key={blockKey} className="relative p-2 my-2 w-full min-w-0">
-							<div className="flex overflow-hidden flex-col rounded-4xl bg-l3 dark:bg-d3">
+						<div
+							key={blockKey}
+							className="relative p-2 my-2 w-full min-w-0 max-w-full"
+						>
+							<div className="flex overflow-hidden flex-col w-full rounded-4xl bg-l3 dark:bg-d3">
 								<div className="flex flex-row justify-between items-center px-4 py-2 w-full border-b-2 border-l5 dark:border-d5 no-select">
 									<span className="mx-2 text-sm font-medium text-d3 dark:text-l3">
 										数式
@@ -173,8 +176,8 @@ const TurnItem = React.memo(
 										<Copy size={16} className="text-d3 dark:text-l3" />
 									</Button>
 								</div>
-								<div className="grid overflow-x-auto overflow-y-hidden">
-									<div className="px-4 py-2 mx-auto w-fit min-w-full text-xl font-medium text-d3 dark:text-l3">
+								<div className="block overflow-x-auto overflow-y-hidden w-full touch-pan-x custom-scrollbar">
+									<div className="px-4 py-6 mx-auto w-fit min-w-full text-xl font-medium text-d3 dark:text-l3">
 										<BlockMath math={block.content} />
 									</div>
 								</div>
@@ -201,13 +204,10 @@ const TurnItem = React.memo(
 		return (
 			<motion.div
 				style={{
-					// ▼▼▼ 修正: height ではなく minHeight を使う ▼▼▼
-					// これにより、中身が短いときは「画面いっぱい」に広がり（上端に来る）、
-					// アコーディオンを開いて長くなったときは「自動で伸びる」ようになります。
 					minHeight:
 						isLatestTurn && chatHistoryHeight
 							? `${chatHistoryHeight}px`
-							: undefined, // autoの代わりに undefined を推奨（Virtuosoとの相性のため）
+							: undefined,
 				}}
 				className="flex flex-col gap-4 items-center w-full"
 			>
