@@ -44,7 +44,10 @@ export default function RootLayout({
 			<head>
 				<Server />
 			</head>
-			<body style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }} className="antialiased overflow-hidden">
+			<body
+				style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}
+				className="overflow-hidden antialiased"
+			>
 				<Suspense fallback={null}>
 					<TopProgress />
 				</Suspense>
@@ -55,13 +58,13 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<HeroUIProvider>
-						<div className="flex w-full h-dvh overflow-hidden">
-							<div className="flex relative flex-row flex-1 md:pr-16 pb-12 md:pb-0 overflow-hidden">
+						<div className="flex overflow-hidden w-full h-dvh">
+							<div className="flex overflow-hidden relative flex-row flex-1 md:pr-16 pb-12 md:pb-0">
 								<Sidebar />
 								<div className="flex flex-col flex-1 min-w-0">
 									<Header />
 									<main className="flex overflow-hidden flex-col size-full">
-										<ToastProvider placement="top-left" />
+										<ToastProvider placement="top-center" />
 										{children}
 									</main>
 								</div>

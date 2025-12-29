@@ -1,4 +1,5 @@
 /* src\types\chat.ts */
+import type { SharedSelection } from "@heroui/react";
 // ================================================================
 //     1. チャットの構成
 // ================================================================
@@ -72,4 +73,18 @@ export type ImageItem = {
 export type ChatTurn = {
 	user: MessageItem;
 	model: MessageItem | undefined;
+};
+
+export type ContentBlock = {
+	type: "text" | "formula";
+	content: string;
+};
+
+export type TurnItemProps = {
+	turn: ChatTurn;
+	isLatestTurn: boolean;
+	chatHistoryHeight: number | undefined;
+	selectedKeys: SharedSelection;
+	onSelectionChange: (keys: SharedSelection) => void;
+	switchState: NormalizedSwitchState;
 };

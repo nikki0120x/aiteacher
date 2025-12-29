@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BlockMath } from "react-katex";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
@@ -52,6 +52,7 @@ import { responseModes, useChatSettings } from "@/hooks/useChatSettings";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useChatInput } from "@/hooks/useTextInput";
 import { useChatStore } from "@/stores/useChat";
+import type { ContentBlock, TurnItemProps } from "@/types/chat";
 import packageJson from "../../../package.json";
 
 declare global {
@@ -59,11 +60,6 @@ declare global {
 		__TAURI__?: unknown;
 	}
 }
-
-type ContentBlock = {
-	type: "text" | "formula";
-	content: string;
-};
 
 const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	try {
@@ -88,6 +84,297 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	}
 	return results;
 };
+
+const TurnItem = React.memo(
+	({
+		turn,
+		isLatestTurn,
+		chatHistoryHeight,
+		selectedKeys,
+		onSelectionChange,
+		switchState,
+	}: TurnItemProps) => {
+		const msg = turn.model;
+
+		// --------------------------------------------------------
+		// JSONパース等の重い処理をキャッシュする (useMemo)
+		// テキストが変わらない限り再計算されません
+		// --------------------------------------------------------
+		const parsedSections = React.useMemo(() => {
+			if (!msg) return null;
+
+			const state = msg.sectionsState ?? switchState;
+			const sectionDefs = [
+				{ key: "summary", title: "要約" },
+				{ key: "guidance", title: "指針" },
+				{ key: "explanation", title: "解説" },
+				{ key: "answer", title: "解答" },
+			] as const;
+
+			const isNotProblem =
+				msg.text.includes('"isProblem": false') ||
+				msg.text.includes('"isProblem":false');
+
+			const hasStartedStructure = sectionDefs.some(
+				(def) => state[def.key] && msg.text.includes(`"${def.key}"`),
+			);
+
+			const showGenericResponse = isNotProblem || !hasStartedStructure;
+
+			const sectionsData = sectionDefs.map((sec) => ({
+				...sec,
+				isActive: state[sec.key],
+				blocks: state[sec.key] ? extractJsonArray(msg.text, sec.key) : [],
+			}));
+
+			return {
+				isNotProblem,
+				showGenericResponse,
+				sectionsData,
+			};
+		}, [msg, switchState]);
+
+		// --------------------------------------------------------
+		// レンダリングヘルパー (TurnItem内に移動または再利用)
+		// --------------------------------------------------------
+		const renderContentBlocks = (blocks: ContentBlock[]) => {
+			return blocks.map((block, idx) => {
+				const blockKey = `block-${idx}`;
+				if (block.type === "formula") {
+					const handleCopy = async () => {
+						try {
+							const formattedFormula = `$$\n${block.content}\n$$`;
+							await navigator.clipboard.writeText(formattedFormula);
+							addToast({
+								variant: "solid",
+								radius: "full",
+								title: "コピー完了！",
+								description: "数式をクリップボードにコピーしました。",
+								color: "success",
+							});
+						} catch (err) {
+							console.error("コピーに失敗しました", err);
+						}
+					};
+
+					return (
+						<div key={blockKey} className="relative p-2 my-2 w-full min-w-0">
+							<div className="flex overflow-hidden flex-col rounded-4xl bg-l3 dark:bg-d3">
+								<div className="flex flex-row justify-between items-center px-4 py-2 w-full border-b-2 border-l5 dark:border-d5 no-select">
+									<span className="mx-2 text-sm font-medium text-d3 dark:text-l3">
+										数式
+									</span>
+									<Button
+										isIconOnly
+										onPress={handleCopy}
+										className="bg-transparent rounded-full"
+									>
+										<Copy size={16} className="text-d3 dark:text-l3" />
+									</Button>
+								</div>
+								<div className="grid overflow-x-auto overflow-y-hidden">
+									<div className="px-4 py-2 mx-auto w-fit min-w-full text-xl font-medium text-d3 dark:text-l3">
+										<BlockMath math={block.content} />
+									</div>
+								</div>
+							</div>
+						</div>
+					);
+				}
+				return (
+					<div
+						key={blockKey}
+						className="text-lg font-medium text-d2 dark:text-l2 prose dark:prose-invert"
+					>
+						<ReactMarkdown
+							remarkPlugins={[remarkGfm, remarkMath]}
+							rehypePlugins={[rehypeRaw, rehypeKatex]}
+						>
+							{block.content}
+						</ReactMarkdown>
+					</div>
+				);
+			});
+		};
+
+		return (
+			<motion.div
+				style={{
+					height:
+						isLatestTurn && chatHistoryHeight
+							? `${chatHistoryHeight}px`
+							: "auto",
+				}}
+				className="flex flex-col gap-4 items-center w-full"
+			>
+				<Card
+					shadow="none"
+					className="shrink-0 p-2 w-full text-lg font-medium text-d2 dark:text-l2 rounded-4xl bg-l2 dark:bg-d2"
+				>
+					<CardBody>
+						<div>
+							<ReactMarkdown
+								remarkPlugins={[remarkGfm, remarkMath]}
+								rehypePlugins={[rehypeRaw, rehypeKatex]}
+							>
+								{turn.user.text}
+							</ReactMarkdown>
+						</div>
+					</CardBody>
+				</Card>
+
+				{msg && parsedSections && (
+					<Accordion
+						selectionMode="multiple"
+						variant="bordered"
+						keepContentMounted={false}
+						selectedKeys={selectedKeys}
+						onSelectionChange={onSelectionChange}
+						className="shrink-0 p-4 w-full rounded-4xl border-none bg-l2 dark:bg-d2"
+					>
+						{(() => {
+							if (parsedSections.showGenericResponse) {
+								let displayTitle: React.ReactNode;
+
+								if (parsedSections.isNotProblem) {
+									displayTitle = (
+										<div className="flex relative flex-row gap-4 items-center">
+											<TriangleAlert size={32} className="text-yellow" />
+											<span className="text-xl font-bold text-yellow">
+												失敗！
+											</span>
+										</div>
+									);
+								} else {
+									displayTitle = (
+										<div className="flex flex-row gap-4 items-center">
+											<Spinner variant="spinner" size="md" color="primary" />
+											<span className="text-xl font-bold text-blue animate-pulse">
+												応答中
+											</span>
+											<Spinner
+												variant="dots"
+												size="sm"
+												color="primary"
+												className="top-2 right-4 animate-pulse"
+											/>
+										</div>
+									);
+								}
+
+								return (
+									<AccordionItem
+										title={displayTitle}
+										classNames={{ trigger: "px-2 cursor-pointer" }}
+									>
+										<div className="p-2 w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
+											{parsedSections.isNotProblem ? (
+												<div className="flex flex-col gap-4 justify-center items-center p-8 rounded-4xl bg-l3 dark:bg-d3">
+													<p className="text-lg font-bold text-d3 dark:text-l3 text-center">
+														質問を聴き取ることができませんでした
+													</p>
+													<p className="text-base font-medium text-d3/75 dark:text-l3/75 text-center">
+														よかったら再度、AI に質問を訊いてみてね！
+													</p>
+												</div>
+											) : (
+												<div className="flex flex-col gap-4 justify-center items-center p-8 rounded-4xl bg-l3 dark:bg-d3">
+													<Spinner
+														variant="default"
+														size="lg"
+														color="primary"
+													/>
+													<div className="flex flex-row">
+														<p className="text-lg font-bold text-blue text-center animate-pulse">
+															先生が考えています
+														</p>
+														<Spinner
+															variant="dots"
+															size="sm"
+															color="primary"
+															className="top-2 animate-pulse"
+														/>
+													</div>
+													<p className="text-base font-medium text-d3/75 dark:text-l3/75 text-center">
+														返答を準備中ですから、少々お待ちください。
+													</p>
+												</div>
+											)}
+										</div>
+									</AccordionItem>
+								);
+							}
+
+							// 計算済み(useMemo)のセクションデータを使用
+							return parsedSections.sectionsData
+								.filter((sec) => sec.isActive)
+								.map((sec) => {
+									let icon = null;
+									let titleClassName = "";
+
+									switch (sec.title) {
+										case "要約":
+											icon = <ScrollText size={32} className="text-blue" />;
+											titleClassName = "text-xl font-bold text-blue";
+											break;
+										case "指針":
+											icon = <BowArrow size={32} className="text-orange" />;
+											titleClassName = "text-xl font-bold text-orange";
+											break;
+										case "解説":
+											icon = <BookText size={32} className="text-red" />;
+											titleClassName = "text-xl font-bold text-red";
+											break;
+										case "解答":
+											icon = <BookCheck size={32} className="text-lime" />;
+											titleClassName = "text-xl font-bold text-lime";
+											break;
+									}
+
+									const isInitialPlaceholder = sec.blocks.length === 0;
+
+									return (
+										<AccordionItem
+											key={sec.key}
+											aria-label={sec.title}
+											title={
+												<span className={titleClassName}>{sec.title}</span>
+											}
+											startContent={icon}
+											classNames={{ trigger: "px-2 cursor-pointer" }}
+										>
+											<div className="p-2 w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
+												{isInitialPlaceholder ? (
+													<div className="animate-pulse"></div>
+												) : (
+													<div className="flex flex-col gap-4">
+														{renderContentBlocks(sec.blocks)}
+													</div>
+												)}
+											</div>
+										</AccordionItem>
+									);
+								});
+						})()}
+					</Accordion>
+				)}
+				{!isLatestTurn && (
+					<Divider className="shrink-0 mt-4 mb-8 w-[calc(100%-1rem)] bg-l4 dark:bg-d4" />
+				)}
+			</motion.div>
+		);
+	},
+	// React.memo の比較関数（Propsが変わっていない場合は再レンダリングをスキップ）
+	(prev, next) => {
+		return (
+			prev.turn === next.turn &&
+			prev.isLatestTurn === next.isLatestTurn &&
+			prev.chatHistoryHeight === next.chatHistoryHeight &&
+			prev.selectedKeys === next.selectedKeys &&
+			prev.switchState === next.switchState
+		);
+	},
+);
 
 export default function Chat() {
 	const { isSent, isLoading, activeContent, setActiveContent } = useChatStore();
@@ -268,70 +555,6 @@ export default function Chat() {
 	}, [turns]);
 
 	// ================================================================
-	//     レンダリングヘルパー
-	// ================================================================
-
-	const renderContentBlocks = (blocks: ContentBlock[]) => {
-		return blocks.map((block, idx) => {
-			const blockKey = `block-${idx}`;
-			if (block.type === "formula") {
-				const handleCopy = async () => {
-					try {
-						const formattedFormula = `$$\n${block.content}\n$$`;
-						await navigator.clipboard.writeText(formattedFormula);
-						addToast({
-							variant: "solid",
-							radius: "full",
-							title: "コピー完了！",
-							description: "数式をクリップボードにコピーしました。",
-							color: "success",
-						});
-					} catch (err) {
-						console.error("コピーに失敗しました", err);
-					}
-				};
-
-				return (
-					<div key={blockKey} className="relative p-2 my-2 w-full min-w-0">
-						<div className="flex overflow-hidden flex-col rounded-4xl bg-l3 dark:bg-d3">
-							<div className="flex flex-row justify-between items-center px-4 py-2 w-full border-b-2 border-l5 dark:border-d5 no-select">
-								<span className="mx-2 text-sm font-medium text-d3 dark:text-l3">
-									数式
-								</span>
-								<Button
-									isIconOnly
-									onPress={handleCopy}
-									className="bg-transparent rounded-full"
-								>
-									<Copy size={16} className="text-d3 dark:text-l3" />
-								</Button>
-							</div>
-							<div className="grid overflow-x-auto overflow-y-hidden">
-								<div className="px-4 py-2 mx-auto w-fit min-w-full text-xl font-medium text-d3 dark:text-l3">
-									<BlockMath math={block.content} />
-								</div>
-							</div>
-						</div>
-					</div>
-				);
-			}
-			return (
-				<div
-					key={blockKey}
-					className="text-lg font-medium text-d2 dark:text-l2 prose dark:prose-invert"
-				>
-					<ReactMarkdown
-						remarkPlugins={[remarkGfm, remarkMath]}
-						rehypePlugins={[rehypeRaw, rehypeKatex]}
-					>
-						{block.content}
-					</ReactMarkdown>
-				</div>
-			);
-		});
-	};
-
-	// ================================================================
 	//     フロントエンド
 	// ================================================================
 
@@ -351,231 +574,24 @@ export default function Chat() {
 				>
 					<ScrollShadow hideScrollBar visibility="none" className="size-full">
 						<AnimatePresence mode="sync">
-							{turns.map((turn, index) => {
+							{turns.map((turn) => {
 								const isLatestTurn = turn.user.id === lastTurnId;
-								const msg = turn.model;
-								const isLastItem = index === turns.length - 1;
 
 								return (
-									<motion.div
+									<TurnItem
 										key={turn.user.id}
-										style={{
-											height:
-												isLatestTurn && chatHistoryHeight
-													? `${chatHistoryHeight}px`
-													: "auto",
+										turn={turn}
+										isLatestTurn={isLatestTurn}
+										chatHistoryHeight={chatHistoryHeight}
+										selectedKeys={accordionKeys[turn.user.id] || new Set([])}
+										onSelectionChange={(keys) => {
+											setAccordionKeys((prev) => ({
+												...prev,
+												[turn.user.id]: keys,
+											}));
 										}}
-										className="flex flex-col gap-4 items-center w-full"
-									>
-										<Card
-											shadow="none"
-											className="shrink-0 p-2 w-full text-lg font-medium text-d2 dark:text-l2 rounded-4xl bg-l2 dark:bg-d2"
-										>
-											<CardBody>
-												<div>
-													<ReactMarkdown
-														remarkPlugins={[remarkGfm, remarkMath]}
-														rehypePlugins={[rehypeRaw, rehypeKatex]}
-													>
-														{turn.user.text}
-													</ReactMarkdown>
-												</div>
-											</CardBody>
-										</Card>
-
-										{msg && (
-											<Accordion
-												selectionMode="multiple"
-												variant="bordered"
-												selectedKeys={
-													accordionKeys[turn.user.id] || new Set([])
-												}
-												onSelectionChange={(keys) => {
-													setAccordionKeys((prev) => ({
-														...prev,
-														[turn.user.id]: keys,
-													}));
-												}}
-												className="shrink-0 p-4 w-full rounded-4xl border-none bg-l2 dark:bg-d2"
-											>
-												{(() => {
-													const state = msg.sectionsState ?? switchState;
-
-													const sectionDefs = [
-														{ key: "summary", title: "要約" },
-														{ key: "guidance", title: "指針" },
-														{ key: "explanation", title: "解説" },
-														{ key: "answer", title: "解答" },
-													] as const;
-
-													const isNotProblem =
-														msg.text.includes('"isProblem": false') ||
-														msg.text.includes('"isProblem":false');
-
-													const hasStartedStructure = sectionDefs.some(
-														(def) =>
-															state[def.key] &&
-															msg.text.includes(`"${def.key}"`),
-													);
-
-													const showGenericResponse =
-														isNotProblem || !hasStartedStructure;
-
-													if (showGenericResponse) {
-														let displayTitle: React.ReactNode;
-
-														if (isNotProblem) {
-															displayTitle = (
-																<div className="flex relative flex-row gap-4 items-center">
-																	<TriangleAlert
-																		size={32}
-																		className="text-yellow"
-																	/>
-																	<span className="text-xl font-bold text-yellow">
-																		失敗！
-																	</span>
-																</div>
-															);
-														} else {
-															displayTitle = (
-																<div className="flex flex-row gap-4 items-center">
-																	<Spinner
-																		variant="spinner"
-																		size="md"
-																		color="primary"
-																	/>
-																	<span className="text-xl font-bold text-blue animate-pulse">
-																		応答中
-																	</span>
-																	<Spinner
-																		variant="dots"
-																		size="sm"
-																		color="primary"
-																		className="top-2 right-4 animate-pulse"
-																	/>
-																</div>
-															);
-														}
-
-														/*  ================================================================
-																応答画面
-															================================================================ */
-
-														return (
-															<AccordionItem
-																title={displayTitle}
-																classNames={{ trigger: "px-2 cursor-pointer" }}
-															>
-																<div className="p-2 w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
-																	{isNotProblem ? (
-																		<div className="flex flex-col gap-4 justify-center items-center p-8 rounded-4xl bg-l3 dark:bg-d3">
-																			<p className="text-lg font-bold text-d3 dark:text-l3 text-center">
-																				質問を聴き取ることができませんでした
-																			</p>
-																			<p className="text-base font-medium text-d3/75 dark:text-l3/75 text-center">
-																				よかったら再度、AI
-																				に質問を訊いてみてね！
-																			</p>
-																		</div>
-																	) : (
-																		<div className="flex flex-col gap-4 justify-center items-center p-8 rounded-4xl bg-l3 dark:bg-d3">
-																			<Spinner
-																				variant="default"
-																				size="lg"
-																				color="primary"
-																			/>
-																			<div className="flex flex-row">
-																				<p className="text-lg font-bold text-blue text-center animate-pulse">
-																					先生が考えています
-																				</p>
-																				<Spinner
-																					variant="dots"
-																					size="sm"
-																					color="primary"
-																					className="top-2 animate-pulse"
-																				/>
-																			</div>
-																			<p className="text-base font-medium text-d3/75 dark:text-l3/75 text-center">
-																				返答を準備中ですから、少々お待ちください。
-																			</p>
-																		</div>
-																	)}
-																</div>
-															</AccordionItem>
-														);
-													}
-
-													const activeSections = sectionDefs.filter(
-														(def) => state[def.key],
-													);
-
-													return activeSections.map((sec) => {
-														let icon = null;
-														let titleClassName = "";
-
-														switch (sec.title) {
-															case "要約":
-																icon = (
-																	<ScrollText size={32} className="text-blue" />
-																);
-																titleClassName = "text-xl font-bold text-blue";
-																break;
-															case "指針":
-																icon = (
-																	<BowArrow size={32} className="text-orange" />
-																);
-																titleClassName =
-																	"text-xl font-bold text-orange";
-																break;
-															case "解説":
-																icon = (
-																	<BookText size={32} className="text-red" />
-																);
-																titleClassName = "text-xl font-bold text-red";
-																break;
-															case "解答":
-																icon = (
-																	<BookCheck size={32} className="text-lime" />
-																);
-																titleClassName = "text-xl font-bold text-lime";
-																break;
-														}
-
-														const blocks = extractJsonArray(msg.text, sec.key);
-														const isInitialPlaceholder = blocks.length === 0;
-
-														return (
-															<AccordionItem
-																key={sec.key}
-																aria-label={sec.title}
-																title={
-																	<span className={titleClassName}>
-																		{sec.title}
-																	</span>
-																}
-																startContent={icon}
-																classNames={{ trigger: "px-2 cursor-pointer" }}
-															>
-																<div className="p-2 w-full text-lg font-medium text-d3 dark:text-l3 wrap-break-word">
-																	{isInitialPlaceholder ? (
-																		<div className="animate-pulse"></div>
-																	) : (
-																		<div className="flex flex-col gap-4">
-																			{renderContentBlocks(blocks)}
-																		</div>
-																	)}
-																</div>
-															</AccordionItem>
-														);
-													});
-												})()}
-											</Accordion>
-										)}
-
-										{!isLastItem && (
-											<Divider className="shrink-0 mt-4 mb-8 w-[calc(100%-1rem)] bg-l4 dark:bg-d4" />
-										)}
-									</motion.div>
+										switchState={switchState}
+									/>
 								);
 							})}
 						</AnimatePresence>
