@@ -39,9 +39,10 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { BlockMath } from "react-katex";
 import ReactMarkdown from "react-markdown";
+import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
@@ -200,10 +201,13 @@ const TurnItem = React.memo(
 		return (
 			<motion.div
 				style={{
-					height:
+					// ▼▼▼ 修正: height ではなく minHeight を使う ▼▼▼
+					// これにより、中身が短いときは「画面いっぱい」に広がり（上端に来る）、
+					// アコーディオンを開いて長くなったときは「自動で伸びる」ようになります。
+					minHeight:
 						isLatestTurn && chatHistoryHeight
 							? `${chatHistoryHeight}px`
-							: "auto",
+							: undefined, // autoの代わりに undefined を推奨（Virtuosoとの相性のため）
 				}}
 				className="flex flex-col gap-4 items-center w-full"
 			>
@@ -305,7 +309,6 @@ const TurnItem = React.memo(
 								);
 							}
 
-							// 計算済み(useMemo)のセクションデータを使用
 							return parsedSections.sectionsData
 								.filter((sec) => sec.isActive)
 								.map((sec) => {
@@ -364,7 +367,7 @@ const TurnItem = React.memo(
 			</motion.div>
 		);
 	},
-	// React.memo の比較関数（Propsが変わっていない場合は再レンダリングをスキップ）
+
 	(prev, next) => {
 		return (
 			prev.turn === next.turn &&
@@ -398,13 +401,10 @@ export default function Chat() {
 		handleSliderChange,
 	} = useChatSettings();
 
-	const {
-		turns,
-		lastTurnId,
-		chatHistoryRef,
-		messagesEndRef,
-		chatHistoryHeight,
-	} = useChatDisplay();
+	const { turns, lastTurnId, chatHistoryRef, chatHistoryHeight } =
+		useChatDisplay();
+
+	const virtuosoRef = useRef<VirtuosoHandle>(null);
 
 	// ================================================================
 	//     送信と中断
@@ -415,6 +415,16 @@ export default function Chat() {
 
 	const handleSend = async () => {
 		if (inputText.trim() !== "" || images.problem.length > 0) {
+			setAccordionKeys({});
+
+			setTimeout(() => {
+				virtuosoRef.current?.scrollToIndex({
+					index: turns.length,
+					align: "start",
+					behavior: "auto",
+				});
+			}, 50);
+
 			await chatLogicHandleSend(
 				inputText,
 				images.problem,
@@ -436,6 +446,16 @@ export default function Chat() {
 
 	const wrappedHandleSend = useCallback(
 		async (text: string) => {
+			setAccordionKeys({});
+
+			setTimeout(() => {
+				virtuosoRef.current?.scrollToIndex({
+					index: turns.length,
+					align: "start",
+					behavior: "auto",
+				});
+			}, 0);
+
 			await chatLogicHandleSend(
 				text,
 				images.problem,
@@ -445,7 +465,14 @@ export default function Chat() {
 				setImages,
 			);
 		},
-		[chatLogicHandleSend, images.problem, sliders, switchState, setImages],
+		[
+			chatLogicHandleSend,
+			images.problem,
+			sliders,
+			switchState,
+			setImages,
+			turns.length,
+		],
 	);
 
 	const { inputText, setInputText, isListening, toggleListening, isMobile } =
@@ -535,25 +562,6 @@ export default function Chat() {
 		Record<string, SharedSelection>
 	>({});
 
-	const prevTurnsLengthRef = useRef(turns.length);
-
-	useEffect(() => {
-		if (turns.length === 0 || turns.length <= prevTurnsLengthRef.current) {
-			prevTurnsLengthRef.current = turns.length;
-			return;
-		}
-
-		prevTurnsLengthRef.current = turns.length;
-
-		setAccordionKeys(() => {
-			const newKeys: Record<string, SharedSelection> = {};
-			for (const turn of turns) {
-				newKeys[turn.user.id] = new Set([]) as unknown as SharedSelection;
-			}
-			return newKeys;
-		});
-	}, [turns]);
-
 	// ================================================================
 	//     フロントエンド
 	// ================================================================
@@ -572,18 +580,29 @@ export default function Chat() {
 					className="flex overflow-hidden flex-col size-full"
 					ref={chatHistoryRef}
 				>
-					<ScrollShadow hideScrollBar visibility="none" className="size-full">
-						<AnimatePresence mode="sync">
-							{turns.map((turn) => {
-								const isLatestTurn = turn.user.id === lastTurnId;
+					<Virtuoso
+						ref={virtuosoRef}
+						data={turns}
+						followOutput={false}
+						initialTopMostItemIndex={turns.length > 0 ? turns.length - 1 : 0}
+						alignToBottom={false}
+						increaseViewportBy={{ top: 270, bottom: 1040 }}
+						overscan={540}
+						className="size-full no-scrollbar"
+						itemContent={(_, turn) => {
+							const isLatestTurn = turn.user.id === lastTurnId;
 
-								return (
+							return (
+								<div>
 									<TurnItem
 										key={turn.user.id}
 										turn={turn}
 										isLatestTurn={isLatestTurn}
 										chatHistoryHeight={chatHistoryHeight}
-										selectedKeys={accordionKeys[turn.user.id] || new Set([])}
+										selectedKeys={
+											accordionKeys[turn.user.id] ??
+											(new Set([]) as unknown as SharedSelection)
+										}
 										onSelectionChange={(keys) => {
 											setAccordionKeys((prev) => ({
 												...prev,
@@ -592,11 +611,10 @@ export default function Chat() {
 										}}
 										switchState={switchState}
 									/>
-								);
-							})}
-						</AnimatePresence>
-						<div ref={messagesEndRef} />
-					</ScrollShadow>
+								</div>
+							);
+						}}
+					/>
 				</motion.div>
 				<motion.div
 					initial={{ flex: 1, height: 1, opacity: 1 }}
