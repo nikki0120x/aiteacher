@@ -22,10 +22,6 @@ export default function Server() {
 				content="勉強に浪漫と好奇心を。そして、智慧と伴に未だ見ぬ未来を切り拓け！"
 			/>
 			<meta charSet="UTF-8" />
-			<meta
-				name="viewport"
-				content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-			/>
 			<meta property="og:site_name" content="AITeacher" />
 			<meta property="og:title" content="AITeacher" />
 			<meta property="og:url" content="https://www.focalrina.com/" />
