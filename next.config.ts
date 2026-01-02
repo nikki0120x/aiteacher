@@ -1,4 +1,29 @@
+import withPWAInit from "@ducanh2912/next-pwa";
 import type { NextConfig } from "next";
+
+// ================================================================
+//     PWA Configuration
+// ================================================================
+
+const isTauriBuild = process.env.TAURI_BUILD_MODE === "true";
+
+const withPWA = withPWAInit({
+	dest: "public",
+	disable: process.env.NODE_ENV === "development" || isTauriBuild,
+
+	cacheOnFrontEndNav: true,
+	aggressiveFrontEndNavCaching: true,
+	reloadOnOnline: true,
+
+	workboxOptions: {
+		skipWaiting: true,
+		clientsClaim: true,
+	},
+});
+
+// ================================================================
+//     Base Config
+// ================================================================
 
 const baseConfig: NextConfig = {
 	images: { unoptimized: true },
@@ -52,14 +77,18 @@ const tauriConfig: NextConfig = {
 	},
 };
 
-const isTauriBuild = process.env.TAURI_BUILD_MODE === "true";
+// ================================================================
+//     Final Config
+// ================================================================
 
 const finalConfig: NextConfig = {
 	...(isTauriBuild ? tauriConfig : webConfig),
-	...(isTauriBuild ? {
-		bundlePagesRouterDependencies: false,
-	} : {}),
+	...(isTauriBuild
+		? {
+			bundlePagesRouterDependencies: false,
+		}
+		: {}),
 	turbopack: {},
 };
 
-export default finalConfig;
+export default withPWA(finalConfig);

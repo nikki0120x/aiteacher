@@ -73,21 +73,21 @@ export default function Header() {
 				className="flex flex-row justify-center items-center ml-16 lg:ml-0 h-full bg-transparent rounded-none hover:bg-l2 dark:hover:bg-d2"
 			>
 				<Image
-					src="/images/icons/Icon_AITeacher_small_theme.webp"
+					src="/images/icons/webp/Icon_AITeacher_small_theme.webp"
 					alt="The AITeacher Icon"
 					width={40}
 					height={40}
 					className="object-contain w-7.5 lg:w-10"
 				/>
 				<Image
-					src="/images/logos/Logo_AITeacher_small_dark.webp"
+					src="/images/logos/webp/Logo_AITeacher_small_dark.webp"
 					alt="The AITeacher Logo"
 					width={160}
 					height={40}
 					className="block dark:hidden object-contain w-30 lg:w-40"
 				/>
 				<Image
-					src="/images/logos/Logo_AITeacher_small_light.webp"
+					src="/images/logos/webp/Logo_AITeacher_small_light.webp"
 					alt="The AITeacher Logo"
 					width={160}
 					height={40}

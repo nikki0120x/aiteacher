@@ -108,14 +108,14 @@ export default function AuthModal() {
 							)}
 							<div className="flex relative justify-center items-center w-full h-16">
 								<Image
-									src="/images/logos/Logo_AITeacher_large_dark.webp"
+									src="/images/logos/webp/Logo_AITeacher_large_dark.webp"
 									alt="The AITeacher Logo"
 									width={160}
 									height={40}
 									className="dark:hidden object-contain"
 								/>
 								<Image
-									src="/images/logos/Logo_AITeacher_large_light.webp"
+									src="/images/logos/webp/Logo_AITeacher_large_light.webp"
 									alt="The AITeacher Logo"
 									width={160}
 									height={40}
