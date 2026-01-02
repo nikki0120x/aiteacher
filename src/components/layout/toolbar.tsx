@@ -50,11 +50,10 @@ export default function Toolbar() {
 							aria-label={item.text}
 							isIconOnly
 							className={`flex flex-col flex-1 lg:flex-none justify-center items-center p-0! size-16 rounded-none 
-                                    ${
-																			isActive
-																				? "text-l1 bg-blue"
-																				: "bg-transparent hover:bg-l2 dark:hover:bg-d2"
-																		}
+                                    ${isActive
+									? "text-l1 bg-blue"
+									: "bg-transparent hover:bg-l2 dark:hover:bg-d2"
+								}
                                 `}
 						>
 							<item.icon size={24} />

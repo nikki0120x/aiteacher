@@ -85,7 +85,7 @@ export default function RootLayout({
 					<HeroUIProvider>
 						<LoadingOverlay />
 						<div className="flex overflow-hidden w-full h-dvh">
-							<div className="flex overflow-hidden relative flex-row flex-1 lg:pr-16 pb-12 lg:pb-0">
+							<div className="flex overflow-hidden relative flex-row flex-1 lg:pr-16 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
 								<Sidebar />
 								<div className="flex flex-col flex-1 min-w-0">
 									<Header />
