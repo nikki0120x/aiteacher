@@ -1,3 +1,4 @@
+/* src\app\globals.css */
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 @plugin "@tailwindcss/typography";
@@ -7,18 +8,18 @@
 
 @theme {
   --default-font: "Zen Maru Gothic", system-ui;
-  --color-l1: oklch(0.95 0 0);
-  --color-l2: oklch(0.925 0 0);
-  --color-l3: oklch(0.9 0 0);
-  --color-l4: oklch(0.875 0 0);
-  --color-l5: oklch(0.85 0 0);
-  --color-d1: oklch(0.15 0 0);
-  --color-d2: oklch(0.2 0 0);
-  --color-d3: oklch(0.25 0 0);
-  --color-d4: oklch(0.3 0 0);
-  --color-d5: oklch(0.35 0 0);
-  --color-ld: oklch(0.5 0 0);
-  --color-blue: oklch(0.55 0.2 255);
+  --color-l1: hsl(0, 0%, 95%);
+  --color-l2: hsl(0, 0%, 90%);
+  --color-l3: hsl(0, 0%, 85%);
+  --color-l4: hsl(0, 0%, 80%);
+  --color-l5: hsl(0, 0%, 75%);
+  --color-d1: hsl(0, 0%, 5%);
+  --color-d2: hsl(0, 0%, 10%);
+  --color-d3: hsl(0, 0%, 15%);
+  --color-d4: hsl(0, 0%, 20%);
+  --color-d5: hsl(0, 0%, 25%);
+  --color-ld: hsl(0, 0%, 50%);
+  --color-blue: hsl(195, 100%, 50%);
   --color-orange: oklch(70.5% 0.213 47.604);
   --color-red: oklch(64.5% 0.246 16.439);
   --color-yellow: oklch(0.9 0.2 90);

@@ -1,3 +1,4 @@
+/* src\app\server.tsx */
 export default function Server() {
 	const schemaMarkup = {
 		"@context": "https://schema.org",

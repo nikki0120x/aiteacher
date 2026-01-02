@@ -1,13 +1,12 @@
 import type { NextConfig } from "next";
 
 const baseConfig: NextConfig = {
-	images: {
-		unoptimized: true,
-	},
+	images: { unoptimized: true },
+	trailingSlash: true,
 };
 
 // ================================================================
-//     Web
+//     Web (Vercel / Docker)
 // ================================================================
 
 const webConfig: NextConfig = {
@@ -31,12 +30,14 @@ const webConfig: NextConfig = {
 };
 
 // ================================================================
-//     Tauri
+//     Tauri (Desktop App)
 // ================================================================
 
 const tauriConfig: NextConfig = {
 	...baseConfig,
 	output: "export",
+	typescript: { ignoreBuildErrors: true },
+
 	webpack(config) {
 		config.module.rules.push({
 			test: /\.svg$/,
@@ -52,8 +53,13 @@ const tauriConfig: NextConfig = {
 };
 
 const isTauriBuild = process.env.TAURI_BUILD_MODE === "true";
+
 const finalConfig: NextConfig = {
 	...(isTauriBuild ? tauriConfig : webConfig),
+	...(isTauriBuild ? {
+		bundlePagesRouterDependencies: false,
+	} : {}),
 	turbopack: {},
 };
+
 export default finalConfig;

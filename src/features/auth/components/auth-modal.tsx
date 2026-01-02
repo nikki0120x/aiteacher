@@ -2,7 +2,7 @@
 "use client";
 import { Button, Divider } from "@heroui/react";
 import { X } from "lucide-react";
-import { AnimatePresence, easeOut, motion, type PanInfo } from "motion/react";
+import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import Image from "next/image";
 import { useState } from "react";
 import { useMediaQuery } from "react-responsive";
@@ -70,7 +70,7 @@ export default function AuthModal() {
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
-						transition={{ duration: 0.25, ease: easeOut }}
+						transition={{ duration: 0.25, ease: "easeInOut" }}
 						className="flex fixed inset-0 z-500 justify-center max-md:items-end md:items-center size-full backdrop-blur-xs bg-l3/50 dark:bg-d3/50"
 					>
 						<motion.div
@@ -79,7 +79,7 @@ export default function AuthModal() {
 							initial="initial"
 							animate="animate"
 							exit="exit"
-							transition={{ duration: 0.25, ease: easeOut }}
+							transition={{ duration: 0.25, ease: "easeInOut" }}
 							drag={isMobile ? "y" : false}
 							dragConstraints={isMobile ? { top: 0 } : false}
 							onDragStart={() => setIsDragging(true)}
@@ -108,17 +108,17 @@ export default function AuthModal() {
 							)}
 							<div className="flex relative justify-center items-center w-full h-16">
 								<Image
-									src="/logos/dark.webp"
-									alt="Logo (Dark)"
-									width={96}
-									height={128}
+									src="/images/logos/Logo_AITeacher_large_dark.webp"
+									alt="The AITeacher Logo"
+									width={160}
+									height={40}
 									className="dark:hidden object-contain"
 								/>
 								<Image
-									src="/logos/light.webp"
-									alt="Logo (Light)"
-									width={96}
-									height={96}
+									src="/images/logos/Logo_AITeacher_large_light.webp"
+									alt="The AITeacher Logo"
+									width={160}
+									height={40}
 									className="dark:block hidden object-contain"
 								/>
 								<Button

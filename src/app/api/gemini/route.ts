@@ -7,20 +7,13 @@ import { z } from "zod";
 import type { Content, Part, PostPayload } from "@/types/chat";
 import {
 	buildImageParts,
-	buildPrompt,
-	buildResponseSchema,
-	buildRouterPrompt,
+	buildUnifiedPrompt,
+	buildUnifiedSchema,
 	getPolitenessInstruction,
 	normalizeSwitchOptions,
-	routingSchema,
-	SUBJECT_NAMES,
 } from "@/utils/chat";
 
 export const runtime = "nodejs";
-
-// ================================================================
-//     ヘルパー関数
-// ================================================================
 
 function ensureCredentials() {
 	const json = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
@@ -31,11 +24,8 @@ function ensureCredentials() {
 	}
 }
 
-// ================================================================
-//     メイン処理
-// ================================================================
-
 export async function POST(req: NextRequest) {
+	const startTime = Date.now();
 	const {
 		prompt,
 		options,
@@ -44,6 +34,10 @@ export async function POST(req: NextRequest) {
 		history,
 		model = "gemini-2.5-flash",
 	}: PostPayload = await req.json();
+
+	console.log(
+		`\x1b[36m[Request]\x1b[0m Model: ${model}, Prompt: "${prompt?.substring(0, 30)}..."`,
+	);
 
 	if (!prompt && !images?.problem?.length) {
 		return NextResponse.json(
@@ -60,56 +54,16 @@ export async function POST(req: NextRequest) {
 		location: process.env.GOOGLE_CLOUD_LOCATION,
 	});
 
-	// ================================================================
-	//     判定ルーティング
-	// ================================================================
-
-	const routerPrompt = buildRouterPrompt(prompt || "(Image provided)");
-	const imageParts = buildImageParts(images);
-
-	const routerUserParts: Part[] = [{ text: routerPrompt }, ...imageParts];
-
 	try {
-		const classificationResult = await ai.models.generateContent({
-			model: "gemini-2.5-flash",
-			contents: [{ role: "user", parts: routerUserParts }],
-			config: {
-				responseMimeType: "application/json",
-				responseSchema: z.toJSONSchema(routingSchema),
-			},
-		});
-
-		const routingText =
-			classificationResult.candidates?.[0]?.content?.parts?.[0]?.text;
-		if (!routingText)
-			throw new Error("判定結果（テキスト）が取得できませんでした");
-
-		const cleanedJson = routingText.replace(/```json|```/g, "").trim();
-		const route = JSON.parse(cleanedJson) as z.infer<typeof routingSchema>;
-
-		if (route.isProblem === false) {
-			return NextResponse.json({
-				isProblem: false,
-			});
-		}
-
-		const subjectName = SUBJECT_NAMES[route.subject] || "先生";
-		console.log(`[Router] Subject detected: ${subjectName} (${route.subject})`);
-
-		// ================================================================
-		//     返答ストリーミング
-		// ================================================================
-
+		const imageParts = buildImageParts(images);
 		const politenessText = getPolitenessInstruction(sliders?.politeness ?? 0.5);
 		const switches = normalizeSwitchOptions(options);
 
-		const responseSchema = buildResponseSchema(switches);
-		const finalPrompt = buildPrompt(
+		const responseSchema = buildUnifiedSchema(switches);
+		const finalPrompt = buildUnifiedPrompt(
 			politenessText,
 			switches,
-			prompt,
-			subjectName,
-			route.subject,
+			prompt || "(Image provided)",
 		);
 
 		const mainUserParts: Part[] = [{ text: finalPrompt }, ...imageParts];
@@ -119,6 +73,10 @@ export async function POST(req: NextRequest) {
 		const { readable, writable } = new TransformStream();
 
 		(async () => {
+			const writer = writable.getWriter();
+			let fullResponseText = "";
+			let firstChunkTime: number | null = null;
+
 			try {
 				const stream = await ai.models.generateContentStream({
 					model: model,
@@ -129,29 +87,53 @@ export async function POST(req: NextRequest) {
 					},
 				});
 
-				const writer = writable.getWriter();
 				for await (const part of stream) {
 					if (part.text) {
+						if (firstChunkTime === null) {
+							firstChunkTime = Date.now();
+							console.log(
+								`\x1b[32m[Stream]\x1b[0m Response started (TTFB: ${firstChunkTime - startTime}ms)`,
+							);
+						}
+
+						fullResponseText += part.text;
 						await writer.ready;
 						writer.write(new TextEncoder().encode(part.text));
 					}
 				}
+
+				const duration = Date.now() - startTime;
+				try {
+					const parsed = JSON.parse(fullResponseText);
+					console.log(
+						`\x1b[35m[Result]\x1b[0m isProblem: ${parsed.isProblem}, Subject: ${parsed.subject}`,
+					);
+				} catch {
+					const isProblem = fullResponseText.includes('"isProblem":true');
+					const isMath = fullResponseText.includes('"subject":"math"');
+					console.log(
+						`\x1b[35m[Result]\x1b[0m (Heuristic) isProblem: ${isProblem}, Math: ${isMath}`,
+					);
+				}
+				console.log(`\x1b[32m[Done]\x1b[0m Total Duration: ${duration}ms`);
+
 				writer.close();
 			} catch (err) {
-				console.error("ストリームエラー:", err);
-				const writer = writable.getWriter();
-				writer.write(
-					new TextEncoder().encode(
-						JSON.stringify({
-							summary: [
-								{
-									type: "text",
-									content: `**エラーが発生しました:** ${String(err)}`,
-								},
-							],
-						}),
-					),
-				);
+				console.error("\x1b[31m[Stream Error]\x1b[0m", err);
+				const errorPayload = JSON.stringify({
+					isProblem: true,
+					subject: "other",
+					summary: [
+						{
+							type: "text",
+							content: `**エラーが発生しました:** ${String(err)}`,
+						},
+					],
+					guidance: [],
+					explanation: [],
+					answer: [],
+				});
+				writer.write(new TextEncoder().encode(errorPayload));
 				writer.close();
 			}
 		})();
@@ -160,7 +142,7 @@ export async function POST(req: NextRequest) {
 			headers: { "Content-Type": "text/plain; charset=utf-8" },
 		});
 	} catch (e) {
-		console.error("Routing/Generation Error:", e);
+		console.error("\x1b[31m[Critical Error]\x1b[0m", e);
 		return NextResponse.json(
 			{ error: "処理中にエラーが発生しました" },
 			{ status: 500 },

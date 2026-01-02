@@ -4,16 +4,41 @@ import { HeroUIProvider } from "@heroui/react";
 import { ToastProvider } from "@heroui/toast";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
 import NProgress from "nprogress";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import Toolbar from "@/components/layout/toolbar";
 import AuthModal from "@/features/auth/components/auth-modal";
 import Server from "./server";
 import "./globals.css";
+
+function LoadingOverlay() {
+	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		const timer = setTimeout(() => setIsLoading(false));
+		return () => clearTimeout(timer);
+	}, []);
+
+	return (
+		<AnimatePresence>
+			{isLoading && (
+				<motion.div
+					key="loading-overlay"
+					initial={{ opacity: 1 }}
+					animate={{ opacity: 1 }}
+					exit={{ opacity: 0 }}
+					transition={{ duration: 0.25, ease: "easeInOut" }}
+					className="fixed inset-0 z-1000 w-dvw h-dvh cursor-wait bg-l1 dark:bg-d1"
+				/>
+			)}
+		</AnimatePresence>
+	);
+}
 
 function TopProgress() {
 	const pathname = usePathname();
@@ -58,8 +83,9 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<HeroUIProvider>
+						<LoadingOverlay />
 						<div className="flex overflow-hidden w-full h-dvh">
-							<div className="flex overflow-hidden relative flex-row flex-1 md:pr-16 pb-12 md:pb-0">
+							<div className="flex overflow-hidden relative flex-row flex-1 lg:pr-16 pb-12 lg:pb-0">
 								<Sidebar />
 								<div className="flex flex-col flex-1 min-w-0">
 									<Header />

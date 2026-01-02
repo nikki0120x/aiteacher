@@ -1,6 +1,7 @@
+/* src\app\hero.ts */
 import { heroui } from "@heroui/react";
 
-const colorBlue = "#006de2";
+const colorBlue = "#00bfff";
 
 export default heroui({
 	themes: {

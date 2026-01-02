@@ -135,9 +135,55 @@ const TurnItem = React.memo(
 			};
 		}, [msg, switchState]);
 
-		// --------------------------------------------------------
-		// レンダリングヘルパー (TurnItem内に移動または再利用)
-		// --------------------------------------------------------
+		// ================================================================
+		//     数学ブロック
+		// ================================================================
+
+		const FormulaBlock = ({ content }: { content: string }) => {
+			const scrollRef = useRef<HTMLDivElement>(null);
+
+			React.useEffect(() => {
+				const el = scrollRef.current;
+				if (!el) return;
+
+				const handleWheel = (e: WheelEvent) => {
+					const isScrollable = el.scrollWidth > el.clientWidth;
+
+					if (isScrollable && e.deltaY !== 0) {
+						const { scrollLeft, scrollWidth, clientWidth } = el;
+						const isAtStart = scrollLeft <= 0 && e.deltaY < 0;
+						const isAtEnd =
+							scrollLeft + clientWidth >= scrollWidth && e.deltaY > 0;
+
+						if (!isAtStart && !isAtEnd) {
+							el.scrollLeft += e.deltaY;
+							if (e.cancelable) {
+								e.preventDefault();
+							}
+						}
+					}
+				};
+
+				el.addEventListener("wheel", handleWheel, { passive: false });
+				return () => el.removeEventListener("wheel", handleWheel);
+			}, []);
+
+			return (
+				<div
+					ref={scrollRef}
+					className="block overflow-x-auto overflow-y-hidden w-full touch-pan-x custom-scrollbar"
+				>
+					<div className="px-4 py-6 mx-auto w-fit min-w-full text-xl font-medium text-d3 dark:text-l3">
+						<BlockMath math={content} />
+					</div>
+				</div>
+			);
+		};
+
+		// ================================================================
+		//     レンダリングヘルパー
+		// ================================================================
+
 		const renderContentBlocks = (blocks: ContentBlock[]) => {
 			return blocks.map((block, idx) => {
 				const blockKey = `block-${idx}`;
@@ -176,15 +222,12 @@ const TurnItem = React.memo(
 										<Copy size={16} className="text-d3 dark:text-l3" />
 									</Button>
 								</div>
-								<div className="block overflow-x-auto overflow-y-hidden w-full touch-pan-x custom-scrollbar">
-									<div className="px-4 py-6 mx-auto w-fit min-w-full text-xl font-medium text-d3 dark:text-l3">
-										<BlockMath math={block.content} />
-									</div>
-								</div>
+								<FormulaBlock content={block.content} />
 							</div>
 						</div>
 					);
 				}
+
 				return (
 					<div
 						key={blockKey}
@@ -638,17 +681,17 @@ export default function Chat() {
 							>
 								<Divider className="flex-1 mr-8 bg-d5 dark:bg-l5" />
 								<Image
-									src="/logos/dark.webp"
-									alt="Logo (Dark)"
-									width={128}
-									height={128}
+									src="/images/logos/Logo_AITeacher_large_dark.webp"
+									alt="The AITeacher Logo"
+									width={160}
+									height={40}
 									className="dark:hidden object-contain"
 								/>
 								<Image
-									src="/logos/light.webp"
-									alt="Logo (Light)"
-									width={128}
-									height={128}
+									src="/images/logos/Logo_AITeacher_large_light.webp"
+									alt="The AITeacher Logo"
+									width={160}
+									height={40}
 									className="dark:block hidden object-contain"
 								/>
 								<Divider
