@@ -37,7 +37,7 @@ export default function Toolbar() {
 	];
 
 	return (
-		<aside className="box-content! flex fixed lg:top-0 lg:right-0 bottom-0 lg:bottom-auto left-0 lg:left-auto z-100 flex-row lg:flex-col lg:w-16 w-full h-16 lg:h-full border-l5 border-t-1 lg:border-l-1 lg:border-t-0 dark:border-d5 bg-l1 no-select dark:bg-d1">
+		<aside className="box-content! flex fixed lg:top-0 lg:right-0 bottom-0 lg:bottom-auto left-0 lg:left-auto z-100 flex-row lg:flex-col pb-[env(safe-area-inset-bottom)] lg:pb-0 lg:w-16 w-full h-16 lg:h-full border-l5 border-t-1 lg:border-l-1 lg:border-t-0 dark:border-d5 bg-l1 no-select dark:bg-d1">
 			<div className="flex flex-row lg:flex-col justify-center items-stretch size-full">
 				{navItems.map((item) => {
 					const isActive = pathname === item.href;
