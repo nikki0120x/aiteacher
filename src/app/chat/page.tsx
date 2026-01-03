@@ -252,7 +252,7 @@ const TurnItem = React.memo(
 							? `${chatHistoryHeight}px`
 							: undefined,
 				}}
-				className="flex flex-col gap-4 items-center w-full py-8"
+				className="flex flex-col gap-4 items-center py-8 w-full"
 			>
 				<Card
 					shadow="none"

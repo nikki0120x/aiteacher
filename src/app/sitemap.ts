@@ -2,31 +2,33 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.focalrina.com";
-    const isProduction = process.env.VERCEL_ENV === 'production';
+	const baseUrl = (
+		process.env.NEXT_PUBLIC_BASE_URL || "https://www.focalrina.com"
+	).replace(/\/$/, "");
+	const isProduction = process.env.VERCEL_ENV === "production";
 
-    if (!isProduction) {
-        return [];
-    }
+	if (!isProduction) {
+		return [];
+	}
 
-    return [
-        {
-            url: baseUrl,
-            lastModified: new Date(),
-            changeFrequency: "daily",
-            priority: 1,
-        },
-        {
-            url: `${baseUrl}/dashboard/`,
-            lastModified: new Date(),
-            changeFrequency: "daily",
-            priority: 0.75,
-        },
-        {
-            url: `${baseUrl}/chat/`,
-            lastModified: new Date(),
-            changeFrequency: "daily",
-            priority: 0.75,
-        },
-    ];
+	return [
+		{
+			url: baseUrl,
+			lastModified: new Date(),
+			changeFrequency: "daily",
+			priority: 1,
+		},
+		{
+			url: `${baseUrl}/dashboard/`,
+			lastModified: new Date(),
+			changeFrequency: "daily",
+			priority: 0.75,
+		},
+		{
+			url: `${baseUrl}/chat/`,
+			lastModified: new Date(),
+			changeFrequency: "daily",
+			priority: 0.75,
+		},
+	];
 }

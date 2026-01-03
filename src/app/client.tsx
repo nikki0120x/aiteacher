@@ -72,7 +72,7 @@ export default function Client({ children }: { children: React.ReactNode }) {
 					<LoadingOverlay />
 					<div className="flex overflow-hidden w-full h-dvh">
 						<div
-                            className="flex overflow-hidden relative flex-row flex-1 lg:pr-16 lg:pb-0!"
+							className="flex overflow-hidden relative flex-row flex-1 lg:pr-16 lg:pb-0!"
 							style={{
 								paddingBottom: "calc(4rem + env(safe-area-inset-bottom))",
 							}}
