@@ -252,7 +252,7 @@ const TurnItem = React.memo(
 							? `${chatHistoryHeight}px`
 							: undefined,
 				}}
-				className="flex flex-col gap-4 items-center w-full"
+				className="flex flex-col gap-4 items-center w-full py-8"
 			>
 				<Card
 					shadow="none"
@@ -403,9 +403,6 @@ const TurnItem = React.memo(
 								});
 						})()}
 					</Accordion>
-				)}
-				{!isLatestTurn && (
-					<Divider className="shrink-0 mt-4 mb-8 w-[calc(100%-1rem)] bg-l4 dark:bg-d4" />
 				)}
 			</motion.div>
 		);
@@ -610,7 +607,7 @@ export default function Chat() {
 	// ================================================================
 
 	return (
-		<div className="flex flex-none justify-center items-center p-4 pt-0 size-full">
+		<div className="flex flex-none justify-center items-center px-4 pb-4 size-full">
 			<motion.div className="flex flex-col justify-center items-center size-full max-w-3xl">
 				<motion.div
 					initial={{ flex: 0, height: 0, opacity: 0 }}
@@ -654,6 +651,9 @@ export default function Chat() {
 										}}
 										switchState={switchState}
 									/>
+									{!isLatestTurn && (
+										<Divider className="shrink-0 w-[calc(100%-1rem)] bg-l4 dark:bg-d4" />
+									)}
 								</div>
 							);
 						}}
