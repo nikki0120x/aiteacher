@@ -11,6 +11,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: isProduction ? "/" : undefined,
             disallow: isProduction ? "/api/" : "/",
         },
-        sitemap: isProduction ? `${baseUrl}/sitemap.xml` : undefined,
+        sitemap: isProduction ? `${baseUrl}sitemap.xml` : undefined,
     };
 }
