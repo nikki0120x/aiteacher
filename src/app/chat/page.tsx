@@ -31,6 +31,7 @@ import {
 	Mic,
 	MicOff,
 	Pause,
+	ScanSearch,
 	ScrollText,
 	SendHorizontal,
 	Settings2,
@@ -66,7 +67,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	try {
 		const parsed = JSON.parse(jsonString);
 		return Array.isArray(parsed[key]) ? parsed[key] : [];
-	} catch {}
+	} catch { }
 
 	const regex = new RegExp(`"${key}"\\s*:\\s*\\[(.*?)(?:\\]|$)`, "s");
 	const match = jsonString.match(regex);
@@ -81,7 +82,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	for (const objStr of objectMatches) {
 		try {
 			results.push(JSON.parse(objStr));
-		} catch {}
+		} catch { }
 	}
 	return results;
 };
@@ -473,7 +474,7 @@ export default function Chat() {
 				images.problem,
 				sliders,
 				switchState,
-				() => {},
+				() => { },
 				setImages,
 			);
 		},
@@ -632,11 +633,10 @@ export default function Chat() {
 				onDragEnter={handleDragEnter}
 				onDragLeave={handleDragLeave}
 				onKeyDown={handleKeyDown}
-				className={`flex flex-col justify-center p-2 size-full rounded-4xl border-2 border-dashed transition-all duration-250 ${
-					isDragActive
+				className={`flex flex-col justify-center p-2 size-full rounded-4xl border-2 border-dashed transition-all duration-250 ${isDragActive
 						? "border-blue bg-l2 dark:bg-d2"
 						: "border-l5 dark:border-d5"
-				}`}
+					}`}
 			>
 				{children}
 				<input
@@ -677,7 +677,7 @@ export default function Chat() {
 						transition={{ duration: 0.25, ease: "easeInOut" }}
 						className="flex absolute inset-0 z-100 justify-center items-center p-4 size-full backdrop-blur-lg pointer-events-none bg-l1/50 no-select dark:bg-d1/50"
 					>
-						<div className="flex flex-col gap-2 justify-center items-center size-full rounded-4xl border-2 border-blue border-dashed">
+						<div className="flex flex-col gap-2 justify-center items-center size-full rounded-4xl border-2 border-blue border-dashed p-4">
 							<ImageUp size={64} className="text-blue animate-bounce" />
 							<span className="text-2xl font-bold text-blue text-center">
 								此処へファイルをドロップせよ
@@ -748,7 +748,7 @@ export default function Chat() {
 							</div>
 
 							{/* 画像リスト */}
-							<div className="flex flex-col shrink-0 gap-4 p-4 border-l5 border-t-1 dark:border-d5 bg-l2 dark:bg-d2">
+							<div className="flex flex-col shrink-0 gap-2 p-4 border-l5 border-t-1 dark:border-d5 bg-l2 dark:bg-d2">
 								<div className="flex flex-row gap-2 items-center pl-1">
 									<ImageUp size={24} className="text-d2 dark:text-l2" />
 									<span className="text-lg font-bold text-d2 dark:text-l2 text-left">
@@ -766,17 +766,22 @@ export default function Chat() {
 												role="button"
 												tabIndex={0}
 												key={img.id}
-												className={`relative shrink-0 size-20 rounded-2xl transition-all duration-250 cursor-pointer group ${
-													isActive
-														? "ring-2 ring-blue scale-105 opacity-100"
+												className={`relative shrink-0 size-20 rounded-2xl transition-all duration-250 cursor-pointer group ${isActive
+														? "ring-2 ring-blue sca4le-105 opacity-100"
 														: "opacity-50 hover:opacity-100 hover:scale-105"
-												}`}
+													}`}
 												onKeyDown={(e) => {
 													if (e.key === "Enter" || e.key === " ") {
-														setPreviewId(img.id);
+														setPrevImages(images.problem);
+														setPreviewId(img.id)
+														setIsPreviewOpen(true);
 													}
 												}}
-												onClick={() => setPreviewId(img.id)}
+												onClick={() => {
+													setPrevImages(images.problem);
+													setPreviewId(img.id)
+													setIsPreviewOpen(true);
+												}}
 											>
 												<Image
 													src={img.src}
@@ -786,14 +791,14 @@ export default function Chat() {
 												/>
 												<button
 													type="button"
-													className="absolute -top-2 -right-2 p-1 text-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 bg-red"
+													className="absolute flex items-center justify-center -top-2 -right-2 rounded-full size-8 opacity-0 group-hover:opacity-100 transition-all duration-250 hover:scale-105 bg-red cursor-pointer"
 													onClick={(e) => {
 														e.stopPropagation();
 														handleImageRemove("problem", img.id);
 														if (isActive) setPreviewId(null);
 													}}
 												>
-													<X size={12} />
+													<X size={16} className="text-l1" />
 												</button>
 											</div>
 										);
@@ -1146,17 +1151,19 @@ export default function Chat() {
 																		<div
 																			role="button"
 																			tabIndex={0}
-																			className="relative shrink-0 outline-none cursor-pointer"
+																			className="relative shrink-0 outline-none cursor-pointer group"
 																			onKeyDown={(e) => {
 																				if (
 																					e.key === "Enter" ||
 																					e.key === " "
 																				) {
+																					setPrevImages(images.problem);
 																					setPreviewId(item.id);
 																					setIsPreviewOpen(true);
 																				}
 																			}}
 																			onClick={() => {
+																				setPrevImages(images.problem);
 																				setPreviewId(item.id);
 																				setIsPreviewOpen(true);
 																			}}
@@ -1168,17 +1175,9 @@ export default function Chat() {
 																				height={160}
 																				className="aspect-square object-cover rounded-3xl"
 																			/>
-																			<Button
-																				isIconOnly
-																				size="sm"
-																				radius="full"
-																				className="absolute top-2 right-2 text-l2 bg-red"
-																				onPress={() => {
-																					handleImageRemove("problem", item.id);
-																				}}
-																			>
-																				<X />
-																			</Button>
+																			<div className="flex items-center justify-center size-full rounded-3xl absolute inset-0 group-hover:bg-l1/50 group-hover:dark:bg-d1/50 transition-all duration-250">
+																				<ScanSearch size={64} className="dark:text-l1/50 text-d1/50 opacity-0 group-hover:opacity-100 transition-all duration-250" />
+																			</div>
 																		</div>
 																	</Tooltip>
 																))}
