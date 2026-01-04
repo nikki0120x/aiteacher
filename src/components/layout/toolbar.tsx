@@ -81,7 +81,7 @@ export default function Toolbar() {
 							isIconOnly
 							className={`flex flex-col flex-1 lg:flex-none justify-center items-center p-0! size-16 rounded-none 
                                     ${isActive
-									? "text-l1 bg-blue"
+									? "text-l1! bg-blue"
 									: "bg-transparent hover:bg-l2 dark:hover:bg-d2"
 								}
                                 `}
