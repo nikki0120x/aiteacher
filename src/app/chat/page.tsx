@@ -66,7 +66,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	try {
 		const parsed = JSON.parse(jsonString);
 		return Array.isArray(parsed[key]) ? parsed[key] : [];
-	} catch {}
+	} catch { }
 
 	const regex = new RegExp(`"${key}"\\s*:\\s*\\[(.*?)(?:\\]|$)`, "s");
 	const match = jsonString.match(regex);
@@ -81,7 +81,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	for (const objStr of objectMatches) {
 		try {
 			results.push(JSON.parse(objStr));
-		} catch {}
+		} catch { }
 	}
 	return results;
 };
@@ -501,7 +501,7 @@ export default function Chat() {
 				images.problem,
 				sliders,
 				switchState,
-				() => {},
+				() => { },
 				setImages,
 			);
 		},
@@ -575,9 +575,8 @@ export default function Chat() {
 				onDragEnter={handleDragEnter}
 				onDragLeave={handleDragLeave}
 				onKeyDown={handleKeyDown}
-				className={`flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${
-					isDragActive ? "border-blue bg-blue/25" : "border-ld"
-				}`}
+				className={`flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${isDragActive ? "border-blue bg-blue/25" : "border-ld"
+					}`}
 			>
 				{children}
 				<input
@@ -680,26 +679,8 @@ export default function Chat() {
 								className="flex flex-row gap-4 justify-center items-center w-full"
 							>
 								<Divider className="flex-1 mr-8 bg-d5 dark:bg-l5" />
-								<Image
-									src="/images/logos/webp/Logo_AITeacher_large_dark.webp"
-									alt="The AITeacher Logo"
-									width={160}
-									height={40}
-									className="dark:hidden object-contain"
-								/>
-								<Image
-									src="/images/logos/webp/Logo_AITeacher_large_light.webp"
-									alt="The AITeacher Logo"
-									width={160}
-									height={40}
-									className="dark:block hidden object-contain"
-								/>
-								<Divider
-									orientation="vertical"
-									className="max-h-10 bg-d5 dark:bg-l5"
-								/>
 								<span className="overflow-hidden text-xl font-medium text-d5 dark:text-l5 text-center text-ellipsis whitespace-nowrap">
-									Ver. β-{packageJson.version}
+									質問
 								</span>
 								<Divider className="flex-1 ml-8 bg-d5 dark:bg-l5" />
 							</motion.div>
