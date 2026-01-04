@@ -1,11 +1,16 @@
 /* src\components\layout\toolbar.tsx */
 "use client";
 import { Button } from "@heroui/react";
-import { LayoutDashboard, MessageCircleMore, Plus, Logs, ChartNoAxesCombined } from "lucide-react";
+import {
+	ChartNoAxesCombined,
+	LayoutDashboard,
+	Logs,
+	MessageCircleMore,
+	Plus,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import Lottie from "lottie-react";
 
 interface NavItem {
 	href: string;
@@ -80,10 +85,11 @@ export default function Toolbar() {
 							aria-label={item.text}
 							isIconOnly
 							className={`flex flex-col flex-1 lg:flex-none justify-center items-center p-0! size-16 rounded-none 
-                                    ${isActive
-									? "text-l1! bg-blue"
-									: "bg-transparent hover:bg-l2 dark:hover:bg-d2"
-								}
+                                    ${
+																			isActive
+																				? "text-l1! bg-blue"
+																				: "bg-transparent hover:bg-l2 dark:hover:bg-d2"
+																		}
                                 `}
 						>
 							<item.icon size={24} />

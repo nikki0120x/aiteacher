@@ -37,9 +37,9 @@ import {
 	TriangleAlert,
 	X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, easeInOut, motion } from "motion/react";
 import Image from "next/image";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { BlockMath } from "react-katex";
 import ReactMarkdown from "react-markdown";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
@@ -50,11 +50,11 @@ import remarkMath from "remark-math";
 import { useChatDisplay } from "@/hooks/useChatDisplay";
 import { useChatLogic } from "@/hooks/useChatLogic";
 import { responseModes, useChatSettings } from "@/hooks/useChatSettings";
+import { useHorizontalScroll } from "@/hooks/useHorizontalScroll";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useChatInput } from "@/hooks/useTextInput";
 import { useChatStore } from "@/stores/useChat";
 import type { ContentBlock, TurnItemProps } from "@/types/chat";
-import packageJson from "../../../package.json";
 
 declare global {
 	interface Window {
@@ -66,7 +66,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	try {
 		const parsed = JSON.parse(jsonString);
 		return Array.isArray(parsed[key]) ? parsed[key] : [];
-	} catch { }
+	} catch {}
 
 	const regex = new RegExp(`"${key}"\\s*:\\s*\\[(.*?)(?:\\]|$)`, "s");
 	const match = jsonString.match(regex);
@@ -81,7 +81,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	for (const objStr of objectMatches) {
 		try {
 			results.push(JSON.parse(objStr));
-		} catch { }
+		} catch {}
 	}
 	return results;
 };
@@ -97,10 +97,6 @@ const TurnItem = React.memo(
 	}: TurnItemProps) => {
 		const msg = turn.model;
 
-		// --------------------------------------------------------
-		// JSONパース等の重い処理をキャッシュする (useMemo)
-		// テキストが変わらない限り再計算されません
-		// --------------------------------------------------------
 		const parsedSections = React.useMemo(() => {
 			if (!msg) return null;
 
@@ -140,33 +136,7 @@ const TurnItem = React.memo(
 		// ================================================================
 
 		const FormulaBlock = ({ content }: { content: string }) => {
-			const scrollRef = useRef<HTMLDivElement>(null);
-
-			React.useEffect(() => {
-				const el = scrollRef.current;
-				if (!el) return;
-
-				const handleWheel = (e: WheelEvent) => {
-					const isScrollable = el.scrollWidth > el.clientWidth;
-
-					if (isScrollable && e.deltaY !== 0) {
-						const { scrollLeft, scrollWidth, clientWidth } = el;
-						const isAtStart = scrollLeft <= 0 && e.deltaY < 0;
-						const isAtEnd =
-							scrollLeft + clientWidth >= scrollWidth && e.deltaY > 0;
-
-						if (!isAtStart && !isAtEnd) {
-							el.scrollLeft += e.deltaY;
-							if (e.cancelable) {
-								e.preventDefault();
-							}
-						}
-					}
-				};
-
-				el.addEventListener("wheel", handleWheel, { passive: false });
-				return () => el.removeEventListener("wheel", handleWheel);
-			}, []);
+			const scrollRef = useHorizontalScroll<HTMLDivElement>();
 
 			return (
 				<div
@@ -445,6 +415,8 @@ export default function Chat() {
 		useChatDisplay();
 
 	const virtuosoRef = useRef<VirtuosoHandle>(null);
+	const imageListRef = useHorizontalScroll<HTMLDivElement>();
+	const inputImageListRef = useHorizontalScroll<HTMLDivElement>();
 
 	// ================================================================
 	//     送信と中断
@@ -501,7 +473,7 @@ export default function Chat() {
 				images.problem,
 				sliders,
 				switchState,
-				() => { },
+				() => {},
 				setImages,
 			);
 		},
@@ -519,8 +491,74 @@ export default function Chat() {
 		useChatInput(wrappedHandleSend);
 
 	// ================================================================
+	//     プレビューモーダル管理用ステート
+	// ================================================================
+
+	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+	const [previewId, setPreviewId] = useState<string | null>(null);
+
+	const [prevImages, setPrevImages] = useState(images.problem);
+
+	const activePreviewImage = useMemo(() => {
+		if (images.problem.length === 0) return null;
+
+		const found = images.problem.find((img) => img.id === previewId);
+		if (previewId && found) {
+			return found;
+		}
+
+		return images.problem[images.problem.length - 1];
+	}, [images.problem, previewId]);
+
+	// ================================================================
 	//     画像欄
 	// ================================================================
+
+	const [isGlobalDragActive, setIsGlobalDragActive] = useState(false);
+	const globalDragCounter = useRef(0);
+
+	const handleGlobalDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		e.stopPropagation();
+
+		const isFile = e.dataTransfer.types.includes("Files");
+
+		if (isFile) {
+			globalDragCounter.current++;
+			setIsGlobalDragActive(true);
+		}
+	};
+
+	const handleGlobalDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		e.stopPropagation();
+		globalDragCounter.current--;
+		if (globalDragCounter.current === 0) {
+			setIsGlobalDragActive(false);
+		}
+	};
+
+	const handleGlobalDrop = (e: React.DragEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsGlobalDragActive(false);
+		globalDragCounter.current = 0;
+
+		if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+			if (!isPreviewOpen) {
+				setPrevImages(images.problem);
+			}
+
+			handleDrop("problem", e);
+
+			if (activeContent !== "images") {
+				setActiveContent("images");
+			}
+
+			setIsPreviewOpen(true);
+			setPreviewId(null);
+		}
+	};
 
 	const DroppableArea = ({
 		tabKey,
@@ -558,9 +596,28 @@ export default function Chat() {
 		const handleDropAndReset = (e: React.DragEvent<HTMLDivElement>) => {
 			e.preventDefault();
 			e.stopPropagation();
+
+			if (!isPreviewOpen) {
+				setPrevImages(images.problem);
+			}
+
 			handleDrop(tabKey, e);
 			dragCounter.current = 0;
 			setIsDragActive(false);
+
+			setIsPreviewOpen(true);
+		};
+
+		const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+			if (e.target.files && e.target.files.length > 0) {
+				if (!isPreviewOpen) {
+					setPrevImages(images.problem);
+				}
+
+				handleFiles(tabKey, e.target.files);
+
+				setIsPreviewOpen(true);
+			}
 		};
 
 		return (
@@ -575,28 +632,26 @@ export default function Chat() {
 				onDragEnter={handleDragEnter}
 				onDragLeave={handleDragLeave}
 				onKeyDown={handleKeyDown}
-				className={`flex flex-col justify-center p-2 w-full h-full rounded-2xl border-2 border-dashed ${isDragActive ? "border-blue bg-blue/25" : "border-ld"
-					}`}
+				className={`flex flex-col justify-center p-2 size-full rounded-4xl border-2 border-dashed transition-all duration-250 ${
+					isDragActive
+						? "border-blue bg-l2 dark:bg-d2"
+						: "border-l5 dark:border-d5"
+				}`}
 			>
 				{children}
 				<input
 					ref={inputRef}
 					type="file"
-					accept="image/*"
+					accept="image/*, image/heif, image/heic"
 					multiple
 					className="hidden"
-					onChange={(e) => handleFiles(tabKey, e.target.files)}
+					onChange={onInputChange}
 				/>
 			</div>
 		);
 	};
 
 	const [hasMounted, setHasMounted] = useState(false);
-
-	// ================================================================
-	//     アコーディオン制御ロジック
-	// ================================================================
-
 	const [accordionKeys, setAccordionKeys] = useState<
 		Record<string, SharedSelection>
 	>({});
@@ -606,7 +661,162 @@ export default function Chat() {
 	// ================================================================
 
 	return (
-		<div className="flex flex-none justify-center items-center px-4 pb-4 size-full">
+		<div
+			onDragEnter={handleGlobalDragEnter}
+			onDragLeave={handleGlobalDragLeave}
+			onDragOver={(e) => e.preventDefault()}
+			onDrop={handleGlobalDrop}
+			className="flex relative flex-none justify-center items-center px-4 pb-4 size-full"
+		>
+			<AnimatePresence>
+				{isGlobalDragActive && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.25, ease: "easeInOut" }}
+						className="flex absolute inset-0 z-100 justify-center items-center p-4 size-full backdrop-blur-lg pointer-events-none bg-l1/50 no-select dark:bg-d1/50"
+					>
+						<div className="flex flex-col gap-2 justify-center items-center size-full rounded-4xl border-2 border-blue border-dashed">
+							<ImageUp size={64} className="text-blue animate-bounce" />
+							<span className="text-2xl font-bold text-blue text-center">
+								此処へファイルをドロップせよ
+							</span>
+							<span className="text-xl font-medium text-ld text-center">
+								対応形式: APNG, AVIF, GIF, JPEG, PNG, SVG, WebP, BMP, ICO, TIFF,
+								HEIF, HEIC
+							</span>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+
+			{/* ============================================================= */}
+			{/* 	カスタム画像プレビューモーダル */}
+			{/* ============================================================= */}
+
+			<AnimatePresence>
+				{isPreviewOpen && activePreviewImage && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.25, ease: "easeInOut" }}
+						className="flex absolute inset-0 z-50 justify-center items-center p-8 backdrop-blur-lg bg-l1/50 no-select dark:bg-d1/50"
+					>
+						{/* モーダルコンテンツ本体 */}
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							transition={{ duration: 0.25, ease: "easeInOut" }}
+							className="flex overflow-hidden relative flex-col size-full rounded-4xl border-1 border-l5 dark:border-d5 bg-l1 dark:bg-d1"
+						>
+							{/* ヘッダー */}
+							<div className="flex flex-row justify-between items-center w-full h-16 border-b-1 border-l5 dark:border-d5 bg-l2 dark:bg-d2">
+								<div className="flex"></div>
+								<div className="flex justify-center items-center">
+									<span className="text-lg font-medium text-d2 dark:text-l2 text-center">
+										{activePreviewImage.fileName}
+									</span>
+								</div>
+								<div className="flex justify-center items-center">
+									<Button
+										isIconOnly
+										onPress={() => {
+											setImages((prev) => ({ ...prev, problem: prevImages }));
+											setIsPreviewOpen(false);
+										}}
+										className="size-16 bg-transparent rounded-none hover:bg-l3 dark:hover:bg-d3"
+									>
+										<X size={24} className="text-d2 dark:text-l2" />
+									</Button>
+								</div>
+							</div>
+
+							{/* メインプレビュー */}
+							<div className="flex flex-1 justify-center items-center p-4 bg-l1 dark:bg-d1">
+								<div className="flex relative justify-center items-center size-full">
+									<Image
+										src={activePreviewImage.src}
+										alt={activePreviewImage.fileName}
+										fill
+										className="object-contain"
+										unoptimized
+									/>
+								</div>
+							</div>
+
+							{/* 画像リスト */}
+							<div className="flex flex-col shrink-0 gap-4 p-4 border-l5 border-t-1 dark:border-d5 bg-l2 dark:bg-d2">
+								<div className="flex flex-row gap-2 items-center pl-1">
+									<ImageUp size={24} className="text-d2 dark:text-l2" />
+									<span className="text-lg font-bold text-d2 dark:text-l2 text-left">
+										アップロード済
+									</span>
+								</div>
+								<div
+									ref={imageListRef}
+									className="flex overflow-x-scroll gap-4 px-2 py-4"
+								>
+									{images.problem.map((img) => {
+										const isActive = activePreviewImage.id === img.id;
+										return (
+											<div
+												role="button"
+												tabIndex={0}
+												key={img.id}
+												className={`relative shrink-0 size-20 rounded-2xl transition-all duration-250 cursor-pointer group ${
+													isActive
+														? "ring-2 ring-blue scale-105 opacity-100"
+														: "opacity-50 hover:opacity-100 hover:scale-105"
+												}`}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														setPreviewId(img.id);
+													}
+												}}
+												onClick={() => setPreviewId(img.id)}
+											>
+												<Image
+													src={img.src}
+													alt={img.fileName}
+													fill
+													className="aspect-square object-cover rounded-2xl"
+												/>
+												<button
+													type="button"
+													className="absolute -top-2 -right-2 p-1 text-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 bg-red"
+													onClick={(e) => {
+														e.stopPropagation();
+														handleImageRemove("problem", img.id);
+														if (isActive) setPreviewId(null);
+													}}
+												>
+													<X size={12} />
+												</button>
+											</div>
+										);
+									})}
+								</div>
+								<div className="flex justify-end">
+									<Button
+										className="rounded-4xl bg-blue"
+										onPress={() => {
+											setIsPreviewOpen(false);
+										}}
+									>
+										<span className="text-base font-medium text-l1 text-center">
+											完了
+										</span>
+									</Button>
+								</div>
+							</div>
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+
 			<motion.div className="flex flex-col justify-center items-center size-full max-w-3xl">
 				<motion.div
 					initial={{ flex: 0, height: 0, opacity: 0 }}
@@ -807,149 +1017,179 @@ export default function Chat() {
 										</Button>
 									</div>
 								</div>
-								<AnimatePresence>
-									{activeContent && (
-										<motion.div
-											initial={{ height: 0 }}
-											animate={{ height: "var(--panel-height)" }}
-											exit={{ height: 0 }}
-											transition={{ duration: 0.5, ease: "easeInOut" }}
-											className="overflow-hidden [--panel-height:15rem] lg:[--panel-height:12rem]"
+								<div className="flex flex-col w-full">
+									<motion.div
+										initial="closed"
+										animate={activeContent === "sliders" ? "open" : "closed"}
+										variants={{
+											open: { height: "auto", opacity: 1 },
+											closed: { height: 0, opacity: 0 },
+										}}
+										transition={{ duration: 0.5, ease: easeInOut }}
+										className="overflow-hidden w-full"
+									>
+										<ScrollShadow
+											hideScrollBar
+											visibility="none"
+											className="size-full"
 										>
-											<ScrollShadow
-												hideScrollBar
-												visibility="none"
-												className="size-full"
-											>
-												{activeContent === "sliders" && (
-													<div className="flex flex-col gap-8 justify-center p-2 size-full">
-														<Slider
-															className="w-full"
-															value={sliders.politeness}
-															formatOptions={{ style: "percent" }}
-															label="丁寧度"
-															marks={[
-																{ value: 0.25, label: "難しい" },
-																{ value: 0.5, label: "普通" },
-																{ value: 0.75, label: "易しい" },
-															]}
-															maxValue={1}
-															minValue={0}
-															step={0.25}
-															showSteps
-															showTooltip
-															size="lg"
-															onChange={(v) =>
-																handleSliderChange("politeness", v)
-															}
-														/>
-														<Divider className="bg-l5 dark:bg-d5" />
-														<div className="flex flex-row flex-wrap gap-4">
-															<Switch
-																size="lg"
-																isSelected={switchState.summary}
-																onChange={() => handleSwitchChange("summary")}
+											<div className="flex flex-col gap-8 justify-center p-2 size-full">
+												<Slider
+													className="w-full"
+													value={sliders.politeness}
+													formatOptions={{ style: "percent" }}
+													label="丁寧度"
+													marks={[
+														{ value: 0.25, label: "難しい" },
+														{ value: 0.5, label: "普通" },
+														{ value: 0.75, label: "易しい" },
+													]}
+													maxValue={1}
+													minValue={0}
+													step={0.25}
+													showSteps
+													showTooltip
+													size="lg"
+													onChange={(v) => handleSliderChange("politeness", v)}
+												/>
+												<Divider className="bg-l5 dark:bg-d5" />
+												<div className="flex flex-row flex-wrap gap-4">
+													<Switch
+														size="lg"
+														isSelected={switchState.summary}
+														onChange={() => handleSwitchChange("summary")}
+													>
+														要約
+													</Switch>
+													<Switch
+														size="lg"
+														isSelected={switchState.guidance}
+														onChange={() => handleSwitchChange("guidance")}
+													>
+														指針
+													</Switch>
+													<Switch
+														size="lg"
+														isSelected={switchState.explanation}
+														onChange={() => handleSwitchChange("explanation")}
+													>
+														解説
+													</Switch>
+													<Switch
+														size="lg"
+														isSelected={switchState.answer}
+														onChange={() => handleSwitchChange("answer")}
+													>
+														解答
+													</Switch>
+												</div>
+											</div>
+										</ScrollShadow>
+									</motion.div>
+
+									<motion.div
+										initial="closed"
+										animate={activeContent === "images" ? "open" : "closed"}
+										variants={{
+											open: { height: "auto", opacity: 1 },
+											closed: { height: 0, opacity: 0 },
+										}}
+										transition={{ duration: 0.5, ease: easeInOut }}
+										className="overflow-hidden w-full"
+									>
+										<ScrollShadow
+											hideScrollBar
+											visibility="none"
+											className="size-full"
+										>
+											<DndContext>
+												<div className="w-full h-full min-h-50">
+													<DroppableArea
+														tabKey="problem"
+														inputRef={problemInputRef}
+													>
+														{images.problem.length === 0 ? (
+															<div className="flex flex-col gap-2 justify-center items-center p-8 size-full">
+																<Button
+																	size="lg"
+																	radius="full"
+																	className="bg-blue"
+																	onPress={() =>
+																		problemInputRef.current?.click()
+																	}
+																>
+																	<span className="text-xl font-bold text-l1 text-center">
+																		アップロード
+																	</span>
+																</Button>
+																<span className="text-lg font-medium text-ld text-center">
+																	ファイルをドラッグ&ドロップせよ
+																</span>
+															</div>
+														) : (
+															<div
+																ref={inputImageListRef}
+																className="flex overflow-x-auto overflow-y-hidden flex-row flex-nowrap gap-2 p-2"
 															>
-																要約
-															</Switch>
-															<Switch
-																size="lg"
-																isSelected={switchState.guidance}
-																onChange={() => handleSwitchChange("guidance")}
-															>
-																指針
-															</Switch>
-															<Switch
-																size="lg"
-																isSelected={switchState.explanation}
-																onChange={() =>
-																	handleSwitchChange("explanation")
-																}
-															>
-																解説
-															</Switch>
-															<Switch
-																size="lg"
-																isSelected={switchState.answer}
-																onChange={() => handleSwitchChange("answer")}
-															>
-																解答
-															</Switch>
-														</div>
-													</div>
-												)}
-												{activeContent === "images" && (
-													<DndContext>
-														<div className="size-full">
-															<DroppableArea
-																tabKey="problem"
-																inputRef={problemInputRef}
-															>
-																{images.problem.length === 0 ? (
-																	<div className="flex flex-col gap-2 justify-center items-center p-8 size-full">
-																		<Button
-																			size="lg"
-																			radius="full"
-																			className="text-xl font-medium text-l2 text-center bg-blue"
-																			onPress={() =>
-																				problemInputRef.current?.click()
-																			}
+																{images.problem.map((item) => (
+																	<Tooltip
+																		key={item.id}
+																		content={item.fileName}
+																		placement="bottom"
+																		delay={0}
+																		closeDelay={0}
+																		radius="full"
+																		size="md"
+																		shadow="md"
+																		color="primary"
+																	>
+																		<div
+																			role="button"
+																			tabIndex={0}
+																			className="relative shrink-0 outline-none cursor-pointer"
+																			onKeyDown={(e) => {
+																				if (
+																					e.key === "Enter" ||
+																					e.key === " "
+																				) {
+																					setPreviewId(item.id);
+																					setIsPreviewOpen(true);
+																				}
+																			}}
+																			onClick={() => {
+																				setPreviewId(item.id);
+																				setIsPreviewOpen(true);
+																			}}
 																		>
-																			画像アップロード
-																		</Button>
-																		<span className="text-lg font-medium text-ld">
-																			ファイルをドラッグ&ドロップ
-																		</span>
-																	</div>
-																) : (
-																	<div className="flex overflow-x-auto overflow-y-hidden flex-row flex-nowrap gap-2">
-																		{images.problem.map((item) => (
-																			<Tooltip
-																				key={item.id}
-																				content={item.fileName}
-																				placement="bottom"
-																				delay={0}
-																				closeDelay={0}
+																			<Image
+																				src={item.src}
+																				alt={item.fileName}
+																				width={160}
+																				height={160}
+																				className="aspect-square object-cover rounded-3xl"
+																			/>
+																			<Button
+																				isIconOnly
+																				size="sm"
 																				radius="full"
-																				size="md"
-																				shadow="md"
-																				color="primary"
+																				className="absolute top-2 right-2 text-l2 bg-red"
+																				onPress={() => {
+																					handleImageRemove("problem", item.id);
+																				}}
 																			>
-																				<div className="relative shrink-0">
-																					<Image
-																						src={item.src}
-																						alt={item.fileName}
-																						width={160}
-																						height={160}
-																						className="aspect-square object-cover rounded-4xl"
-																					/>
-																					<Button
-																						isIconOnly
-																						size="sm"
-																						radius="full"
-																						className="absolute top-2 right-2 text-l2 bg-red"
-																						onPress={() =>
-																							handleImageRemove(
-																								"problem",
-																								item.id,
-																							)
-																						}
-																					>
-																						<X />
-																					</Button>
-																				</div>
-																			</Tooltip>
-																		))}
-																	</div>
-																)}
-															</DroppableArea>
-														</div>
-													</DndContext>
-												)}
-											</ScrollShadow>
-										</motion.div>
-									)}
-								</AnimatePresence>
+																				<X />
+																			</Button>
+																		</div>
+																	</Tooltip>
+																))}
+															</div>
+														)}
+													</DroppableArea>
+												</div>
+											</DndContext>
+										</ScrollShadow>
+									</motion.div>
+								</div>
 							</motion.div>
 						</AnimatePresence>
 					</div>
