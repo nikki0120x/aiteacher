@@ -64,11 +64,12 @@ export type MessageItem = {
 	sectionsState?: NormalizedSwitchState;
 };
 
-export type ImageItem = {
+export interface ImageItem {
 	id: string;
 	src: string;
 	fileName: string;
-};
+	file?: File;
+}
 
 export type ChatTurn = {
 	user: MessageItem;

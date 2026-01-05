@@ -1,6 +1,23 @@
 /* src/app/chat/page.tsx */
 "use client";
-import { DndContext } from "@dnd-kit/core";
+import {
+	closestCenter,
+	DndContext,
+	type DragEndEvent,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+import {
+	arrayMove,
+	horizontalListSortingStrategy,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
 	Accordion,
 	AccordionItem,
@@ -23,24 +40,36 @@ import {
 } from "@heroui/react";
 import {
 	BookCheck,
+	Info,
 	BookText,
 	BowArrow,
 	ChevronDown,
 	Copy,
+	Crop,
 	ImageUp,
+	LineSquiggle,
 	Mic,
 	MicOff,
+	ZoomIn,
 	Pause,
+	ZoomOut,
 	ScanSearch,
 	ScrollText,
 	SendHorizontal,
 	Settings2,
 	TriangleAlert,
+	Type,
 	X,
 } from "lucide-react";
 import { AnimatePresence, easeInOut, motion } from "motion/react";
 import Image from "next/image";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { BlockMath } from "react-katex";
 import ReactMarkdown from "react-markdown";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
@@ -62,6 +91,53 @@ declare global {
 		__TAURI__?: unknown;
 	}
 }
+
+// ================================================================
+//     WebP変換ヘルパー
+// ================================================================
+
+const convertFileToWebP = (file: File): Promise<File> => {
+	if (!file.type.startsWith("image/") || file.type === "image/webp") {
+		return Promise.resolve(file);
+	}
+
+	return new Promise((resolve) => {
+		const img = document.createElement("img");
+		img.onload = () => {
+			const canvas = document.createElement("canvas");
+			canvas.width = img.width;
+			canvas.height = img.height;
+			const ctx = canvas.getContext("2d");
+
+			if (!ctx) {
+				resolve(file);
+				return;
+			}
+
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.drawImage(img, 0, 0);
+
+			canvas.toBlob(
+				(blob) => {
+					if (blob) {
+						const newFileName = `${file.name.replace(/\.[^/.]+$/, "")}.webp`;
+						const newFile = new File([blob], newFileName, {
+							type: "image/webp",
+							lastModified: Date.now(),
+						});
+						resolve(newFile);
+					} else {
+						resolve(file);
+					}
+				},
+				"image/webp",
+				0.75,
+			);
+		};
+		img.onerror = () => resolve(file);
+		img.src = URL.createObjectURL(file);
+	});
+};
 
 const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	try {
@@ -85,6 +161,518 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 		} catch { }
 	}
 	return results;
+};
+
+// ================================================================
+//     Zoomable Image Component (New)
+// ================================================================
+
+interface ZoomableImageProps {
+	src: string;
+	alt: string;
+	isConverting: boolean;
+	zoomLevel: number;
+	onZoomChange: (zoom: number) => void;
+	isSliderDragging: boolean;
+}
+
+const ZoomableImage = ({ src, alt, isConverting, zoomLevel, onZoomChange, isSliderDragging, }: ZoomableImageProps) => {
+	const containerRef = useRef<HTMLDivElement>(null);
+	const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
+	const [isDragging, setIsDragging] = useState(false);
+	const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
+
+	const dragStart = useRef({ x: 0, y: 0 });
+	const startTransform = useRef({ x: 0, y: 0 });
+	const isPinching = useRef(false);
+	const touchStartRef = useRef<{
+		dist: number;
+		center: { x: number; y: number };
+		transform: { x: number; y: number; scale: number };
+	} | null>(null);
+
+	const lastTapRef = useRef({ time: 0, x: 0, y: 0 });
+
+	const MAX_SCALE_LIMIT = 10;
+
+	const resetZoom = useCallback(() => {
+		setTransform({ x: 0, y: 0, scale: 1 });
+		onZoomChange(1);
+	}, [onZoomChange]);
+
+	useEffect(() => {
+		resetZoom();
+	}, [resetZoom, src]);
+
+	const getBounds = useCallback(
+		(scale: number, rect: DOMRect) => {
+			if (naturalSize.w === 0 || naturalSize.h === 0) {
+				return {
+					minX: rect.width * (1 - scale),
+					maxX: 0,
+					minY: rect.height * (1 - scale),
+					maxY: 0,
+				};
+			}
+
+			const imgRatio = naturalSize.w / naturalSize.h;
+			const containerRatio = rect.width / rect.height;
+
+			let rw = rect.width;
+			let rh = rect.height;
+
+			if (imgRatio > containerRatio) {
+				rh = rect.width / imgRatio;
+			} else {
+				rw = rect.height * imgRatio;
+			}
+
+			const offX = (rect.width - rw) / 2;
+			const offY = (rect.height - rh) / 2;
+
+			const upperX = -offX * scale;
+			const upperY = -offY * scale;
+			const lowerX = rect.width - (offX + rw) * scale;
+			const lowerY = rect.height - (offY + rh) * scale;
+
+			return {
+				minX: lowerX > upperX ? (lowerX + upperX) / 2 : lowerX,
+				maxX: lowerX > upperX ? (lowerX + upperX) / 2 : upperX,
+				minY: lowerY > upperY ? (lowerY + upperY) / 2 : lowerY,
+				maxY: lowerY > upperY ? (lowerY + upperY) / 2 : upperY,
+			};
+		},
+		[naturalSize],
+	);
+
+	const clamp = (val: number, min: number, max: number) =>
+		Math.min(Math.max(val, min), max);
+
+	useEffect(() => {
+		if (
+			zoomLevel !== transform.scale &&
+			!isPinching.current &&
+			!isDragging &&
+			containerRef.current
+		) {
+			const rect = containerRef.current.getBoundingClientRect();
+			const targetScale = Math.min(Math.max(1, zoomLevel), MAX_SCALE_LIMIT);
+
+			const cx = rect.width / 2;
+			const cy = rect.height / 2;
+
+			const pImgX = (cx - transform.x) / transform.scale;
+			const pImgY = (cy - transform.y) / transform.scale;
+
+			let newX = cx - pImgX * targetScale;
+			let newY = cy - pImgY * targetScale;
+
+			const bounds = getBounds(targetScale, rect);
+			newX = clamp(newX, bounds.minX, bounds.maxX);
+			newY = clamp(newY, bounds.minY, bounds.maxY);
+
+			setTransform({ x: newX, y: newY, scale: targetScale });
+		}
+	}, [zoomLevel, naturalSize]);
+
+	const handleWheel = (e: React.WheelEvent) => {
+		if (isConverting) return;
+		e.preventDefault();
+		if (!containerRef.current) return;
+
+		const rect = containerRef.current.getBoundingClientRect();
+		const x = e.clientX - rect.left;
+		const y = e.clientY - rect.top;
+
+		const delta = -e.deltaY * 0.001;
+		const newScale = Math.min(
+			Math.max(1, transform.scale + delta * transform.scale),
+			MAX_SCALE_LIMIT,
+		);
+
+		if (newScale === 1) {
+			resetZoom();
+			return;
+		}
+
+		const ratio = newScale / transform.scale;
+		const bounds = getBounds(newScale, rect);
+		const newX = clamp(x - (x - transform.x) * ratio, bounds.minX, bounds.maxX);
+		const newY = clamp(y - (y - transform.y) * ratio, bounds.minY, bounds.maxY);
+
+		setTransform({ x: newX, y: newY, scale: newScale });
+		onZoomChange(newScale);
+	};
+
+	const handleTouchStart = (e: React.TouchEvent) => {
+		if (isConverting) return;
+
+		if (e.touches.length === 2) {
+			isPinching.current = true;
+			setIsDragging(false);
+
+			const t1 = e.touches[0];
+			const t2 = e.touches[1];
+			const rect = containerRef.current?.getBoundingClientRect();
+			if (!rect) return;
+
+			const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+			const cx = (t1.clientX + t2.clientX) / 2 - rect.left;
+			const cy = (t1.clientY + t2.clientY) / 2 - rect.top;
+
+			touchStartRef.current = {
+				dist,
+				center: { x: cx, y: cy },
+				transform: { ...transform },
+			};
+		}
+	};
+
+	const handleTouchMove = (e: React.TouchEvent) => {
+		if (isConverting) return;
+
+		if (
+			isPinching.current &&
+			e.touches.length === 2 &&
+			touchStartRef.current &&
+			containerRef.current
+		) {
+			e.preventDefault();
+			e.stopPropagation();
+
+			const t1 = e.touches[0];
+			const t2 = e.touches[1];
+			const rect = containerRef.current.getBoundingClientRect();
+
+			const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+			const cx = (t1.clientX + t2.clientX) / 2 - rect.left;
+			const cy = (t1.clientY + t2.clientY) / 2 - rect.top;
+
+			const {
+				dist: startDist,
+				center: startCenter,
+				transform: startTransform,
+			} = touchStartRef.current;
+
+			const scaleRatio = dist / startDist;
+			let newScale = startTransform.scale * scaleRatio;
+			newScale = Math.min(Math.max(1, newScale), MAX_SCALE_LIMIT);
+
+			const pImgX = (startCenter.x - startTransform.x) / startTransform.scale;
+			const pImgY = (startCenter.y - startTransform.y) / startTransform.scale;
+
+			let newX = cx - pImgX * newScale;
+			let newY = cy - pImgY * newScale;
+
+			const bounds = getBounds(newScale, rect);
+			newX = clamp(newX, bounds.minX, bounds.maxX);
+			newY = clamp(newY, bounds.minY, bounds.maxY);
+
+			setTransform({ x: newX, y: newY, scale: newScale });
+			onZoomChange(newScale);
+		}
+	};
+
+	const handleTouchEnd = () => {
+		if (isPinching.current) {
+			isPinching.current = false;
+			touchStartRef.current = null;
+		}
+	};
+
+	const handlePointerDown = (e: React.PointerEvent) => {
+		if (isConverting || isPinching.current) return;
+
+		const now = Date.now();
+		const { time: lastTime, x: lastX, y: lastY } = lastTapRef.current;
+
+		const isDoubleTap =
+			now - lastTime < 250 &&
+			Math.abs(e.clientX - lastX) < 16 &&
+			Math.abs(e.clientY - lastY) < 16;
+
+		if (isDoubleTap) {
+			e.preventDefault();
+			e.stopPropagation();
+
+			if (containerRef.current) {
+				if (transform.scale > 1) {
+					resetZoom();
+				} else {
+					const rect = containerRef.current.getBoundingClientRect();
+					const x = e.clientX - rect.left;
+					const y = e.clientY - rect.top;
+
+					const targetScale = MAX_SCALE_LIMIT;
+					const bounds = getBounds(targetScale, rect);
+					const newX = clamp(x - x * targetScale, bounds.minX, bounds.maxX);
+					const newY = clamp(y - y * targetScale, bounds.minY, bounds.maxY);
+
+					setTransform({ x: newX, y: newY, scale: targetScale });
+					onZoomChange(targetScale);
+				}
+			}
+			lastTapRef.current = { time: 0, x: 0, y: 0 };
+			setIsDragging(false);
+			return;
+		}
+
+		lastTapRef.current = { time: now, x: e.clientX, y: e.clientY };
+
+		e.stopPropagation();
+		setIsDragging(true);
+		dragStart.current = { x: e.clientX, y: e.clientY };
+		startTransform.current = { x: transform.x, y: transform.y };
+		(e.target as HTMLElement).setPointerCapture(e.pointerId);
+	};
+
+	const handlePointerMove = (e: React.PointerEvent) => {
+		if (!isDragging || !containerRef.current || isPinching.current) return;
+		e.preventDefault();
+		e.stopPropagation();
+
+		const dx = e.clientX - dragStart.current.x;
+		const dy = e.clientY - dragStart.current.y;
+
+		let nextX = startTransform.current.x + dx;
+		let nextY = startTransform.current.y + dy;
+
+		const rect = containerRef.current.getBoundingClientRect();
+		const bounds = getBounds(transform.scale, rect);
+
+		nextX = clamp(nextX, bounds.minX, bounds.maxX);
+		nextY = clamp(nextY, bounds.minY, bounds.maxY);
+
+		setTransform({ ...transform, x: nextX, y: nextY });
+	};
+
+	const handlePointerUp = (e: React.PointerEvent) => {
+		if (isDragging) {
+			setIsDragging(false);
+			(e.target as HTMLElement).releasePointerCapture(e.pointerId);
+		}
+	};
+
+	return (
+		<div
+			ref={containerRef}
+			className="overflow-hidden relative size-full cursor-grab active:cursor-grabbing touch-none select-none"
+			onWheel={handleWheel}
+			onPointerDown={handlePointerDown}
+			onPointerMove={handlePointerMove}
+			onPointerUp={handlePointerUp}
+			onPointerLeave={handlePointerUp}
+			onTouchStart={handleTouchStart}
+			onTouchMove={handleTouchMove}
+			onTouchEnd={handleTouchEnd}
+		>
+			<div
+				style={{
+					transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
+					transformOrigin: "0 0",
+					transitionDuration: isDragging || isPinching.current || isSliderDragging ? "0s" : "0.25s",
+					transitionTimingFunction: "ease-in-out",
+					transitionProperty: "transform, opacity",
+					width: "100%",
+					height: "100%",
+					position: "absolute",
+					inset: 0,
+					willChange: "transform",
+					backfaceVisibility: "hidden",
+					WebkitBackfaceVisibility: "hidden",
+					opacity: isConverting ? 0.5 : 1,
+				}}
+			>
+				<Image
+					src={src}
+					alt={alt}
+					fill
+					draggable={false}
+					className="object-contain"
+					unoptimized
+					onLoadingComplete={(img) => {
+						setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+					}}
+				/>
+			</div>
+
+			{isConverting && (
+				<div className="flex absolute inset-0 z-10 justify-center items-center size-full backdrop-blur-xs cursor-progress bg-l1/50 dark:bg-d1/50">
+					<Spinner size="lg" color="primary" />
+				</div>
+			)}
+		</div>
+	);
+};
+
+// ================================================================
+//     Sortable Image Components
+// ================================================================
+
+interface SortableImageProps {
+	id: string;
+	item: { id: string; fileName: string; src: string };
+	onClick: () => void;
+	isConverting: boolean;
+}
+
+const SortableImageItem = ({
+	id,
+	item,
+	onClick,
+	isConverting,
+}: SortableImageProps) => {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition: isDragging
+			? "scale 250ms ease, opacity 250ms ease"
+			: `${transition}, scale 250ms ease, opacity 250ms ease`,
+		zIndex: isDragging ? 50 : "auto",
+		scale: isDragging ? 1.1 : 1,
+		opacity: isDragging ? 0.5 : 1,
+	};
+
+	return (
+		<Tooltip
+			content={item.fileName}
+			placement="bottom"
+			delay={0}
+			closeDelay={0}
+			radius="full"
+			size="md"
+			shadow="md"
+			color="primary"
+			isDisabled={isDragging}
+		>
+			<div
+				ref={setNodeRef}
+				style={style}
+				{...attributes}
+				{...listeners}
+				className="relative shrink-0 outline-none cursor-grab active:cursor-grabbing touch-none group"
+			>
+				<Image
+					src={item.src}
+					alt={item.fileName}
+					width={160}
+					height={160}
+					className="aspect-square object-cover rounded-3xl pointer-events-none"
+				/>
+				<div
+					role="button"
+					tabIndex={0}
+					className="flex absolute inset-0 justify-center items-center size-full rounded-3xl transition-all duration-250 group-hover:bg-l1/50 group-hover:dark:bg-d1/50"
+					onClick={() => onClick()}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							onClick();
+						}
+					}}
+				>
+					<ScanSearch
+						size={64}
+						className="text-d1/50 dark:text-l1/50 opacity-0 group-hover:opacity-100 transition-all duration-250"
+					/>
+				</div>
+				{isConverting && (
+					<div className="flex absolute inset-0 z-10 justify-center items-center rounded-3xl cursor-progress bg-l1/50 dark:bg-d1/50">
+						<Spinner size="lg" color="primary" />
+					</div>
+				)}
+			</div>
+		</Tooltip>
+	);
+};
+
+// モーダル用のソート可能アイテムコンポーネント
+interface SortableModalImageItemProps {
+	id: string;
+	item: { id: string; fileName: string; src: string };
+	isActive: boolean;
+	isConverting: boolean;
+	onClick: () => void;
+	onRemove: () => void;
+}
+
+const SortableModalImageItem = ({
+	id,
+	item,
+	isActive,
+	isConverting,
+	onClick,
+	onRemove,
+}: SortableModalImageItemProps) => {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition: isDragging
+			? "scale 250ms ease, opacity 250ms ease"
+			: `${transition}, scale 250ms ease, opacity 250ms ease`,
+		zIndex: isDragging ? 50 : "auto",
+		scale: isDragging ? 1.1 : 1,
+		opacity: isDragging ? 0.5 : 1,
+	};
+
+	return (
+		<div
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			{...listeners}
+			role="button"
+			tabIndex={0}
+			className={`relative shrink-0 size-20 rounded-2xl outline-none transition-all duration-250 cursor-grab active:cursor-grabbing touch-none group ${isActive
+				? "ring-2 ring-blue scale-105 opacity-100"
+				: "opacity-50 hover:opacity-100 hover:scale-105"
+				}`}
+			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					onClick();
+				}
+			}}
+		>
+			<Image
+				src={item.src}
+				alt={item.fileName}
+				fill
+				className="aspect-square object-cover rounded-2xl pointer-events-none"
+			/>
+			{isConverting && (
+				<div className="flex absolute inset-0 z-10 justify-center items-center size-full rounded-2xl cursor-progress bg-l1/50 dark:bg-d1/50">
+					<Spinner size="lg" color="primary" />
+				</div>
+			)}
+			<button
+				type="button"
+				className="flex absolute -top-2 -right-2 z-20 justify-center items-center p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-250 hover:scale-105 cursor-pointer bg-red"
+				onPointerDown={(e) => e.stopPropagation()}
+				onClick={(e) => {
+					e.stopPropagation();
+					onRemove();
+				}}
+			>
+				<X size={20} className="text-l1" />
+			</button>
+		</div>
+	);
 };
 
 const TurnItem = React.memo(
@@ -132,13 +720,8 @@ const TurnItem = React.memo(
 			};
 		}, [msg, switchState]);
 
-		// ================================================================
-		//     数学ブロック
-		// ================================================================
-
 		const FormulaBlock = ({ content }: { content: string }) => {
 			const scrollRef = useHorizontalScroll<HTMLDivElement>();
-
 			return (
 				<div
 					ref={scrollRef}
@@ -150,10 +733,6 @@ const TurnItem = React.memo(
 				</div>
 			);
 		};
-
-		// ================================================================
-		//     レンダリングヘルパー
-		// ================================================================
 
 		const renderContentBlocks = (blocks: ContentBlock[]) => {
 			return blocks.map((block, idx) => {
@@ -393,14 +972,8 @@ const TurnItem = React.memo(
 export default function Chat() {
 	const { isSent, isLoading, activeContent, setActiveContent } = useChatStore();
 
-	const {
-		images,
-		setImages,
-		problemInputRef,
-		handleFiles,
-		handleDrop,
-		handleImageRemove,
-	} = useImageUpload();
+	const { images, setImages, problemInputRef, handleImageRemove } =
+		useImageUpload();
 
 	const {
 		responseMode,
@@ -419,9 +992,34 @@ export default function Chat() {
 	const imageListRef = useHorizontalScroll<HTMLDivElement>();
 	const inputImageListRef = useHorizontalScroll<HTMLDivElement>();
 
-	// ================================================================
-	//     送信と中断
-	// ================================================================
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: {
+				distance: 16,
+			},
+		}),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		}),
+	);
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+
+		if (over && active.id !== over.id) {
+			setImages((prev) => {
+				const oldIndex = prev.problem.findIndex(
+					(item) => item.id === active.id,
+				);
+				const newIndex = prev.problem.findIndex((item) => item.id === over.id);
+
+				return {
+					...prev,
+					problem: arrayMove(prev.problem, oldIndex, newIndex),
+				};
+			});
+		}
+	};
 
 	const { handleSend: chatLogicHandleSend, handleAbort: chatLogicHandleAbort } =
 		useChatLogic();
@@ -452,10 +1050,6 @@ export default function Chat() {
 	const handleAbort = () => {
 		chatLogicHandleAbort();
 	};
-
-	// ================================================================
-	//     入力欄
-	// ================================================================
 
 	const wrappedHandleSend = useCallback(
 		async (text: string) => {
@@ -491,14 +1085,13 @@ export default function Chat() {
 	const { inputText, setInputText, isListening, toggleListening, isMobile } =
 		useChatInput(wrappedHandleSend);
 
-	// ================================================================
-	//     プレビューモーダル管理用ステート
-	// ================================================================
-
 	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 	const [previewId, setPreviewId] = useState<string | null>(null);
-
 	const [prevImages, setPrevImages] = useState(images.problem);
+	const [convertingIds, setConvertingIds] = useState<Set<string>>(new Set());
+
+	const [previewZoomLevel, setPreviewZoomLevel] = useState(1);
+	const [isSliderDragging, setIsSliderDragging] = useState(false);
 
 	const activePreviewImage = useMemo(() => {
 		if (images.problem.length === 0) return null;
@@ -511,9 +1104,76 @@ export default function Chat() {
 		return images.problem[images.problem.length - 1];
 	}, [images.problem, previewId]);
 
-	// ================================================================
-	//     画像欄
-	// ================================================================
+	const handleUploadAndConvert = async (
+		files: FileList | null,
+		tabKey: "problem",
+	) => {
+		if (!files || files.length === 0) return;
+
+		if (!isPreviewOpen) {
+			setPrevImages(images.problem);
+		}
+
+		if (activeContent !== "images") {
+			setActiveContent("images");
+		}
+
+		const fileArray = Array.from(files);
+
+		const tempImages = fileArray.map((file) => ({
+			id: crypto.randomUUID(),
+			file: file,
+			fileName: file.name,
+			src: URL.createObjectURL(file),
+		}));
+
+		setConvertingIds((prev) => {
+			const next = new Set(prev);
+			for (const img of tempImages) {
+				next.add(img.id);
+			}
+			return next;
+		});
+
+		const imagesForState = tempImages.map(({ file, ...rest }) => rest);
+
+		setImages((prev) => ({
+			...prev,
+			[tabKey]: [...prev[tabKey], ...imagesForState],
+		}));
+
+		setPreviewId(tempImages[tempImages.length - 1].id);
+		setPreviewZoomLevel(1);
+		setIsPreviewOpen(true);
+
+		for (const imgObj of tempImages) {
+			try {
+				const webpFile = await convertFileToWebP(imgObj.file);
+				const newSrc = URL.createObjectURL(webpFile);
+
+				setImages((prev) => {
+					const targetList = prev[tabKey];
+					const index = targetList.findIndex((item) => item.id === imgObj.id);
+					if (index === -1) return prev;
+					const updatedList = [...targetList];
+					updatedList[index] = {
+						...updatedList[index],
+						fileName: webpFile.name,
+						src: newSrc,
+					};
+					return { ...prev, [tabKey]: updatedList };
+				});
+			} catch (e) {
+				console.error("WebP変換に失敗しました:", e);
+			} finally {
+				setConvertingIds((prev) => {
+					const next = new Set(prev);
+					next.delete(imgObj.id);
+					return next;
+				});
+			}
+		}
+	};
 
 	const [isGlobalDragActive, setIsGlobalDragActive] = useState(false);
 	const globalDragCounter = useRef(0);
@@ -539,26 +1199,13 @@ export default function Chat() {
 		}
 	};
 
-	const handleGlobalDrop = (e: React.DragEvent<HTMLDivElement>) => {
+	const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
 		e.stopPropagation();
 		setIsGlobalDragActive(false);
 		globalDragCounter.current = 0;
 
-		if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-			if (!isPreviewOpen) {
-				setPrevImages(images.problem);
-			}
-
-			handleDrop("problem", e);
-
-			if (activeContent !== "images") {
-				setActiveContent("images");
-			}
-
-			setIsPreviewOpen(true);
-			setPreviewId(null);
-		}
+		await handleUploadAndConvert(e.dataTransfer.files, "problem");
 	};
 
 	const DroppableArea = ({
@@ -566,7 +1213,7 @@ export default function Chat() {
 		children,
 		inputRef,
 	}: {
-		tabKey: string;
+		tabKey: "problem";
 		children: React.ReactNode;
 		inputRef: React.RefObject<HTMLInputElement | null>;
 	}) => {
@@ -594,30 +1241,19 @@ export default function Chat() {
 			if (dragCounter.current === 0) setIsDragActive(false);
 		};
 
-		const handleDropAndReset = (e: React.DragEvent<HTMLDivElement>) => {
+		const handleDropAndReset = async (e: React.DragEvent<HTMLDivElement>) => {
 			e.preventDefault();
 			e.stopPropagation();
-
-			if (!isPreviewOpen) {
-				setPrevImages(images.problem);
-			}
-
-			handleDrop(tabKey, e);
 			dragCounter.current = 0;
 			setIsDragActive(false);
 
-			setIsPreviewOpen(true);
+			await handleUploadAndConvert(e.dataTransfer.files, tabKey);
 		};
 
-		const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-			if (e.target.files && e.target.files.length > 0) {
-				if (!isPreviewOpen) {
-					setPrevImages(images.problem);
-				}
-
-				handleFiles(tabKey, e.target.files);
-
-				setIsPreviewOpen(true);
+		const onInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+			await handleUploadAndConvert(e.target.files, tabKey);
+			if (inputRef.current) {
+				inputRef.current.value = "";
 			}
 		};
 
@@ -634,8 +1270,8 @@ export default function Chat() {
 				onDragLeave={handleDragLeave}
 				onKeyDown={handleKeyDown}
 				className={`flex flex-col justify-center p-2 size-full rounded-4xl border-2 border-dashed transition-all duration-250 ${isDragActive
-						? "border-blue bg-l2 dark:bg-d2"
-						: "border-l5 dark:border-d5"
+					? "border-blue bg-l2 dark:bg-d2"
+					: "border-l5 dark:border-d5"
 					}`}
 			>
 				{children}
@@ -656,10 +1292,6 @@ export default function Chat() {
 		Record<string, SharedSelection>
 	>({});
 
-	// ================================================================
-	//     フロントエンド
-	// ================================================================
-
 	return (
 		<div
 			onDragEnter={handleGlobalDragEnter}
@@ -677,7 +1309,7 @@ export default function Chat() {
 						transition={{ duration: 0.25, ease: "easeInOut" }}
 						className="flex absolute inset-0 z-100 justify-center items-center p-4 size-full backdrop-blur-lg pointer-events-none bg-l1/50 no-select dark:bg-d1/50"
 					>
-						<div className="flex flex-col gap-2 justify-center items-center size-full rounded-4xl border-2 border-blue border-dashed p-4">
+						<div className="flex flex-col gap-2 justify-center items-center p-4 size-full rounded-4xl border-2 border-blue border-dashed">
 							<ImageUp size={64} className="text-blue animate-bounce" />
 							<span className="text-2xl font-bold text-blue text-center">
 								此処へファイルをドロップせよ
@@ -691,10 +1323,6 @@ export default function Chat() {
 				)}
 			</AnimatePresence>
 
-			{/* ============================================================= */}
-			{/* 	カスタム画像プレビューモーダル */}
-			{/* ============================================================= */}
-
 			<AnimatePresence>
 				{isPreviewOpen && activePreviewImage && (
 					<motion.div
@@ -704,21 +1332,33 @@ export default function Chat() {
 						transition={{ duration: 0.25, ease: "easeInOut" }}
 						className="flex absolute inset-0 z-50 justify-center items-center p-8 backdrop-blur-lg bg-l1/50 no-select dark:bg-d1/50"
 					>
-						{/* モーダルコンテンツ本体 */}
 						<motion.div
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							transition={{ duration: 0.25, ease: "easeInOut" }}
-							className="flex overflow-hidden relative flex-col size-full rounded-4xl border-1 border-l5 dark:border-d5 bg-l1 dark:bg-d1"
+							className="flex overflow-hidden relative flex-col size-full max-w-5xl rounded-4xl border-1 border-l5 dark:border-d5 bg-l1 dark:bg-d1"
 						>
-							{/* ヘッダー */}
-							<div className="flex flex-row justify-between items-center w-full h-16 border-b-1 border-l5 dark:border-d5 bg-l2 dark:bg-d2">
-								<div className="flex"></div>
-								<div className="flex justify-center items-center">
-									<span className="text-lg font-medium text-d2 dark:text-l2 text-center">
-										{activePreviewImage.fileName}
-									</span>
+							<div className="flex flex-row shrink-0 justify-between items-center p-2 w-full border-b-1 border-l5 dark:border-d5 bg-l2 dark:bg-d2">
+								<div className="flex flex-row gap-2 items-center justify-left">
+									<Button
+										isIconOnly
+										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
+									>
+										<Crop size={24} className="text-d2 dark:text-l2" />
+									</Button>
+									<Button
+										isIconOnly
+										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
+									>
+										<Type size={24} className="text-d2 dark:text-l2" />
+									</Button>
+									<Button
+										isIconOnly
+										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
+									>
+										<LineSquiggle size={24} className="text-d2 dark:text-l2" />
+									</Button>
 								</div>
 								<div className="flex justify-center items-center">
 									<Button
@@ -726,95 +1366,145 @@ export default function Chat() {
 										onPress={() => {
 											setImages((prev) => ({ ...prev, problem: prevImages }));
 											setIsPreviewOpen(false);
+											setPreviewZoomLevel(1);
 										}}
-										className="size-16 bg-transparent rounded-none hover:bg-l3 dark:hover:bg-d3"
+										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
 									>
 										<X size={24} className="text-d2 dark:text-l2" />
 									</Button>
 								</div>
 							</div>
 
-							{/* メインプレビュー */}
-							<div className="flex flex-1 justify-center items-center p-4 bg-l1 dark:bg-d1">
+							<div className="flex flex-1 justify-center items-center size-full bg-l1 dark:bg-d1">
 								<div className="flex relative justify-center items-center size-full">
-									<Image
+									<ZoomableImage
 										src={activePreviewImage.src}
 										alt={activePreviewImage.fileName}
-										fill
-										className="object-contain"
-										unoptimized
+										isConverting={convertingIds.has(activePreviewImage.id)}
+										zoomLevel={previewZoomLevel}
+										onZoomChange={setPreviewZoomLevel}
+										isSliderDragging={isSliderDragging}
 									/>
 								</div>
 							</div>
 
-							{/* 画像リスト */}
-							<div className="flex flex-col shrink-0 gap-2 p-4 border-l5 border-t-1 dark:border-d5 bg-l2 dark:bg-d2">
-								<div className="flex flex-row gap-2 items-center pl-1">
-									<ImageUp size={24} className="text-d2 dark:text-l2" />
-									<span className="text-lg font-bold text-d2 dark:text-l2 text-left">
-										アップロード済
-									</span>
-								</div>
-								<div
-									ref={imageListRef}
-									className="flex overflow-x-scroll gap-4 px-2 py-4"
-								>
-									{images.problem.map((img) => {
-										const isActive = activePreviewImage.id === img.id;
-										return (
-											<div
-												role="button"
-												tabIndex={0}
-												key={img.id}
-												className={`relative shrink-0 size-20 rounded-2xl transition-all duration-250 cursor-pointer group ${isActive
-														? "ring-2 ring-blue sca4le-105 opacity-100"
-														: "opacity-50 hover:opacity-100 hover:scale-105"
-													}`}
-												onKeyDown={(e) => {
-													if (e.key === "Enter" || e.key === " ") {
-														setPrevImages(images.problem);
-														setPreviewId(img.id)
-														setIsPreviewOpen(true);
-													}
-												}}
-												onClick={() => {
-													setPrevImages(images.problem);
-													setPreviewId(img.id)
-													setIsPreviewOpen(true);
-												}}
-											>
-												<Image
-													src={img.src}
-													alt={img.fileName}
-													fill
-													className="aspect-square object-cover rounded-2xl"
-												/>
-												<button
-													type="button"
-													className="absolute flex items-center justify-center -top-2 -right-2 rounded-full size-8 opacity-0 group-hover:opacity-100 transition-all duration-250 hover:scale-105 bg-red cursor-pointer"
-													onClick={(e) => {
-														e.stopPropagation();
-														handleImageRemove("problem", img.id);
-														if (isActive) setPreviewId(null);
-													}}
-												>
-													<X size={16} className="text-l1" />
-												</button>
-											</div>
-										);
-									})}
-								</div>
-								<div className="flex justify-end">
+							<div className="flex flex-row shrink-0 justify-between items-center p-2 w-full border-l5 border-t-1 dark:border-d5 bg-l2 dark:bg-d2">
+								<div className="flex justify-start items-center">
 									<Button
-										className="rounded-4xl bg-blue"
-										onPress={() => {
-											setIsPreviewOpen(false);
-										}}
+										isIconOnly
+										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
 									>
-										<span className="text-base font-medium text-l1 text-center">
-											完了
-										</span>
+										<Info size={24} className="text-d2 dark:text-l2" />
 									</Button>
+								</div>
+								<div className="flex justify-center items-center w-full max-w-xs">
+									<Slider
+										aria-label="Zoom Level"
+										size="sm"
+										color="foreground"
+										step={0.01}
+										minValue={1}
+										maxValue={10}
+										value={previewZoomLevel}
+										onChange={(v) => {
+											setIsSliderDragging(true);
+											setPreviewZoomLevel(Array.isArray(v) ? v[0] : v);
+										}}
+										onChangeEnd={() => setIsSliderDragging(false)}
+										startContent={
+											<Button
+												isIconOnly
+												className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
+												onPress={() => setPreviewZoomLevel((p) => Math.max(1, p - 0.5))}
+											>
+												<ZoomOut size={24} className="text-d2 dark:text-l2" />
+											</Button>
+										}
+										endContent={
+											<Button
+												isIconOnly
+												className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
+												onPress={() => setPreviewZoomLevel((p) => Math.min(10, p + 0.5))}
+											>
+												<ZoomIn size={24} className="text-d2 dark:text-l2" />
+											</Button>
+										}
+										className="max-w-md"
+									/>
+								</div>
+								<div className="flex justify-end items-center"></div>
+							</div>
+
+							<div className="flex flex-col shrink-0 w-full border-l5 border-t-1 dark:border-d5 bg-l3 dark:bg-d3">
+								<DndContext
+									sensors={sensors}
+									collisionDetection={closestCenter}
+									modifiers={[restrictToHorizontalAxis]}
+									onDragEnd={handleDragEnd}
+								>
+									<div
+										ref={imageListRef}
+										className="flex overflow-x-scroll gap-4 p-4 touch-pan-x"
+									>
+										<SortableContext
+											items={images.problem.map((i) => i.id)}
+											strategy={horizontalListSortingStrategy}
+										>
+											{images.problem.map((img) => {
+												const isActive = activePreviewImage.id === img.id;
+												const isConverting = convertingIds.has(img.id);
+												return (
+													<SortableModalImageItem
+														key={img.id}
+														id={img.id}
+														item={img}
+														isActive={isActive}
+														isConverting={isConverting}
+														onClick={() => {
+															setPreviewId(img.id);
+															setIsPreviewOpen(true);
+														}}
+														onRemove={() => {
+															handleImageRemove("problem", img.id);
+															if (isActive) setPreviewId(null);
+														}}
+													/>
+												);
+											})}
+										</SortableContext>
+									</div>
+								</DndContext>
+								<div className="flex flex-row gap-2 justify-between items-center p-4 w-full">
+									<div></div>
+									<div className="flex flex-row gap-2 justify-end items-center">
+										<Button
+											onPress={() => {
+												setImages((prev) => ({ ...prev, problem: prevImages }));
+												setIsPreviewOpen(false);
+											}}
+											className="rounded-full bg-l4 hover:bg-l5 dark:bg-d4 dark:hover:bg-d5"
+										>
+											<span className="text-base font-medium text-d4 dark:text-l4 text-center">
+												取消
+											</span>
+										</Button>
+										<Button
+											className="flex justify-center items-center rounded-full disabled:cursor-not-allowed disabled:pointer-events-auto bg-blue"
+											isDisabled={convertingIds.size > 0}
+											onPress={() => {
+												setPrevImages(images.problem);
+												setIsPreviewOpen(false);
+											}}
+										>
+											{convertingIds.size > 0 ? (
+												<Spinner size="sm" color="white" />
+											) : (
+												<span className="text-base font-medium text-l1 text-center">
+													完了
+												</span>
+											)}
+										</Button>
+									</div>
 								</div>
 							</div>
 						</motion.div>
@@ -822,7 +1512,7 @@ export default function Chat() {
 				)}
 			</AnimatePresence>
 
-			<motion.div className="flex flex-col justify-center items-center size-full max-w-3xl">
+			<motion.div className="flex flex-col justify-center items-center size-full max-w-4xl">
 				<motion.div
 					initial={{ flex: 0, height: 0, opacity: 0 }}
 					animate={{
@@ -1107,7 +1797,12 @@ export default function Chat() {
 											visibility="none"
 											className="size-full"
 										>
-											<DndContext>
+											<DndContext
+												sensors={sensors}
+												collisionDetection={closestCenter}
+												modifiers={[restrictToHorizontalAxis]}
+												onDragEnd={handleDragEnd}
+											>
 												<div className="w-full h-full min-h-50">
 													<DroppableArea
 														tabKey="problem"
@@ -1134,53 +1829,26 @@ export default function Chat() {
 														) : (
 															<div
 																ref={inputImageListRef}
-																className="flex overflow-x-auto overflow-y-hidden flex-row flex-nowrap gap-2 p-2"
+																className="flex overflow-x-auto overflow-y-hidden flex-row flex-nowrap gap-2 p-2 touch-pan-x"
 															>
-																{images.problem.map((item) => (
-																	<Tooltip
-																		key={item.id}
-																		content={item.fileName}
-																		placement="bottom"
-																		delay={0}
-																		closeDelay={0}
-																		radius="full"
-																		size="md"
-																		shadow="md"
-																		color="primary"
-																	>
-																		<div
-																			role="button"
-																			tabIndex={0}
-																			className="relative shrink-0 outline-none cursor-pointer group"
-																			onKeyDown={(e) => {
-																				if (
-																					e.key === "Enter" ||
-																					e.key === " "
-																				) {
-																					setPrevImages(images.problem);
-																					setPreviewId(item.id);
-																					setIsPreviewOpen(true);
-																				}
-																			}}
+																<SortableContext
+																	items={images.problem.map((i) => i.id)}
+																	strategy={horizontalListSortingStrategy}
+																>
+																	{images.problem.map((item) => (
+																		<SortableImageItem
+																			key={item.id}
+																			id={item.id}
+																			item={item}
+																			isConverting={convertingIds.has(item.id)}
 																			onClick={() => {
 																				setPrevImages(images.problem);
 																				setPreviewId(item.id);
 																				setIsPreviewOpen(true);
 																			}}
-																		>
-																			<Image
-																				src={item.src}
-																				alt={item.fileName}
-																				width={160}
-																				height={160}
-																				className="aspect-square object-cover rounded-3xl"
-																			/>
-																			<div className="flex items-center justify-center size-full rounded-3xl absolute inset-0 group-hover:bg-l1/50 group-hover:dark:bg-d1/50 transition-all duration-250">
-																				<ScanSearch size={64} className="dark:text-l1/50 text-d1/50 opacity-0 group-hover:opacity-100 transition-all duration-250" />
-																			</div>
-																		</div>
-																	</Tooltip>
-																))}
+																		/>
+																	))}
+																</SortableContext>
 															</div>
 														)}
 													</DroppableArea>
