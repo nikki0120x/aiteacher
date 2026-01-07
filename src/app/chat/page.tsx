@@ -92,6 +92,20 @@ declare global {
 	}
 }
 
+const blobUrlToBase64 = async (blobUrl: string): Promise<string> => {
+	const response = await fetch(blobUrl);
+	const blob = await response.blob();
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onloadend = () => {
+			const base64data = reader.result as string;
+			resolve(base64data.split(",")[1]);
+		};
+		reader.onerror = reject;
+		reader.readAsDataURL(blob);
+	});
+};
+
 // ================================================================
 //     WebP変換ヘルパー
 // ================================================================
@@ -1036,9 +1050,28 @@ export default function Chat() {
 				});
 			}, 50);
 
+			// --- 追加: 画像をBase64に変換 ---
+			let imagesForApi = images.problem;
+			if (images.problem.length > 0) {
+				try {
+					imagesForApi = await Promise.all(
+						images.problem.map(async (img) => ({
+							...img,
+							// APIには blob: ではなく base64文字列 を渡す
+							src: await blobUrlToBase64(img.src),
+						}))
+					);
+				} catch (e) {
+					console.error("Image conversion failed", e);
+					// エラーハンドリング (必要に応じてトースト表示など)
+					return;
+				}
+			}
+			// ------------------------------
+
 			await chatLogicHandleSend(
 				inputText,
-				images.problem,
+				imagesForApi, // 変換後の画像を渡す
 				sliders,
 				switchState,
 				setInputText,
@@ -1063,9 +1096,26 @@ export default function Chat() {
 				});
 			}, 0);
 
+			// --- 追加: 画像をBase64に変換 ---
+			let imagesForApi = images.problem;
+			if (images.problem.length > 0) {
+				try {
+					imagesForApi = await Promise.all(
+						images.problem.map(async (img) => ({
+							...img,
+							src: await blobUrlToBase64(img.src),
+						}))
+					);
+				} catch (e) {
+					console.error("Image conversion failed", e);
+					return;
+				}
+			}
+			// ------------------------------
+
 			await chatLogicHandleSend(
 				text,
-				images.problem,
+				imagesForApi, // 変換後の画像を渡す
 				sliders,
 				switchState,
 				() => { },
@@ -1110,6 +1160,7 @@ export default function Chat() {
 	) => {
 		if (!files || files.length === 0) return;
 
+		// 1. 既存の画像表示状態を保持
 		if (!isPreviewOpen) {
 			setPrevImages(images.problem);
 		}
@@ -1120,13 +1171,17 @@ export default function Chat() {
 
 		const fileArray = Array.from(files);
 
+		// 2. まず「一時的な画像オブジェクト」を作成 (WebP変換はまだしない)
+		// URL.createObjectURL は同期処理ですが非常に高速です
 		const tempImages = fileArray.map((file) => ({
 			id: crypto.randomUUID(),
 			file: file,
 			fileName: file.name,
-			src: URL.createObjectURL(file),
+			src: URL.createObjectURL(file), // まずは生データのURLを入れる
 		}));
 
+		// 3. UIの状態を「即座に」更新する
+		// これにより、変換を待たずにモーダルが開き、スピナーが回り始めます
 		setConvertingIds((prev) => {
 			const next = new Set(prev);
 			for (const img of tempImages) {
@@ -1135,44 +1190,57 @@ export default function Chat() {
 			return next;
 		});
 
+		// 画像リストに追加
 		const imagesForState = tempImages.map(({ file, ...rest }) => rest);
-
 		setImages((prev) => ({
 			...prev,
 			[tabKey]: [...prev[tabKey], ...imagesForState],
 		}));
 
+		// モーダルを開く (ここでUI描画が走るようにする)
 		setPreviewId(tempImages[tempImages.length - 1].id);
 		setPreviewZoomLevel(1);
 		setIsPreviewOpen(true);
 
-		for (const imgObj of tempImages) {
-			try {
-				const webpFile = await convertFileToWebP(imgObj.file);
-				const newSrc = URL.createObjectURL(webpFile);
+		// 4. 重たいWebP変換処理を「非同期」かつ「遅延」させて実行
+		// setTimeout(..., 100) を使うことで、ブラウザがモーダルを描画する時間を確保します
+		setTimeout(async () => {
+			for (const imgObj of tempImages) {
+				try {
+					// ここで初めて重い処理が走る
+					const webpFile = await convertFileToWebP(imgObj.file);
+					const newSrc = URL.createObjectURL(webpFile);
 
-				setImages((prev) => {
-					const targetList = prev[tabKey];
-					const index = targetList.findIndex((item) => item.id === imgObj.id);
-					if (index === -1) return prev;
-					const updatedList = [...targetList];
-					updatedList[index] = {
-						...updatedList[index],
-						fileName: webpFile.name,
-						src: newSrc,
-					};
-					return { ...prev, [tabKey]: updatedList };
-				});
-			} catch (e) {
-				console.error("WebP変換に失敗しました:", e);
-			} finally {
-				setConvertingIds((prev) => {
-					const next = new Set(prev);
-					next.delete(imgObj.id);
-					return next;
-				});
+					// 変換完了次第、画像を差し替える
+					setImages((prev) => {
+						const targetList = prev[tabKey];
+						const index = targetList.findIndex((item) => item.id === imgObj.id);
+						if (index === -1) return prev;
+
+						// 配列をコピーして更新
+						const updatedList = [...targetList];
+						updatedList[index] = {
+							...updatedList[index],
+							fileName: webpFile.name, // 拡張子をwebpに変更したファイル名
+							src: newSrc,             // 軽量化されたURLに置換
+						};
+						return { ...prev, [tabKey]: updatedList };
+					});
+				} catch (e) {
+					console.error("WebP変換に失敗しました:", e);
+				} finally {
+					// 完了フラグを外す（スピナーが消える）
+					setConvertingIds((prev) => {
+						const next = new Set(prev);
+						next.delete(imgObj.id);
+						return next;
+					});
+
+					// 連続処理でUIが固まらないように、1枚ごとに少しだけ休憩を入れる
+					await new Promise(resolve => requestAnimationFrame(resolve));
+				}
 			}
-		}
+		}, 100);
 	};
 
 	const [isGlobalDragActive, setIsGlobalDragActive] = useState(false);
