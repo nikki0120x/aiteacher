@@ -51,7 +51,7 @@ export default function Header() {
 				<Button
 					aria-label="Menu Button"
 					onClick={toggleToolbar}
-					className="flex justify-center items-center m-2 size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
+					className="shrink-0 flex justify-center items-center m-2 size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
 				>
 					<Menu className="size-6 text-d1 dark:text-l1" />
 				</Button>
@@ -65,14 +65,14 @@ export default function Header() {
 						alt="The AITeacher Logo"
 						width={160}
 						height={40}
-						className="block dark:hidden object-contain w-30 lg:w-40"
+						className="block dark:hidden object-contain w-20 lg:w-40"
 					/>
 					<Image
 						src="/images/logos/webp/Logo_AITeacher_small_light.webp"
 						alt="The AITeacher Logo"
 						width={160}
 						height={40}
-						className="dark:block hidden object-contain w-30 lg:w-40"
+						className="dark:block hidden object-contain w-20 lg:w-40"
 					/>
 				</Button>
 			</div>
@@ -81,26 +81,26 @@ export default function Header() {
 				<div className="flex flex-row gap-1 justify-center items-center">
 					<Button
 						aria-label="Notification Button"
-						className="flex justify-center items-center size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
+						className="flex justify-center items-center size-10 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
 					>
 						<Bell className="size-6 text-d1 dark:text-l1" />
 					</Button>
 					<Button
 						aria-label="Theme Button"
-						className="flex justify-center items-center size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
+						className="flex justify-center items-center size-10 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
 					>
 						<SunMoon className="size-6 text-d1 dark:text-l1" />
 					</Button>
 					<Button
 						aria-label="Language Button"
-						className="flex justify-center items-center size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
+						className="flex justify-center items-center size-10 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
 					>
 						<Languages className="size-6 text-d1 dark:text-l1" />
 					</Button>
 				</div>
 				<Button
 					aria-label="Account Button"
-					className="flex justify-center items-center m-2 size-12 rounded-full bg-blue"
+					className="shrink-0 flex justify-center items-center m-2 size-12 rounded-full bg-blue"
 				>
 					<UserRound className="size-6 text-l1" />
 				</Button>
