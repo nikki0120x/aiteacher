@@ -10,7 +10,6 @@ import { ThemeProvider } from "next-themes";
 import NProgress from "nprogress";
 import { Suspense, useEffect, useState } from "react";
 import Header from "@/components/layout/header";
-import Sidebar from "@/components/layout/sidebar";
 import Toolbar from "@/components/layout/toolbar";
 import AuthModal from "@/features/auth/components/auth-modal";
 
@@ -57,6 +56,17 @@ function TopProgress() {
 }
 
 export default function Client({ children }: { children: React.ReactNode }) {
+	useEffect(() => {
+		const handleContextMenu = (e: MouseEvent) => {
+			e.preventDefault();
+		};
+
+		document.addEventListener("contextmenu", handleContextMenu);
+		return () => {
+			document.removeEventListener("contextmenu", handleContextMenu);
+		};
+	}, []);
+
 	return (
 		<>
 			<Suspense fallback={null}>
@@ -70,23 +80,22 @@ export default function Client({ children }: { children: React.ReactNode }) {
 			>
 				<HeroUIProvider>
 					<LoadingOverlay />
-					<div className="flex overflow-hidden w-full h-dvh">
+					<div className="flex overflow-hidden relative w-full h-dvh">
 						<div
-							className="flex overflow-hidden relative flex-row flex-1 lg:pr-16 lg:pb-0!"
+							className="flex overflow-hidden relative flex-col flex-1 transition-all duration-250"
 							style={{
-								paddingBottom: "calc(4rem + env(safe-area-inset-bottom))",
+								paddingBottom: "env(safe-area-inset-bottom)",
 							}}
 						>
-							<Sidebar />
-							<div className="flex flex-col flex-1 min-w-0">
-								<Header />
-								<main className="flex overflow-hidden flex-col size-full">
+							<Header />
+							<div className="flex relative flex-row flex-1 min-w-0">
+								<Toolbar />
+								<main className="flex overflow-hidden relative flex-col size-full">
 									<ToastProvider placement="top-center" />
 									{children}
 								</main>
 							</div>
 						</div>
-						<Toolbar />
 					</div>
 					<AuthModal />
 				</HeroUIProvider>

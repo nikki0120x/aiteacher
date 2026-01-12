@@ -1,5 +1,4 @@
 /* src/lib/prisma.ts */
-
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { PrismaClient } from "../../generated/prisma";
@@ -12,13 +11,10 @@ if (!connectionString) {
 }
 
 const pool = new Pool({ connectionString });
-
 const adapter = new PrismaPg(pool) as unknown as DriverAdapter;
-
 const globalForPrisma = global as unknown as {
 	prisma: PrismaClient | undefined;
 };
-
 const prisma =
 	globalForPrisma.prisma ||
 	new PrismaClient({

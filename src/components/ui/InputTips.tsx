@@ -37,7 +37,7 @@ export const InputTips = ({
 	const spanClasses = cn("text-base text-medium select-all", spanClassName);
 
 	// ================================================================
-	//     フロントエンド
+	//     レンダリング
 	// ================================================================
 
 	return (

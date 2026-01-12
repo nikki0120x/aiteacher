@@ -4,7 +4,7 @@ import type { Content, MessageItem, SwitchState } from "@/types/chat";
 import { normalizeSwitchOptions } from "@/utils/chat";
 
 // ================================================================
-//     1. チャットの状態と更新
+//     状態
 // ================================================================
 
 interface ChatState {
@@ -31,7 +31,7 @@ interface ChatState {
 }
 
 // ================================================================
-//     2. ストアの実装
+//     保存
 // ================================================================
 
 export const useChatStore = create<ChatState>((set) => ({

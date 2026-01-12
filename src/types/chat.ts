@@ -1,7 +1,8 @@
 /* src\types\chat.ts */
 import type { SharedSelection } from "@heroui/react";
+
 // ================================================================
-//     1. チャットの構成
+//     構成
 // ================================================================
 
 export type Part = {
@@ -15,7 +16,7 @@ export type Content = {
 };
 
 // ================================================================
-//     2. チャットの設定
+//     設定
 // ================================================================
 
 export type SliderState = {
@@ -36,20 +37,7 @@ export type ImageSet = {
 };
 
 // ================================================================
-//     3. APIへの要求
-// ================================================================
-
-export type PostPayload = {
-	prompt: string;
-	sliders?: SliderState;
-	options?: SwitchState;
-	images?: ImageSet;
-	history?: Content[];
-	model: AIModel;
-};
-
-// ================================================================
-//     4. アプリの状態
+//     状態
 // ================================================================
 
 export type ResponseMode = "learning" | "standard";
@@ -64,17 +52,17 @@ export type MessageItem = {
 	sectionsState?: NormalizedSwitchState;
 };
 
+export type ChatTurn = {
+	user: MessageItem;
+	model: MessageItem | undefined;
+};
+
 export interface ImageItem {
 	id: string;
 	src: string;
 	fileName: string;
 	file?: File;
 }
-
-export type ChatTurn = {
-	user: MessageItem;
-	model: MessageItem | undefined;
-};
 
 export type ContentBlock = {
 	type: "text" | "formula";
@@ -88,4 +76,17 @@ export type TurnItemProps = {
 	selectedKeys: SharedSelection;
 	onSelectionChange: (keys: SharedSelection) => void;
 	switchState: NormalizedSwitchState;
+};
+
+// ================================================================
+//     ペイロード
+// ================================================================
+
+export type PostPayload = {
+	prompt: string;
+	model: AIModel;
+	sliders?: SliderState;
+	options?: SwitchState;
+	images?: ImageSet;
+	history?: Content[];
 };

@@ -17,19 +17,13 @@ export default function Server() {
 					__html: JSON.stringify(schemaMarkup),
 				}}
 			/>
-			<meta
-				name="description"
-				content="勉強に浪漫と好奇心を。そして、智慧と伴に未だ見ぬ未来を切り拓け！"
-			/>
+			<meta name="description" content="勉強に、浪漫と好奇心を。" />
 			<meta charSet="UTF-8" />
 			<meta property="og:site_name" content="AITeacher" />
 			<meta property="og:title" content="AITeacher" />
 			<meta property="og:url" content="https://www.focalrina.com/" />
 			<meta property="og:type" content="website" />
-			<meta
-				property="og:description"
-				content="勉強に浪漫と好奇心を。そして、智慧と伴に未だ見ぬ未来を切り拓け！"
-			/>
+			<meta property="og:description" content="勉強に、浪漫と好奇心を。" />
 			<script
 				async
 				src="https://www.googletagmanager.com/gtag/js?id=G-P7BN0KQ1YQ"
@@ -37,11 +31,11 @@ export default function Server() {
 			<script
 				dangerouslySetInnerHTML={{
 					__html: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-P7BN0KQ1YQ');
-            `,
+					window.dataLayer = window.dataLayer || [];
+					function gtag(){dataLayer.push(arguments);}
+					gtag('js', new Date());
+					gtag('config', 'G-P7BN0KQ1YQ');
+					`,
 				}}
 			/>
 			<link rel="preconnect" href="https://fonts.googleapis.com" />

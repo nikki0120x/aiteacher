@@ -22,10 +22,8 @@ import {
 	Accordion,
 	AccordionItem,
 	addToast,
-	Button,
 	Card,
 	CardBody,
-	Divider,
 	Dropdown,
 	DropdownItem,
 	DropdownMenu,
@@ -40,19 +38,16 @@ import {
 } from "@heroui/react";
 import {
 	BookCheck,
-	Info,
 	BookText,
 	BowArrow,
-	ChevronDown,
 	Copy,
 	Crop,
 	ImageUp,
+	Info,
 	LineSquiggle,
 	Mic,
 	MicOff,
-	ZoomIn,
 	Pause,
-	ZoomOut,
 	ScanSearch,
 	ScrollText,
 	SendHorizontal,
@@ -60,6 +55,8 @@ import {
 	TriangleAlert,
 	Type,
 	X,
+	ZoomIn,
+	ZoomOut,
 } from "lucide-react";
 import { AnimatePresence, easeInOut, motion } from "motion/react";
 import Image from "next/image";
@@ -77,6 +74,7 @@ import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { Button } from "@/components/ui";
 import { useChatDisplay } from "@/hooks/useChatDisplay";
 import { useChatLogic } from "@/hooks/useChatLogic";
 import { responseModes, useChatSettings } from "@/hooks/useChatSettings";
@@ -85,12 +83,6 @@ import { useImageUpload } from "@/hooks/useImageUpload";
 import { useChatInput } from "@/hooks/useTextInput";
 import { useChatStore } from "@/stores/useChat";
 import type { ContentBlock, TurnItemProps } from "@/types/chat";
-
-declare global {
-	interface Window {
-		__TAURI__?: unknown;
-	}
-}
 
 const blobUrlToBase64 = async (blobUrl: string): Promise<string> => {
 	const response = await fetch(blobUrl);
@@ -157,7 +149,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	try {
 		const parsed = JSON.parse(jsonString);
 		return Array.isArray(parsed[key]) ? parsed[key] : [];
-	} catch { }
+	} catch {}
 
 	const regex = new RegExp(`"${key}"\\s*:\\s*\\[(.*?)(?:\\]|$)`, "s");
 	const match = jsonString.match(regex);
@@ -172,7 +164,7 @@ const extractJsonArray = (jsonString: string, key: string): ContentBlock[] => {
 	for (const objStr of objectMatches) {
 		try {
 			results.push(JSON.parse(objStr));
-		} catch { }
+		} catch {}
 	}
 	return results;
 };
@@ -190,7 +182,14 @@ interface ZoomableImageProps {
 	isSliderDragging: boolean;
 }
 
-const ZoomableImage = ({ src, alt, isConverting, zoomLevel, onZoomChange, isSliderDragging, }: ZoomableImageProps) => {
+const ZoomableImage = ({
+	src,
+	alt,
+	isConverting,
+	zoomLevel,
+	onZoomChange,
+	isSliderDragging,
+}: ZoomableImageProps) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
 	const [isDragging, setIsDragging] = useState(false);
@@ -484,7 +483,10 @@ const ZoomableImage = ({ src, alt, isConverting, zoomLevel, onZoomChange, isSlid
 				style={{
 					transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
 					transformOrigin: "0 0",
-					transitionDuration: isDragging || isPinching.current || isSliderDragging ? "0s" : "0.25s",
+					transitionDuration:
+						isDragging || isPinching.current || isSliderDragging
+							? "0s"
+							: "0.25s",
 					transitionTimingFunction: "ease-in-out",
 					transitionProperty: "transform, opacity",
 					width: "100%",
@@ -652,10 +654,11 @@ const SortableModalImageItem = ({
 			{...listeners}
 			role="button"
 			tabIndex={0}
-			className={`relative shrink-0 size-20 rounded-2xl outline-none transition-all duration-250 cursor-grab active:cursor-grabbing touch-none group ${isActive
-				? "ring-2 ring-blue scale-105 opacity-100"
-				: "opacity-50 hover:opacity-100 hover:scale-105"
-				}`}
+			className={`relative shrink-0 size-20 rounded-2xl outline-none transition-all duration-250 cursor-grab active:cursor-grabbing touch-none group ${
+				isActive
+					? "ring-2 ring-blue scale-105 opacity-100"
+					: "opacity-50 hover:opacity-100 hover:scale-105"
+			}`}
 			onClick={onClick}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
@@ -779,8 +782,7 @@ const TurnItem = React.memo(
 										数式
 									</span>
 									<Button
-										isIconOnly
-										onPress={handleCopy}
+										onClick={handleCopy}
 										className="bg-transparent rounded-full"
 									>
 										<Copy size={16} className="text-d3 dark:text-l3" />
@@ -809,7 +811,7 @@ const TurnItem = React.memo(
 		};
 
 		return (
-			<motion.div
+			<div
 				style={{
 					minHeight:
 						isLatestTurn && chatHistoryHeight
@@ -968,7 +970,7 @@ const TurnItem = React.memo(
 						})()}
 					</Accordion>
 				)}
-			</motion.div>
+			</div>
 		);
 	},
 
@@ -1059,7 +1061,7 @@ export default function Chat() {
 							...img,
 							// APIには blob: ではなく base64文字列 を渡す
 							src: await blobUrlToBase64(img.src),
-						}))
+						})),
 					);
 				} catch (e) {
 					console.error("Image conversion failed", e);
@@ -1104,7 +1106,7 @@ export default function Chat() {
 						images.problem.map(async (img) => ({
 							...img,
 							src: await blobUrlToBase64(img.src),
-						}))
+						})),
 					);
 				} catch (e) {
 					console.error("Image conversion failed", e);
@@ -1118,7 +1120,7 @@ export default function Chat() {
 				imagesForApi, // 変換後の画像を渡す
 				sliders,
 				switchState,
-				() => { },
+				() => {},
 				setImages,
 			);
 		},
@@ -1222,7 +1224,7 @@ export default function Chat() {
 						updatedList[index] = {
 							...updatedList[index],
 							fileName: webpFile.name, // 拡張子をwebpに変更したファイル名
-							src: newSrc,             // 軽量化されたURLに置換
+							src: newSrc, // 軽量化されたURLに置換
 						};
 						return { ...prev, [tabKey]: updatedList };
 					});
@@ -1237,7 +1239,7 @@ export default function Chat() {
 					});
 
 					// 連続処理でUIが固まらないように、1枚ごとに少しだけ休憩を入れる
-					await new Promise(resolve => requestAnimationFrame(resolve));
+					await new Promise((resolve) => requestAnimationFrame(resolve));
 				}
 			}
 		}, 100);
@@ -1337,10 +1339,11 @@ export default function Chat() {
 				onDragEnter={handleDragEnter}
 				onDragLeave={handleDragLeave}
 				onKeyDown={handleKeyDown}
-				className={`flex flex-col justify-center p-2 size-full rounded-4xl border-2 border-dashed transition-all duration-250 ${isDragActive
-					? "border-blue bg-l2 dark:bg-d2"
-					: "border-l5 dark:border-d5"
-					}`}
+				className={`flex flex-col justify-center p-2 size-full rounded-4xl border-2 border-dashed transition-all duration-250 ${
+					isDragActive
+						? "border-blue bg-l2 dark:bg-d2"
+						: "border-l5 dark:border-d5"
+				}`}
 			>
 				{children}
 				<input
@@ -1355,7 +1358,7 @@ export default function Chat() {
 		);
 	};
 
-	const [hasMounted, setHasMounted] = useState(false);
+	const [_hasMounted, setHasMounted] = useState(false);
 	const [accordionKeys, setAccordionKeys] = useState<
 		Record<string, SharedSelection>
 	>({});
@@ -1409,29 +1412,19 @@ export default function Chat() {
 						>
 							<div className="flex flex-row shrink-0 justify-between items-center p-2 w-full border-b-1 border-l5 dark:border-d5 bg-l2 dark:bg-d2">
 								<div className="flex flex-row gap-2 items-center justify-left">
-									<Button
-										isIconOnly
-										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
-									>
+									<Button className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3">
 										<Crop size={24} className="text-d2 dark:text-l2" />
 									</Button>
-									<Button
-										isIconOnly
-										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
-									>
+									<Button className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3">
 										<Type size={24} className="text-d2 dark:text-l2" />
 									</Button>
-									<Button
-										isIconOnly
-										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
-									>
+									<Button className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3">
 										<LineSquiggle size={24} className="text-d2 dark:text-l2" />
 									</Button>
 								</div>
 								<div className="flex justify-center items-center">
 									<Button
-										isIconOnly
-										onPress={() => {
+										onClick={() => {
 											setImages((prev) => ({ ...prev, problem: prevImages }));
 											setIsPreviewOpen(false);
 											setPreviewZoomLevel(1);
@@ -1458,10 +1451,7 @@ export default function Chat() {
 
 							<div className="flex flex-row shrink-0 justify-between items-center p-2 w-full border-l5 border-t-1 dark:border-d5 bg-l2 dark:bg-d2">
 								<div className="flex justify-start items-center">
-									<Button
-										isIconOnly
-										className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
-									>
+									<Button className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3">
 										<Info size={24} className="text-d2 dark:text-l2" />
 									</Button>
 								</div>
@@ -1481,18 +1471,20 @@ export default function Chat() {
 										onChangeEnd={() => setIsSliderDragging(false)}
 										startContent={
 											<Button
-												isIconOnly
 												className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
-												onPress={() => setPreviewZoomLevel((p) => Math.max(1, p - 0.5))}
+												onClick={() =>
+													setPreviewZoomLevel((p) => Math.max(1, p - 0.5))
+												}
 											>
 												<ZoomOut size={24} className="text-d2 dark:text-l2" />
 											</Button>
 										}
 										endContent={
 											<Button
-												isIconOnly
 												className="bg-transparent rounded-full hover:bg-l3 dark:hover:bg-d3"
-												onPress={() => setPreviewZoomLevel((p) => Math.min(10, p + 0.5))}
+												onClick={() =>
+													setPreviewZoomLevel((p) => Math.min(10, p + 0.5))
+												}
 											>
 												<ZoomIn size={24} className="text-d2 dark:text-l2" />
 											</Button>
@@ -1546,7 +1538,7 @@ export default function Chat() {
 									<div></div>
 									<div className="flex flex-row gap-2 justify-end items-center">
 										<Button
-											onPress={() => {
+											onClick={() => {
 												setImages((prev) => ({ ...prev, problem: prevImages }));
 												setIsPreviewOpen(false);
 											}}
@@ -1558,8 +1550,7 @@ export default function Chat() {
 										</Button>
 										<Button
 											className="flex justify-center items-center rounded-full disabled:cursor-not-allowed disabled:pointer-events-auto bg-blue"
-											isDisabled={convertingIds.size > 0}
-											onPress={() => {
+											onClick={() => {
 												setPrevImages(images.problem);
 												setIsPreviewOpen(false);
 											}}
@@ -1580,15 +1571,16 @@ export default function Chat() {
 				)}
 			</AnimatePresence>
 
-			<motion.div className="flex flex-col justify-center items-center size-full max-w-4xl">
+			<div className="flex flex-col justify-center items-center size-full max-w-4xl">
 				<motion.div
-					initial={{ flex: 0, height: 0, opacity: 0 }}
+					initial={{ flex: 0, height: 0, opacity: 0, visibility: "hidden" }}
 					animate={{
 						flex: isSent ? 1 : 0,
 						height: isSent ? "auto" : 0,
 						opacity: isSent ? 1 : 0,
+						visibility: isSent ? "visible" : "hidden",
 					}}
-					transition={{ duration: 0.5, ease: "easeInOut" }}
+					transition={{ duration: 0.25, ease: "easeInOut" }}
 					className="flex overflow-hidden flex-col size-full"
 					ref={chatHistoryRef}
 				>
@@ -1600,7 +1592,7 @@ export default function Chat() {
 						alignToBottom={false}
 						increaseViewportBy={{ top: 270, bottom: 1040 }}
 						overscan={540}
-						className="size-full no-scrollbar"
+						className="size-full"
 						itemContent={(_, turn) => {
 							const isLatestTurn = turn.user.id === lastTurnId;
 
@@ -1624,7 +1616,7 @@ export default function Chat() {
 										switchState={switchState}
 									/>
 									{!isLatestTurn && (
-										<Divider className="shrink-0 w-[calc(100%-1rem)] bg-l4 dark:bg-d4" />
+										<hr className="shrink-0 w-full h-1 text-l5 dark:text-d5" />
 									)}
 								</div>
 							);
@@ -1632,171 +1624,185 @@ export default function Chat() {
 					/>
 				</motion.div>
 				<motion.div
-					initial={{ flex: 1, height: 1, opacity: 1 }}
+					initial={{
+						flex: 1,
+						height: "auto",
+						opacity: 1,
+						visibility: "visible",
+					}}
 					animate={{
 						flex: isSent ? 0 : 1,
 						height: "auto",
 						opacity: 1,
+						visibility: "visible",
 					}}
-					transition={{ duration: 0.5, ease: "easeInOut" }}
-					className="flex flex-col gap-10 justify-center items-center size-full no-select"
+					transition={{ duration: 0.25, ease: "easeInOut" }}
+					className="flex flex-col gap-16 justify-center items-center size-full no-select"
 				>
 					<AnimatePresence>
 						{!isSent && (
 							<motion.div
-								key="heading"
-								initial={{ opacity: 0 }}
-								animate={{ opacity: 1 }}
-								exit={{ opacity: 0 }}
-								transition={{ duration: 0.5, ease: "easeInOut" }}
+								initial={{ height: 0, opacity: 0, visibility: "hidden" }}
+								animate={{ height: "auto", opacity: 1, visibility: "visible" }}
+								exit={{ height: 0, opacity: 0, visibility: "hidden" }}
+								transition={{ duration: 0.25, ease: "easeInOut" }}
 								className="flex flex-row gap-4 justify-center items-center w-full"
 							>
-								<Divider className="flex-1 mr-8 bg-d5 dark:bg-l5" />
-								<span className="overflow-hidden text-xl font-medium text-d5 dark:text-l5 text-center text-ellipsis whitespace-nowrap">
+								<hr className="flex-1 mr-8 w-full h-1 text-l5 dark:text-d5" />
+								<span className="overflow-hidden text-xl font-medium text-d5 dark:text-l5 text-center">
 									質問
 								</span>
-								<Divider className="flex-1 ml-8 bg-d5 dark:bg-l5" />
+								<hr className="flex-1 ml-8 w-full h-1 text-l5 dark:text-d5" />
 							</motion.div>
 						)}
 					</AnimatePresence>
 
-					<div className="flex flex-col justify-center px-4 py-2 w-full rounded-4xl border-1 border-l5 dark:border-d5">
+					<div className="flex flex-col justify-center px-4 py-2 w-full rounded-4xl border border-l5 dark:border-d5">
 						<AnimatePresence>
 							<motion.div
-								key="chatArea"
-								initial={
-									hasMounted
-										? { opacity: 0, height: 0 }
-										: { opacity: 0, height: "auto" }
-								}
-								animate={{ opacity: 1, height: "auto" }}
-								exit={{ opacity: 0, height: 0 }}
-								transition={{ duration: 0.5, ease: "easeInOut" }}
-								className="flex flex-col justify-center"
+								initial={{ height: 0, opacity: 0, visibility: "hidden" }}
+								animate={{ height: "auto", opacity: 1, visibility: "visible" }}
+								exit={{ height: 0, opacity: 0, visibility: "hidden" }}
+								transition={{ duration: 0.25, ease: "easeInOut" }}
+								className="flex flex-col justify-center items-center w-full"
 								onAnimationComplete={() => setHasMounted(true)}
 							>
-								<div className="flex flex-row">
-									<Textarea
-										isRequired
-										cacheMeasurements={true}
-										minRows={1}
-										maxRows={3}
-										size="lg"
-										variant="underlined"
-										validationBehavior="aria"
-										placeholder="AI に訊きたい質問はある？"
-										className="text-d1 dark:text-l1 no-after-content"
-										value={inputText}
-										onChange={(e) => setInputText(e.target.value)}
-										onKeyDown={(e) => {
-											if (!isMobile && e.key === "Enter" && !e.shiftKey) {
-												e.preventDefault();
-												handleSend();
-											}
-										}}
-									/>
-									<Button
-										isIconOnly
-										radius="full"
-										className={`${isListening ? "bg-red text-l2" : "bg-transparent hover:bg-l2 dark:hover:bg-d2 text-d2 dark:text-l2"}`}
-										onPress={toggleListening}
-									>
-										{isListening ? <Mic /> : <MicOff />}
-									</Button>
-								</div>
-								<div className="flex flex-row justify-between pb-2">
-									<div className="flex flex-row gap-2">
-										<Button
-											isIconOnly
-											radius="full"
-											className={`text-d2 dark:text-l2 ${activeContent === "sliders" ? "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3" : "bg-transparent hover:bg-l2 dark:hover:bg-d2"}`}
-											onPress={() =>
-												setActiveContent(
-													activeContent === "sliders" ? null : "sliders",
-												)
-											}
-										>
-											<Settings2 />
-										</Button>
-										<Button
-											isIconOnly
-											radius="full"
-											className={`text-d2 dark:text-l2 ${activeContent === "images" ? "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3" : "bg-transparent hover:bg-l2 dark:hover:bg-d2"}`}
-											onPress={() =>
-												setActiveContent(
-													activeContent === "images" ? null : "images",
-												)
-											}
-										>
-											<ImageUp />
-										</Button>
-									</div>
-									<div className="flex flex-row gap-2">
-										<Dropdown
-											placement="bottom"
-											classNames={{
-												content: "text-d2 dark:text-l2 bg-l2 dark:bg-d2",
+								<div className="flex flex-col justify-center items-center size-full">
+									<div className="flex flex-row justify-center items-center size-full">
+										<Textarea
+											isRequired
+											cacheMeasurements={true}
+											minRows={1}
+											maxRows={3}
+											size="lg"
+											variant="underlined"
+											validationBehavior="aria"
+											placeholder="AI に訊きたい質問はある？"
+											className="text-base font-medium text-d1 dark:text-l1 text-left no-after-content"
+											value={inputText}
+											onChange={(e) => setInputText(e.target.value)}
+											onKeyDown={(e) => {
+												if (!isMobile && e.key === "Enter" && !e.shiftKey) {
+													e.preventDefault();
+													handleSend();
+												}
 											}}
-										>
-											<DropdownTrigger>
-												<Button
-													radius="full"
-													className="text-base font-medium text-d2 dark:text-l2 bg-transparent hover:bg-l2 dark:hover:bg-d2"
-												>
-													{selectedModeLabel} <ChevronDown size={16} />
-												</Button>
-											</DropdownTrigger>
-											<DropdownMenu
-												disallowEmptySelection
-												selectedKeys={[responseMode]}
-												selectionMode="single"
-												onSelectionChange={handleResponseModeSelection}
-											>
-												<DropdownItem
-													key="standard"
-													description={responseModes.standard.description}
-												>
-													{responseModes.standard.label}
-												</DropdownItem>
-												<DropdownItem
-													key="learning"
-													description={responseModes.learning.description}
-												>
-													{responseModes.learning.label}
-												</DropdownItem>
-											</DropdownMenu>
-										</Dropdown>
+										/>
 										<Button
-											isIconOnly
-											radius="full"
-											className={`${isLoading ? "bg-red text-l2" : inputText.trim() !== "" || images.problem.length > 0 ? "bg-blue text-l2" : "bg-l2 text-d2 dark:bg-d2 dark:text-l2"}`}
-											onPress={() => (isLoading ? handleAbort() : handleSend())}
-											disabled={
-												!isLoading &&
-												!(inputText.trim() !== "" || images.problem.length > 0)
-											}
+											className={`flex shrink-0 justify-center items-center size-10 rounded-full ${isListening ? "bg-red text-l1" : "bg-l1 dark:bg-d1 hover:bg-l2 dark:hover:bg-d2 text-d1 dark:text-l1"}`}
+											onClick={toggleListening}
 										>
-											{isLoading ? <Pause /> : <SendHorizontal />}
+											{isListening ? (
+												<Mic className="size-6" />
+											) : (
+												<MicOff className="size-6" />
+											)}
 										</Button>
 									</div>
+									<div className="flex flex-row items-center size-full h-10 justify-betweem">
+										<div className="flex flex-row gap-1 justify-start items-center size-full">
+											<Button
+												className={`flex justify-center items-center size-10 rounded-2xl ${activeContent === "sliders" ? "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 text-d2 dark:text-l2" : "bg-l1 dark:bg-d1 hover:bg-l2 dark:hover:bg-d2 text-d1 dark:text-l1"}`}
+												onClick={() =>
+													setActiveContent(
+														activeContent === "sliders" ? null : "sliders",
+													)
+												}
+											>
+												<Settings2 className="size-6" />
+											</Button>
+											<Button
+												className={`flex justify-center items-center size-10 rounded-2xl ${activeContent === "images" ? "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 text-d2 dark:text-l2" : "bg-l1 dark:bg-d1 hover:bg-l2 dark:hover:bg-d2 text-d1 dark:text-l1"}`}
+												onClick={() =>
+													setActiveContent(
+														activeContent === "images" ? null : "images",
+													)
+												}
+											>
+												<ImageUp className="size-6" />
+											</Button>
+										</div>
+										<div className="flex flex-row gap-1 justify-end items-center size-full">
+											<Dropdown
+												placement="bottom"
+												classNames={{
+													content: "text-d2 dark:text-l2 bg-l2 dark:bg-d2",
+												}}
+											>
+												<DropdownTrigger>
+													<Button className="flex justify-center items-center px-4 h-10 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2">
+														<span className="text-base font-medium text-d1 dark:text-l1 text-center">
+															{selectedModeLabel}
+														</span>
+													</Button>
+												</DropdownTrigger>
+												<DropdownMenu
+													disallowEmptySelection
+													selectedKeys={[responseMode]}
+													selectionMode="single"
+													onSelectionChange={handleResponseModeSelection}
+												>
+													<DropdownItem
+														key="standard"
+														description={responseModes.standard.description}
+													>
+														{responseModes.standard.label}
+													</DropdownItem>
+													<DropdownItem
+														key="learning"
+														description={responseModes.learning.description}
+													>
+														{responseModes.learning.label}
+													</DropdownItem>
+												</DropdownMenu>
+											</Dropdown>
+											<Button
+												disabled={
+													!isLoading &&
+													inputText.trim() === "" &&
+													images.problem.length === 0
+												}
+												onClick={() =>
+													isLoading ? handleAbort() : handleSend()
+												}
+												className={`flex justify-center items-center size-10 rounded-full ${isLoading ? "bg-red text-l1" : inputText.trim() !== "" || images.problem.length > 0 ? "bg-blue text-l1" : "bg-l2 text-d2 dark:bg-d2 dark:text-l2 cursor-not-allowed"}`}
+											>
+												{isLoading ? (
+													<Pause className="size-6" />
+												) : (
+													<SendHorizontal className="size-6" />
+												)}
+											</Button>
+										</div>
+									</div>
 								</div>
-								<div className="flex flex-col w-full">
+								<div className="flex flex-col justify-center items-center size-full">
 									<motion.div
 										initial="closed"
 										animate={activeContent === "sliders" ? "open" : "closed"}
 										variants={{
-											open: { height: "auto", opacity: 1 },
-											closed: { height: 0, opacity: 0 },
+											open: {
+												height: "auto",
+												opacity: 1,
+												visibility: "visible",
+											},
+											closed: {
+												height: 0,
+												opacity: 0,
+												transitionEnd: {
+													visibility: "hidden",
+												},
+											},
 										}}
-										transition={{ duration: 0.5, ease: easeInOut }}
-										className="overflow-hidden w-full"
+										transition={{ duration: 0.25, ease: easeInOut }}
+										className="flex overflow-hidden justify-center items-center size-full"
 									>
 										<ScrollShadow
 											hideScrollBar
 											visibility="none"
-											className="size-full"
+											className="flex justify-center items-center size-full no-scrollbar"
 										>
-											<div className="flex flex-col gap-8 justify-center p-2 size-full">
+											<div className="flex flex-col gap-1 justify-center items-start p-2 size-full">
 												<Slider
 													className="w-full"
 													value={sliders.politeness}
@@ -1815,8 +1821,8 @@ export default function Chat() {
 													size="lg"
 													onChange={(v) => handleSliderChange("politeness", v)}
 												/>
-												<Divider className="bg-l5 dark:bg-d5" />
-												<div className="flex flex-row flex-wrap gap-4">
+												<hr className="my-2 w-full h-1 text-l5 dark:text-d5" />
+												<div className="flex flex-row flex-wrap gap-4 justify-start items-center w-full">
 													<Switch
 														size="lg"
 														isSelected={switchState.summary}
@@ -1854,16 +1860,26 @@ export default function Chat() {
 										initial="closed"
 										animate={activeContent === "images" ? "open" : "closed"}
 										variants={{
-											open: { height: "auto", opacity: 1 },
-											closed: { height: 0, opacity: 0 },
+											open: {
+												height: "auto",
+												opacity: 1,
+												visibility: "visible",
+											},
+											closed: {
+												height: 0,
+												opacity: 0,
+												transitionEnd: {
+													visibility: "hidden",
+												},
+											},
 										}}
-										transition={{ duration: 0.5, ease: easeInOut }}
-										className="overflow-hidden w-full"
+										transition={{ duration: 0.25, ease: easeInOut }}
+										className="flex overflow-hidden justify-center items-center size-full"
 									>
 										<ScrollShadow
 											hideScrollBar
 											visibility="none"
-											className="size-full"
+											className="flex justify-center items-center size-full no-scrollbar"
 										>
 											<DndContext
 												sensors={sensors}
@@ -1871,7 +1887,7 @@ export default function Chat() {
 												modifiers={[restrictToHorizontalAxis]}
 												onDragEnd={handleDragEnd}
 											>
-												<div className="w-full h-full min-h-50">
+												<div className="flex flex-col justify-center items-start p-2 size-full min-h-50">
 													<DroppableArea
 														tabKey="problem"
 														inputRef={problemInputRef}
@@ -1879,10 +1895,8 @@ export default function Chat() {
 														{images.problem.length === 0 ? (
 															<div className="flex flex-col gap-2 justify-center items-center p-8 size-full">
 																<Button
-																	size="lg"
-																	radius="full"
-																	className="bg-blue"
-																	onPress={() =>
+																	className="flex justify-center items-center w-60 h-12 rounded-full bg-blue"
+																	onClick={() =>
 																		problemInputRef.current?.click()
 																	}
 																>
@@ -1891,13 +1905,13 @@ export default function Chat() {
 																	</span>
 																</Button>
 																<span className="text-lg font-medium text-ld text-center">
-																	ファイルをドラッグ&ドロップせよ
+																	ファイルをドラッグ&ドロップ
 																</span>
 															</div>
 														) : (
 															<div
 																ref={inputImageListRef}
-																className="flex overflow-x-auto overflow-y-hidden flex-row flex-nowrap gap-2 p-2 touch-pan-x"
+																className="flex overflow-x-auto overflow-y-hidden flex-row flex-nowrap gap-2 justify-start items-center p-2 touch-pan-x"
 															>
 																<SortableContext
 																	items={images.problem.map((i) => i.id)}
@@ -1929,7 +1943,7 @@ export default function Chat() {
 						</AnimatePresence>
 					</div>
 				</motion.div>
-			</motion.div>
+			</div>
 		</div>
 	);
 }

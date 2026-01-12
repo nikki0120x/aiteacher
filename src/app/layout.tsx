@@ -35,7 +35,7 @@ export default function RootLayout({
 			</head>
 			<body
 				style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}
-				className="overflow-hidden antialiased"
+				className="overflow-hidden"
 			>
 				<Client>{children}</Client>
 			</body>

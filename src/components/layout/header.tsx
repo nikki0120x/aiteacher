@@ -1,23 +1,16 @@
 /* src\components\layout\header.tsx */
 "use client";
-import { Button, Progress } from "@heroui/react";
-import { SquarePen } from "lucide-react";
+import { Progress } from "@heroui/react";
+import { Bell, Languages, Menu, SunMoon, UserRound } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useChatStore } from "@/stores/useChat";
+import { Button } from "@/components/ui";
+import { useToolbarStore } from "@/stores/useToolbar";
 
 export default function Header() {
+	const { toggleToolbar } = useToolbarStore();
 	const router = useRouter();
-
-	const {
-		abortController,
-		setIsSent,
-		setIsLoading,
-		setActiveContent,
-		clearMessage,
-		setAbortController,
-	} = useChatStore();
 
 	// ================================================================
 	//     ローディング
@@ -39,26 +32,11 @@ export default function Header() {
 	}, [pathname]);
 
 	// ================================================================
-	//     新規チャット
-	// ================================================================
-
-	const handleNewChat = () => {
-		setIsSent(false);
-		setIsLoading(false);
-		setActiveContent("sliders");
-		clearMessage();
-		if (abortController) {
-			abortController.abort();
-			setAbortController(null);
-		}
-	};
-
-	// ================================================================
-	//     フロントエンド
+	//     レンダリング
 	// ================================================================
 
 	return (
-		<header className="box-content! flex relative flex-row justify-between items-center w-full h-16 border-b-1 border-l5 dark:border-d5 bg-l1 no-select dark:bg-d1">
+		<header className="box-content! flex relative flex-row justify-between items-center w-full h-16 border-l5 dark:border-d5 border-b bg-l1 no-select dark:bg-d1">
 			{loading && (
 				<Progress
 					isIndeterminate
@@ -68,42 +46,65 @@ export default function Header() {
 					className="absolute -bottom-1 left-0 z-10 w-full"
 				/>
 			)}
-			<Button
-				onPress={() => router.push("/")}
-				className="flex flex-row justify-center items-center ml-16 lg:ml-0 h-full bg-transparent rounded-none hover:bg-l2 dark:hover:bg-d2"
-			>
-				<Image
-					src="/images/icons/webp/Icon_AITeacher_small_theme.webp"
-					alt="The AITeacher Icon"
-					width={40}
-					height={40}
-					className="object-contain w-7.5 lg:w-10"
-				/>
-				<Image
-					src="/images/logos/webp/Logo_AITeacher_small_dark.webp"
-					alt="The AITeacher Logo"
-					width={160}
-					height={40}
-					className="block dark:hidden object-contain w-30 lg:w-40"
-				/>
-				<Image
-					src="/images/logos/webp/Logo_AITeacher_small_light.webp"
-					alt="The AITeacher Logo"
-					width={160}
-					height={40}
-					className="dark:block hidden object-contain w-30 lg:w-40"
-				/>
-			</Button>
-			<Button
-				aria-label="New Chat Button"
-				isIconOnly
-				size="lg"
-				radius="full"
-				onPress={handleNewChat}
-				className="size-16 text-d1 dark:text-l1 rounded-none outline-none transition-all duration-250 bg-l1 hover:bg-l3 focus-visible:bg-l3 active:bg-l2 dark:bg-d1 hover:dark:bg-d3 focus-visible:dark:bg-d3 active:dark:bg-d2"
-			>
-				<SquarePen />
-			</Button>
+
+			<div className="flex flex-row justify-start items-center size-full">
+				<Button
+					aria-label="Menu Button"
+					onClick={toggleToolbar}
+					className="flex justify-center items-center m-2 size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
+				>
+					<Menu className="size-6 text-d1 dark:text-l1" />
+				</Button>
+				<Button
+					aria-label="Home Button"
+					onClick={() => router.push("/")}
+					className="flex justify-center items-center p-2 h-12 rounded-2xl bg-l1 dark:bg-d1"
+				>
+					<Image
+						src="/images/logos/webp/Logo_AITeacher_small_dark.webp"
+						alt="The AITeacher Logo"
+						width={160}
+						height={40}
+						className="block dark:hidden object-contain w-30 lg:w-40"
+					/>
+					<Image
+						src="/images/logos/webp/Logo_AITeacher_small_light.webp"
+						alt="The AITeacher Logo"
+						width={160}
+						height={40}
+						className="dark:block hidden object-contain w-30 lg:w-40"
+					/>
+				</Button>
+			</div>
+
+			<div className="flex flex-row justify-end items-center size-full">
+				<div className="flex flex-row gap-1 justify-center items-center">
+					<Button
+						aria-label="Notification Button"
+						className="flex justify-center items-center size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
+					>
+						<Bell className="size-6 text-d1 dark:text-l1" />
+					</Button>
+					<Button
+						aria-label="Theme Button"
+						className="flex justify-center items-center size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
+					>
+						<SunMoon className="size-6 text-d1 dark:text-l1" />
+					</Button>
+					<Button
+						aria-label="Language Button"
+						className="flex justify-center items-center size-12 rounded-2xl bg-l1 hover:bg-l2 dark:bg-d1 dark:hover:bg-d2"
+					>
+						<Languages className="size-6 text-d1 dark:text-l1" />
+					</Button>
+				</div>
+				<Button
+					aria-label="Account Button"
+					className="flex justify-center items-center m-2 size-12 rounded-full bg-blue"
+				>
+					<UserRound className="size-6 text-l1" />
+				</Button>
+			</div>
 		</header>
 	);
 }
