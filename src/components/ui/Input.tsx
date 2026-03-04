@@ -1,220 +1,244 @@
-/* src\components\ui\Input.tsx */
-import { AnimatePresence, motion } from "framer-motion";
-import type { LucideIcon } from "lucide-react";
+import { Eye, EyeClosed, Trash2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
 import {
-	type ChangeEvent,
 	forwardRef,
-	type MouseEvent,
-	useCallback,
 	useEffect,
+	useImperativeHandle,
 	useRef,
 	useState,
 } from "react";
-import { cn } from "@/utils/cn";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/models/cn";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
-	Icon: LucideIcon;
-	label: string;
+export interface InputProps
+	extends React.InputHTMLAttributes<HTMLInputElement> {
+	visibility?: boolean;
+	label?: string;
+	error?: string;
+	leftContent?: React.ReactNode;
 	rightContent?: React.ReactNode;
-	wrapperClassName?: string;
-	inputClassName?: string;
-	dynamicIconClassName?: string;
-	labelClassName?: string;
-};
+	leftContentCount?: number;
+	rightContentCount?: number;
+}
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
 	(
 		{
-			Icon,
+			type = "text",
+			id,
+			name,
+			value,
+			placeholder,
+			visibility = true,
+			onClick,
+			className,
 			label,
-			wrapperClassName,
-			inputClassName,
-			dynamicIconClassName,
-			labelClassName,
+			error,
+			leftContent,
 			rightContent,
-			onFocus,
-			onBlur,
+			leftContentCount = leftContent ? 1 : 0,
+			rightContentCount = rightContent ? 1 : 0,
 			onChange,
 			...props
 		},
 		ref,
 	) => {
-		const DynamicIcon = Icon;
+		const innerRef = useRef<HTMLInputElement>(null);
 
-		const [isFocused, setIsFocused] = useState(false);
-		const [hasValue, setHasValue] = useState(
-			!!props.value || !!props.defaultValue,
-		);
+		useImperativeHandle(ref, () => innerRef.current as HTMLInputElement);
+
+		const [hasValue, setHasValue] = useState(!!value);
+		const [showPassword, setShowPassword] = useState(false);
 
 		useEffect(() => {
-			if (props.value !== undefined) {
-				setHasValue(String(props.value).length > 0);
-			}
-		}, [props.value]);
+			setHasValue(!!value);
+		}, [value]);
 
-		const wrapperRef = useRef<HTMLDivElement>(null);
-		const [ripple, setRipple] = useState<{
-			x: number;
-			y: number;
-			key: number;
-			scale: number;
-		} | null>(null);
+		const isPasswordType = type === "password";
+		const currentType = isPasswordType && showPassword ? "text" : type;
+		const isFloatingType = ["text", "email", "password"].includes(type);
 
-		// ================================================================
-		//     イベントハンドラ
-		// ================================================================
+		//	入力変化
+		const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+			setHasValue(e.target.value.length > 0);
 
-		const handleWrapperMouseDown = (event: MouseEvent<HTMLDivElement>) => {
-			if (isFocused) return;
+			if (onChange) onChange(e);
+		};
 
-			if (wrapperRef.current) {
-				const rect = wrapperRef.current.getBoundingClientRect();
+		//	入力削除
+		const handleInputClear = () => {
+			if (innerRef.current) {
+				const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+					window.HTMLInputElement.prototype,
+					"value",
+				)?.set;
 
-				const x = event.clientX - rect.left;
-				const y = event.clientY - rect.top;
+				nativeInputValueSetter?.call(innerRef.current, "");
 
-				const width = rect.width;
-				const height = rect.height;
+				const event = new Event("input", { bubbles: true });
 
-				const dist1 = Math.hypot(x, y);
-				const dist2 = Math.hypot(width - x, y);
-				const dist3 = Math.hypot(x, height - y);
-				const dist4 = Math.hypot(width - x, height - y);
+				innerRef.current.dispatchEvent(event);
 
-				const maxDistance = Math.max(dist1, dist2, dist3, dist4);
-				const RIPPLE_SIZE = 20;
-				const scale = (maxDistance * 2) / RIPPLE_SIZE;
+				setHasValue(false);
 
-				setRipple({ x, y, scale, key: Date.now() });
+				innerRef.current.focus();
 			}
 		};
 
-		const handleFocus = useCallback(
-			(event: React.FocusEvent<HTMLInputElement>) => {
-				setIsFocused(true);
-				onFocus?.(event);
-			},
-			[onFocus],
+		const autofillClass = cn(
+			"autofill:shadow-[0_0_0_1024px_theme(colors.l1)_inset] dark:autofill:shadow-[0_0_0_1024px_theme(colors.d1)_inset]",
+			"autofill:[-webkit-text-fill-color:theme(colors.d1)] dark:autofill:[-webkit-text-fill-color:theme(colors.l1)]",
 		);
 
-		const handleBlur = useCallback(
-			(event: React.FocusEvent<HTMLInputElement>) => {
-				setIsFocused(false);
-				onBlur?.(event);
-			},
-			[onBlur],
+		if (isFloatingType) {
+			return (
+				<div className="flex flex-col justify-center items-center size-full">
+					<AnimatePresence mode="popLayout">
+						<motion.div
+							layout
+							transition={{ duration: 0.5, ease: "backOut" }}
+							className={cn(
+								"colors flex h-15 w-full flex-row items-center justify-center gap-1 rounded-4xl border border-l5 p-2 dark:border-l5",
+								"has-focus:ring-2 has-focus:ring-blue",
+								!visibility && "hidden",
+								className,
+							)}
+						>
+							{leftContent && (
+								<div className="flex flex-row items-center justify-start">
+									{leftContent}
+								</div>
+							)}
+
+							<div className="relative ml-4 flex flex-1 items-center justify-center">
+								<input
+									{...props}
+									ref={innerRef}
+									type={currentType}
+									name={name}
+									value={value}
+									placeholder=""
+									onChange={handleInputChange}
+									className={cn(
+										"peer size-full bg-transparent pt-2 text-left font-medium text-base text-d1 caret-blue outline-none placeholder:text-l5 dark:text-l1 dark:placeholder:text-d5",
+										autofillClass,
+									)}
+								/>
+
+								<label
+									className={cn(
+										"all pointer-events-none absolute left-0 origin-left text-l5 dark:text-d5",
+										"peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:text-blue!",
+										"peer-[:not(:placeholder-shown)]:-translate-y-4 peer-[:not(:placeholder-shown)]:scale-75",
+									)}
+								>
+									{label || placeholder}
+								</label>
+							</div>
+
+							<div className="flex flex-row items-center justify-center gap-1">
+								{rightContent}
+
+								<AnimatePresence mode="popLayout">
+									{isPasswordType && (
+										<motion.div
+											layout
+											key="password-toggle"
+											initial={{ scale: 0, opacity: 0 }}
+											animate={{ scale: 1, opacity: 1 }}
+											exit={{ scale: 0, opacity: 0 }}
+											transition={{ duration: 0.5, ease: "backOut" }}
+										>
+											<Button
+												onClick={() => setShowPassword(!showPassword)}
+												className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+											>
+												{showPassword ? (
+													<Eye className="all text-yellow" />
+												) : (
+													<EyeClosed className="all text-yellow" />
+												)}
+											</Button>
+										</motion.div>
+									)}
+
+									{hasValue && (
+										<motion.div
+											layout
+											key="clear"
+											initial={{ scale: 0, opacity: 0 }}
+											animate={{ scale: 1, opacity: 1 }}
+											exit={{ scale: 0, opacity: 0 }}
+											transition={{ duration: 0.5, ease: "backOut" }}
+										>
+											<Button
+												onClick={handleInputClear}
+												className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+											>
+												<Trash2 className="all text-red" />
+											</Button>
+										</motion.div>
+									)}
+								</AnimatePresence>
+							</div>
+						</motion.div>
+					</AnimatePresence>
+
+					<AnimatePresence>
+						{error && (
+							<motion.div
+								layout
+								initial={{ height: 0, opacity: 0 }}
+								animate={{ height: "auto", opacity: 1 }}
+								exit={{ height: 0, opacity: 0 }}
+								transition={{ duration: 0.5, ease: "backOut" }}
+								className="px-4 w-full flex justify-start items-center" 
+							>
+								<motion.span
+									layout
+									transition={{ duration: 0.5, ease: "backOut" }}
+									className="mt-2 colors text-left font-medium text-base text-red"
+								>
+									⚠ {error}
+								</motion.span>
+							</motion.div>
+						)}
+					</AnimatePresence>
+				</div>
+			);
+		}
+
+		const styles = {
+			radio: cn(
+				"overflow-hidden relative border-2 cursor-pointer",
+				"checked:border-blue!",
+				"after:size-full after:content-[''] after:bg-blue after:rounded-full after:scale-0 after:all",
+				"checked:after:scale-50",
+			),
+		};
+
+		const variantClass = styles[type as keyof typeof styles];
+
+		const inputClass = cn(
+			"outline-none",
+			variantClass,
+			!visibility && "sr-only",
+			className,
 		);
-
-		const handleChange = useCallback(
-			(event: ChangeEvent<HTMLInputElement>) => {
-				setHasValue(event.target.value.length > 0);
-				onChange?.(event);
-			},
-			[onChange],
-		);
-
-		const shouldShrink = isFocused || hasValue;
-
-		// ================================================================
-		//     Classes
-		// ================================================================
-
-		const wrapperClasses = cn(
-			"flex overflow-hidden relative flex-row items-center w-full h-14 rounded-4xl transition-colors duration-250",
-			"group",
-			wrapperClassName,
-		);
-
-		const inputClasses = cn(
-			"pt-3 pr-6 pl-12 w-full h-full text-base text-medium rounded-4xl border-1 outline-none transition-colors duration-250",
-			"text-d1 dark:text-l1 bg-transparent border-ld group-hover:border-blue",
-			inputClassName,
-		);
-
-		const dynamicIconClasses = cn(
-			"absolute left-4 shrink-0 w-6 h-6 transition-colors duration-250 cursor-pointer",
-			"text-d1 group-hover:text-blue! dark:text-l1",
-			dynamicIconClassName,
-		);
-
-		const labelClasses = cn(
-			"absolute top-1/2 left-0 left-12 z-100 text-base transition-all duration-250 -translate-y-1/2 pointer-events-none",
-			"text-ld group-hover:text-blue!",
-
-			shouldShrink && "top-3 text-xs",
-
-			isFocused && "text-d1 dark:text-l1",
-			!isFocused && hasValue && "text-d1 dark:text-l1",
-			labelClassName,
-		);
-
-		const rightContentClasses = cn(
-			"flex absolute top-1/2 right-2 z-10 gap-1 items-center -translate-y-1/2",
-		);
-
-		// ================================================================
-		//     レンダリング
-		// ================================================================
 
 		return (
-			<motion.div
-				className={wrapperClasses}
-				ref={wrapperRef}
-				onMouseDown={handleWrapperMouseDown}
-			>
-				<input
-					className={inputClasses}
-					ref={ref}
-					onFocus={handleFocus}
-					onBlur={handleBlur}
-					onChange={handleChange}
-					{...props}
-				/>
-				<DynamicIcon className={dynamicIconClasses} />
-				<span className={labelClasses}>{label}</span>
-				{rightContent && (
-					<div className={rightContentClasses}>{rightContent}</div>
-				)}
-				<AnimatePresence>
-					{ripple && (
-						<motion.span
-							key={ripple.key}
-							initial={{
-								x: ripple.x,
-								y: ripple.y,
-								scale: 0,
-								opacity: 0.5,
-							}}
-							animate={{
-								scale: ripple.scale,
-								opacity: 0,
-								transition: {
-									duration: 1,
-									ease: "easeOut",
-								},
-							}}
-							exit={{
-								opacity: 0,
-								transition: { duration: 0.2 },
-							}}
-							onAnimationComplete={() => {
-								setRipple(null);
-							}}
-							style={{
-								position: "absolute",
-								borderRadius: "50%",
-								backgroundColor: "oklch(0.5 0 0)",
-								width: "2rem",
-								height: "2rem",
-								pointerEvents: "none",
-								translateX: "-50%",
-								translateY: "-50%",
-							}}
-						/>
-					)}
-				</AnimatePresence>
-			</motion.div>
+			<input
+				{...props}
+				ref={ref}
+				type={type}
+				name={name}
+				value={value}
+				onChange={onChange}
+				className={inputClass}
+			/>
 		);
 	},
 );
+
+Input.displayName = "Input";

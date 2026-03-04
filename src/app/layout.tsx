@@ -1,8 +1,9 @@
-/* src\app\layout.tsx */
 import type { Metadata, Viewport } from "next";
-import Client from "./client";
-import Server from "./server";
-import "./globals.css";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
+import Client from "@/app/client";
+import Server from "@/app/server";
+import "@/app/globals.css";
 
 export const viewport: Viewport = {
 	width: "device-width",
@@ -23,21 +24,31 @@ export const metadata: Metadata = {
 	},
 };
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const locale = await getLocale();
+	const messages = await getMessages();
+
 	return (
-		<html lang="ja" suppressHydrationWarning>
+		<html lang={locale} data-scroll-behavior="smooth" suppressHydrationWarning>
 			<head>
 				<Server />
 			</head>
 			<body
-				style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}
-				className="overflow-hidden"
+				style={{
+					fontFamily: "'Zen Maru Gothic', sans-serif",
+					fontSize: "16px",
+					lineHeight: "calc(1.5 / 1)",
+					fontWeight: "500",
+				}}
+				className="overflow-hidden bg-l1 text-d1 dark:bg-d1 dark:text-l1"
 			>
-				<Client>{children}</Client>
+				<NextIntlClientProvider messages={messages}>
+					<Client>{children}</Client>
+				</NextIntlClientProvider>
 			</body>
 		</html>
 	);

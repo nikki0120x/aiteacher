@@ -1,49 +1,48 @@
-/* src\components\ui\button.tsx */
 import type React from "react";
+import { forwardRef } from "react";
 import { Ripple, useRipple } from "@/components/parts/ripple";
-import { cn } from "@/utils/cn";
+import { cn } from "@/models/cn";
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
+export interface ButtonProps
+	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+	ripple?: boolean;
+}
 
-export const Button = ({
-	children,
-	onClick,
-	className,
-	...props
-}: ButtonProps) => {
-	const { ripples, triggerRipple } = useRipple();
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+	(
+		{ type = "button", ripple = true, onClick, className, children, ...props },
+		ref,
+	) => {
+		const { ripples, triggerRipple } = useRipple();
 
-	const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-		triggerRipple(e);
+		const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+			if (ripple) {
+				triggerRipple(e);
+			}
 
-		if (onClick) {
-			onClick(e);
-		}
-	};
+			onClick?.(e);
+		};
 
-	// ================================================================
-	//     Classes
-	// ================================================================
+		const buttonClass = cn(
+			"overflow-hidden relative outline-none cursor-pointer",
+			"focus-visible:ring-2 focus-visible:ring-blue",
+			"active:[&>*:not(:first-child)]:scale-75",
+			className,
+		);
 
-	const buttonClasses = cn(
-		"flex overflow-hidden relative outline-none focus-visible:ring-2 focus-visible:ring-blue backdrop-blur-lg transition-colors duration-250 ease-in-out cursor-pointer group",
-		"[&>*:not(:first-child)]:transition-transform [&>*:not(:first-child)]:duration-250 [&>*:not(:first-child)]:ease-in-out active:[&>*:not(:first-child)]:scale-75",
-		className,
-	);
+		return (
+			<button
+				{...props}
+				ref={ref}
+				type={type}
+				onClick={handleClick}
+				className={buttonClass}
+			>
+				{ripple && <Ripple ripples={ripples} />}
+				{children}
+			</button>
+		);
+	},
+);
 
-	// ================================================================
-	//     レンダリング
-	// ================================================================
-
-	return (
-		<button
-			type="button"
-			className={buttonClasses}
-			onClick={handleClick}
-			{...props}
-		>
-			<Ripple ripples={ripples} />
-			{children}
-		</button>
-	);
-};
+Button.displayName = "Button";

@@ -1,29 +1,41 @@
-/* src\app\globals.css */
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 @plugin "@tailwindcss/typography";
-@plugin "./hero.ts";
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 @custom-variant dark (&:is(.dark *));
 
 @theme {
   --default-font: "Zen Maru Gothic", system-ui;
+
   --color-l1: hsl(0, 0%, 95%);
   --color-l2: hsl(0, 0%, 90%);
   --color-l3: hsl(0, 0%, 85%);
   --color-l4: hsl(0, 0%, 80%);
   --color-l5: hsl(0, 0%, 75%);
+  --color-l6: hsl(0, 0%, 70%);
+  --color-l7: hsl(0, 0%, 65%);
+  --color-l8: hsl(0, 0%, 60%);
+  --color-l9: hsl(0, 0%, 55%);
   --color-d1: hsl(0, 0%, 5%);
   --color-d2: hsl(0, 0%, 10%);
   --color-d3: hsl(0, 0%, 15%);
   --color-d4: hsl(0, 0%, 20%);
   --color-d5: hsl(0, 0%, 25%);
-  --color-ld: hsl(0, 0%, 50%);
+  --color-d6: hsl(0, 0%, 30%);
+  --color-d7: hsl(0, 0%, 35%);
+  --color-d8: hsl(0, 0%, 40%);
+  --color-d9: hsl(0, 0%, 45%);
+
+  --color-white: hsl(0, 0%, 100%);
+  --color-gray: hsl(0, 0%, 50%);
+  --color-black: hsl(0, 0%, 0%);
+  --color-red: hsl(15, 100%, 50%);
+  --color-orange: hsl(30, 100%, 50%);
+  --color-yellow: hsl(45, 100%, 50%);
+  --color-green: hsl(135, 100%, 50%);
   --color-blue: hsl(195, 100%, 50%);
-  --color-orange: hsl(25, 100%, 50%);
-  --color-red: hsl(345, 100%, 50%);
-  --color-yellow: hsl(50, 100%, 50%);
-  --color-lime: hsl(84, 100%, 50%);
+  --color-indigo: hsl(255, 100%, 50%);
+  --color-violet: hsl(300, 100%, 50%);
 }
 
 html,
@@ -31,15 +43,34 @@ body,
 *,
 *::before,
 *::after {
-  @apply box-border antialiased appearance-none scroll-smooth;
+  @apply box-border antialiased appearance-none;
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-body {
-  @apply text-d1 bg-l1 dark:text-l1 dark:bg-d1;
-  overflow: hidden;
+html[data-scroll-behavior="smooth"] {
+  scroll-behavior: smooth;
+}
+
+h1 {
+  @apply text-left text-3xl font-black text-d1 dark:text-l1 colors;
+}
+
+h2 {
+  @apply text-left text-xl font-bold text-d1 dark:text-l1 colors;
+}
+
+p {
+  @apply text-left text-base font-medium text-d1 dark:text-l1 colors;
+}
+
+ul {
+  @apply list-disc pl-8;
+}
+
+hr {
+  @apply my-4 w-full h-1 rounded-full text-d1 dark:text-l1 colors;
 }
 
 *::selection {
@@ -57,6 +88,12 @@ body {
 }
 .dark *::-webkit-scrollbar-track {
   border-radius: 1rem;
+  background: var(--color-d1);
+}
+*::-webkit-scrollbar-corner {
+  background: var(--color-l1);
+}
+.dark *::-webkit-scrollbar-corner {
   background: var(--color-d1);
 }
 *::-webkit-scrollbar-thumb {
@@ -89,18 +126,47 @@ body {
   display: none;
 }
 
-.no-select {
-  user-select: none;
-  -webkit-user-select: none;
+@utility all {
+  @apply transition-all duration-500 ease-out;
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+@utility colors {
+  @apply transition-colors duration-500 ease-out;
 }
 
-.no-after-content *::after {
-  content: none;
+@utility transform {
+  @apply transition-transform duration-500 ease-out;
 }
-.no-after-content [class*="shadow-"] {
-  box-shadow: none;
+
+@utility none {
+  @apply transition-none;
+}
+
+@utility animate-caret {
+  animation: caret-fade 5s infinite linear;
+}
+
+@keyframes caret-fade {
+  0%,
+  100% {
+    caret-color: var(--color-red);
+  }
+  14.3% {
+    caret-color: var(--color-orange);
+  }
+  28.6% {
+    caret-color: var(--color-yellow);
+  }
+  42.9% {
+    caret-color: var(--color-green);
+  }
+  57.2% {
+    caret-color: var(--color-blue);
+  }
+  71.5% {
+    caret-color: var(--color-indigo);
+  }
+  85.8% {
+    caret-color: var(--color-violet);
+  }
 }

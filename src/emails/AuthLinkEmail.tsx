@@ -1,7 +1,6 @@
-/* src\emails\AuthLinkEmail.tsx */
+// emails/AuthCodeEmail.tsx
 import {
 	Body,
-	Button,
 	Container,
 	Head,
 	Html,
@@ -11,17 +10,17 @@ import {
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 
-interface AuthLinkEmailProps {
-	verificationUrl?: string;
+interface AuthCodeEmailProps {
+	validationCode?: string;
 }
 
-export const PreviewProps: Required<AuthLinkEmailProps> = {
-	verificationUrl: "https://example.com/verify?token=123",
+export const PreviewProps: Required<AuthCodeEmailProps> = {
+	validationCode: "123456",
 };
 
-const AuthLinkEmail = ({
-	verificationUrl = PreviewProps.verificationUrl,
-}: AuthLinkEmailProps) => (
+const AuthCodeEmail = ({
+	validationCode = PreviewProps.validationCode,
+}: AuthCodeEmailProps) => (
 	<Html lang="ja" dir="ltr">
 		<Head>
 			<meta charSet="UTF-8" />
@@ -37,36 +36,33 @@ const AuthLinkEmail = ({
 							width="128"
 							className="mx-auto"
 						/>
-						<Text className="text-2xl font-black text-sky-500 text-center">
-							アカウント認証
+						<Text className="text-center font-black text-2xl text-sky-500">
+							アカウント認証コード
 						</Text>
 					</Section>
-					<Section className="mb-3 w-full rounded-4xl bg-slate-100">
-						<Text className="m-4 text-base font-medium text-slate-950">
+					<Section className="mb-3 w-full rounded-4xl bg-slate-100 text-center">
+						<Text className="m-4 font-medium text-base text-slate-950 text-left">
 							親愛なるユーザー様へ
 							<br />
 							<br />
 							FoCalrinaへのご登録ありがとうございます！
 							<br />
-							下の「認証」ボタンをクリックして、アカウントの認証を完了してください。
-							<br />
+							登録画面にて以下の6桁の認証コードを入力して、アカウントの作成を完了してください。
+						</Text>
+						<Text className="my-6 font-black text-4xl text-sky-500 tracking-widest text-center">
+							{validationCode}
+						</Text>
+						<Text className="m-4 font-medium text-base text-slate-950 text-left">
 							今後ともよろしくお願いいたします。
-							<br />
 							<br />
 							FoCalrina より
 						</Text>
 					</Section>
 					<Section className="w-full">
-						<Button
-							href={verificationUrl}
-							className="py-4 w-full text-2xl font-black text-slate-950 text-center rounded-4xl bg-sky-500"
-						>
-							認証
-						</Button>
-						<Text className="text-sm text-slate-500 text-center">
-							※このリンクは
-							<span className="text-sky-500"> 1時間 </span>
-							で期限切れになります。
+						<Text className="text-center text-slate-500 text-sm">
+							※このコードは
+							<span className="text-sky-500"> 10分間 </span>
+							有効です。
 							<br />
 							※このメールへの返信はできません。
 						</Text>
@@ -77,4 +73,4 @@ const AuthLinkEmail = ({
 	</Html>
 );
 
-export default AuthLinkEmail;
+export default AuthCodeEmail;

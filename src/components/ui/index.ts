@@ -1,5 +1,3 @@
-/* src\components\ui\index.ts */
 export * from "./button";
-export * from "./contextmenu";
-export * from "./Input";
-export * from "./InputTips";
+export * from "./input";
+export * from "./label";

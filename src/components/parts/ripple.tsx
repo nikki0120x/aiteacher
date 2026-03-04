@@ -1,7 +1,6 @@
-/* src\components\parts\ripple.tsx */
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { cn } from "@/utils/cn";
+import { cn } from "@/models/cn";
 
 type RippleType = {
 	x: number;
@@ -59,7 +58,7 @@ export const useRipple = () => {
 		if (ripples.length > 0) {
 			const timer = setTimeout(() => {
 				setRipples((prev) => prev.slice(1));
-			}, 1000);
+			}, 500);
 
 			return () => clearTimeout(timer);
 		}
@@ -87,10 +86,9 @@ const RippleEffect = ({
 	return (
 		<span
 			className={cn(
-				"overflow-hidden absolute z-1000 rounded-full pointer-events-none",
-				"transition-all duration-500 ease-out",
+				"all pointer-events-none absolute z-1000 overflow-hidden rounded-full",
 				color,
-				isAnimating ? "opacity-0 scale-100" : "opacity-50 scale-0",
+				isAnimating ? "scale-100 opacity-0" : "scale-0 opacity-50",
 			)}
 			style={{
 				width: size,

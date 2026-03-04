@@ -1,41 +1,12 @@
-/* src\app\client.tsx */
 "use client";
-import { HeroUIProvider } from "@heroui/react";
-import { ToastProvider } from "@heroui/toast";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
 import NProgress from "nprogress";
-import { Suspense, useEffect, useState } from "react";
-import Header from "@/components/layout/header";
-import Toolbar from "@/components/layout/toolbar";
-import AuthModal from "@/features/auth/components/auth-modal";
-
-function LoadingOverlay() {
-	const [isLoading, setIsLoading] = useState(true);
-
-	useEffect(() => {
-		const timer = setTimeout(() => setIsLoading(false));
-		return () => clearTimeout(timer);
-	}, []);
-
-	return (
-		<AnimatePresence>
-			{isLoading && (
-				<motion.div
-					key="loading-overlay"
-					initial={{ opacity: 1 }}
-					animate={{ opacity: 1 }}
-					exit={{ opacity: 0 }}
-					transition={{ duration: 0.25, ease: "easeInOut" }}
-					className="fixed inset-0 z-1000 w-dvw h-dvh cursor-wait bg-l1 dark:bg-d1"
-				/>
-			)}
-		</AnimatePresence>
-	);
-}
+import { Suspense, useEffect } from "react";
+import Header from "@/components/app/layout/header";
+import Sidebar from "@/components/app/layout/sidebar";
 
 function TopProgress() {
 	const pathname = usePathname();
@@ -72,33 +43,23 @@ export default function Client({ children }: { children: React.ReactNode }) {
 			<Suspense fallback={null}>
 				<TopProgress />
 			</Suspense>
-			<ThemeProvider
-				attribute="class"
-				defaultTheme="system"
-				enableSystem
-				disableTransitionOnChange
-			>
-				<HeroUIProvider>
-					<LoadingOverlay />
-					<div className="flex overflow-hidden relative w-full h-dvh">
-						<div
-							className="flex overflow-hidden relative flex-col flex-1 transition-all duration-250"
-							style={{
-								paddingBottom: "env(safe-area-inset-bottom)",
-							}}
-						>
-							<Header />
-							<div className="flex relative flex-row flex-1 min-w-0">
-								<Toolbar />
-								<main className="flex overflow-hidden relative flex-col size-full">
-									<ToastProvider placement="top-center" />
-									{children}
-								</main>
-							</div>
+			<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+				<div className="relative flex h-dvh w-dvw overflow-hidden">
+					<div
+						className="all relative flex flex-1 flex-col overflow-hidden"
+						style={{
+							paddingBottom: "env(safe-area-inset-bottom)",
+						}}
+					>
+						<Header />
+						<div className="relative flex min-w-0 flex-1 flex-row">
+							<Sidebar />
+							<main className="relative flex size-full flex-col overflow-hidden">
+								{children}
+							</main>
 						</div>
 					</div>
-					<AuthModal />
-				</HeroUIProvider>
+				</div>
 			</ThemeProvider>
 			<Analytics />
 			<SpeedInsights />

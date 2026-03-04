@@ -1,0 +1,48 @@
+{
+	"bar": {
+		"dashboard": "ダッシュボード",
+		"questions": "質問",
+		"scoring": "採点",
+		"feedback": "報告",
+		"settings": "設定"
+	},
+	"options": {
+		"menu": {
+			"notifications": "通知",
+			"theme": "テーマ",
+			"language": "言語",
+			"location": "地域",
+			"settings": "設定"
+		},
+		"notification": {
+			"all": "全部",
+			"unread": "未読",
+			"read": "既読",
+			"type": "種類"
+		},
+		"theme": {
+			"system": "システム",
+			"light": "ライト",
+			"dark": "ダーク"
+		},
+		"language": {
+			"en-US": {
+				"native": "English (United States)",
+				"name": "英語 (アメリカ)"
+			},
+			"ja-JP": {
+				"native": "日本語 (日本)",
+				"name": "日本語 (日本)"
+			}
+		},
+		"location": {
+			"US": "アメリカ",
+			"JP": "日本"
+		},
+		"user": {
+			"signUp": "登録",
+			"signIn": "接続",
+			"signOut": "切断"
+		}
+	}
+}

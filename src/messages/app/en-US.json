@@ -1,0 +1,48 @@
+{
+	"bar": {
+		"dashboard": "Dashboard",
+		"questions": "Questions",
+		"scoring": "Scoring",
+		"feedback": "Feedback",
+		"settings": "Settings"
+	},
+	"options": {
+		"menu": {
+			"notifications": "Notifications",
+			"theme": "Theme",
+			"language": "Language",
+			"location": "Location",
+			"settings": "Settings"
+		},
+		"notification": {
+			"all": "All",
+			"unread": "Unread",
+			"read": "Read",
+			"type": "Type"
+		},
+		"theme": {
+			"system": "System",
+			"light": "Light",
+			"dark": "Dark"
+		},
+		"language": {
+			"en-US": {
+				"native": "English (United States)",
+				"name": "English (United States)"
+			},
+			"ja-JP": {
+				"native": "日本語 (日本)",
+				"name": "Japanese (Japan)"
+			}
+		},
+		"location": {
+			"US": "United States",
+			"JP": "Japan"
+		},
+		"user": {
+			"signUp": "Sign Up",
+			"signIn": "Sign In",
+			"signOut": "Sign Out"
+		}
+	}
+}

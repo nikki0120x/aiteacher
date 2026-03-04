@@ -1,10 +1,9 @@
-/* src\app\server.tsx */
 export default function Server() {
 	const schemaMarkup = {
 		"@context": "https://schema.org",
 		"@type": "WebSite",
 		name: "AITeacher",
-		url: "https://www.focalrina.com/",
+		url: "https://www.aiteacher.focalrina.com/",
 		alternateName: "aiteacher",
 	};
 
@@ -21,7 +20,7 @@ export default function Server() {
 			<meta charSet="UTF-8" />
 			<meta property="og:site_name" content="AITeacher" />
 			<meta property="og:title" content="AITeacher" />
-			<meta property="og:url" content="https://www.focalrina.com/" />
+			<meta property="og:url" content="https://www.aiteacher.focalrina.com/" />
 			<meta property="og:type" content="website" />
 			<meta property="og:description" content="勉強に、浪漫と好奇心を。" />
 			<script

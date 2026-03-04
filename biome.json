@@ -21,12 +21,26 @@
 			},
 			"a11y": {
 				"useSemanticElements": "off",
-				"noStaticElementInteractions": "off"
+				"noStaticElementInteractions": "off",
+				"noLabelWithoutControl": "off"
 			},
 			"correctness": {
 				"noUnusedImports": "warn",
 				"noUnusedVariables": "warn",
 				"useExhaustiveDependencies": "off"
+			},
+			"nursery": {
+				"useSortedClasses": {
+					"fix": "safe",
+					"level": "warn",
+					"options": {
+						"functions": [
+							"twMerge",
+							"twJoin",
+							"tv"
+						]
+					}
+				}
 			}
 		}
 	},
