@@ -1,3 +1,3 @@
-export * from "./button";
-export * from "./input";
-export * from "./label";
+export * from "@/components/ui/button";
+export * from "@/components/ui/input";
+export * from "@/components/ui/label";
