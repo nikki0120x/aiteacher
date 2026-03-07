@@ -1,4 +1,3 @@
-// app/actions/auth-actions.ts を新規作成
 "use server";
 
 import { db } from "@/lib/db";

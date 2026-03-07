@@ -1,24 +1,27 @@
 "use client";
 import { useEffect, useRef } from "react";
 
+declare global {
+	interface Window {
+		webkitAudioContext: typeof AudioContext;
+	}
+}
+
 export const VoiceVisualizer = ({ isListening }: { isListening: boolean }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
-	// 音声処理系
 	const audioContextRef = useRef<AudioContext | null>(null);
 	const analyserRef = useRef<AnalyserNode | null>(null);
 	const animationFrameRef = useRef<number | null>(null);
 	const streamRef = useRef<MediaStream | null>(null);
 
-	// アニメーション用データ
 	const barsRef = useRef<
 		{ id: number; height: number; x: number; spawnTime: number }[]
 	>([]);
 	const lastTimeRef = useRef<number>(0);
 	const lastSpawnTimeRef = useRef<number>(0);
 
-	// --- 設定 ---
 	const BAR_WIDTH = 2;
 	const GAP = 4;
 	const SPEED = 160;
@@ -102,7 +105,7 @@ export const VoiceVisualizer = ({ isListening }: { isListening: boolean }) => {
 					streamRef.current = stream;
 
 					const AudioContextClass =
-						window.AudioContext || (window as any).webkitAudioContext;
+						window.AudioContext || window.webkitAudioContext;
 					const audioContext = new AudioContextClass();
 
 					const analyser = audioContext.createAnalyser();
@@ -204,7 +207,7 @@ export const VoiceVisualizer = ({ isListening }: { isListening: boolean }) => {
 	return (
 		<div
 			ref={containerRef}
-			className="relative size-full overflow-hidden text-red"
+			className="size-full overflow-hidden text-red"
 		>
 			<canvas
 				ref={canvasRef}

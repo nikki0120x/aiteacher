@@ -216,6 +216,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 				"after:size-full after:content-[''] after:bg-blue after:rounded-full after:scale-0 after:all",
 				"checked:after:scale-50",
 			),
+			file: "hidden",
 		};
 
 		const variantClass = styles[type as keyof typeof styles];
@@ -232,6 +233,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 				{...props}
 				ref={ref}
 				type={type}
+				id={id}
 				name={name}
 				value={value}
 				onChange={onChange}

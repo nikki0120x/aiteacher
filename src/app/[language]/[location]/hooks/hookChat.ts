@@ -30,6 +30,7 @@ import {
 	type USER_STATUS_MAP,
 	UserMessageSchema,
 } from "@/models/modelChat";
+import { useLocale } from "next-intl";
 
 //  ================================================================
 //      ドラッグアンドドロップ
@@ -132,13 +133,33 @@ export const usePageTitle = (ref: React.RefObject<HTMLElement | null>) => {
 };
 
 //  ================================================================
+//      拡張コンテンツ
+//  ================================================================
+
+export const useExtensionMenu = () => {
+	const [activeMenu, setActiveMenu] = useState<"none" | "plus" | "settings" | "list">("none");
+
+	const toggleMenu = useCallback((menu: "plus" | "settings" | "list") => {
+		setActiveMenu((prev) => (prev === menu ? "none" : menu));
+	}, []);
+
+	return {
+		states: { activeMenu },
+		actions: { toggleMenu },
+	};
+};
+
+//  ================================================================
 //      音声入力
 //  ================================================================
 
 export const useVoiceInput = (
 	inputText: InputText,
 	setInputText: React.Dispatch<React.SetStateAction<InputText>>,
+	textareaRef?: React.RefObject<HTMLTextAreaElement | null>,
+	stopListeningButtonRef?: React.RefObject<HTMLButtonElement | null>,
 ) => {
+	const currentLocale = useLocale();
 	const recognitionRef = useRef<SpeechRecognition | null>(null);
 	const interimTextRef = useRef("");
 	const isManualStopRef = useRef(false);
@@ -162,51 +183,62 @@ export const useVoiceInput = (
 		}
 
 		const recognition = new SpeechRecognitionConstructor();
-		recognition.lang = "ja-JP";
+		recognition.lang = currentLocale;
 		recognition.continuous = true;
 		recognition.interimResults = true;
-
 		isManualStopRef.current = false;
 
 		//	開始
 		recognition.onstart = () => {
+			if (recognitionRef.current !== recognition) {
+				recognition.stop();
+				return;
+			}
+
+			if (isManualStopRef.current) {
+				recognition.stop();
+				return;
+			}
+
 			setIsListening(true);
 		};
 
 		//	終了
 		recognition.onend = () => {
+			if (recognitionRef.current !== recognition) return;
+
 			if (!isManualStopRef.current) {
 				try {
 					recognition.start();
-
 					return;
-				} catch (_e) {
+				} catch {
 					recognitionRef.current = null;
 					interimTextRef.current = "";
-
 					setIsListening(false);
 					setInterimText("");
 				}
 			} else {
 				recognitionRef.current = null;
 				interimTextRef.current = "";
-
 				setIsListening(false);
 				setInterimText("");
 			}
 		};
 
 		//  失敗
-		recognition.onerror = () => {
+		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+			if (recognitionRef.current !== recognition) return;
+			if (event.error === "aborted") return;
+
 			recognitionRef.current = null;
 			interimTextRef.current = "";
-
 			setIsListening(false);
 			setInterimText("");
 		};
 
 		//	結果
 		recognition.onresult = (event: SpeechRecognitionEvent) => {
+			if (recognitionRef.current !== recognition) return;
 			if (Date.now() < lastClearTimeRef.current) return;
 
 			let finalTranscript = "";
@@ -235,35 +267,33 @@ export const useVoiceInput = (
 
 		recognition.start();
 		recognitionRef.current = recognition;
-	}, [setInputText]);
+	}, [currentLocale, setInputText]);
 
 	//	音声認識停止
 	const stopListening = useCallback(() => {
+		isManualStopRef.current = true;
+		setIsListening(false);
+
 		if (recognitionRef.current) {
-			isManualStopRef.current = true;
-
-			if (interimTextRef.current) {
-				setInputText((prev) => ({
-					...prev,
-					inputText: prev.inputText + interimTextRef.current,
-				}));
-
-				interimTextRef.current = "";
-				setInterimText("");
-			}
-
-			recognitionRef.current.abort();
+			recognitionRef.current.stop();
 		}
-	}, [setInputText]);
+	}, []);
 
 	//	音声認識切替
 	const toggleListening = useCallback(() => {
-		if (recognitionRef.current) {
+		if (isListening) {
 			stopListening();
 		} else {
 			startListening();
 		}
-	}, [stopListening, startListening]);
+	}, [isListening, stopListening, startListening]);
+
+	//	音声認識初期化
+	const resetListening = useCallback(() => {
+		if (recognitionRef.current) {
+			recognitionRef.current.abort();
+		}
+	}, []);
 
 	//	表示用テキスト
 	const displayText = useMemo(
@@ -271,16 +301,24 @@ export const useVoiceInput = (
 		[inputText.inputText, interimText],
 	);
 
+	useLayoutEffect(() => {
+		if (isListening) {
+			stopListeningButtonRef?.current?.focus();
+		} else {
+			textareaRef?.current?.focus();
+		}
+	}, [isListening, stopListeningButtonRef, textareaRef]);
+
 	const actions = useMemo(
 		() => ({
 			setIsListening,
 			setInterimText,
-
 			startListening,
 			stopListening,
 			toggleListening,
+			resetListening,
 		}),
-		[startListening, stopListening, toggleListening],
+		[startListening, stopListening, toggleListening, resetListening],
 	);
 
 	return {
@@ -291,7 +329,6 @@ export const useVoiceInput = (
 		states: {
 			isListening,
 			interimText,
-
 			displayText,
 		},
 		actions,
@@ -305,6 +342,7 @@ export const useVoiceInput = (
 export const useTextarea = (
 	displayText: string,
 	ref: React.RefObject<HTMLTextAreaElement | null>,
+	isExtensionOpen: boolean
 ) => {
 	const [textareaHeight, setTextareaHeight] = useState<number | string>("auto");
 	const [singleLineHeight, setSingleLineHeight] = useState<number>(0);
@@ -348,14 +386,15 @@ export const useTextarea = (
 
 		const textareaSpace =
 			typeof textareaHeight === "number" ? textareaHeight : 0;
-		const BLANK_SPACE = 98;
+
+		const BLANK_SPACE = 98 + (isExtensionOpen ? 200 : 0);
 
 		if (textareaSpace > 0) {
 			return textareaSpace + BLANK_SPACE;
 		}
 
 		return "auto";
-	}, [isFullTextarea, textareaHeight]);
+	}, [isFullTextarea, textareaHeight, isExtensionOpen]);
 
 	const actions = useMemo(
 		() => ({
@@ -391,6 +430,9 @@ export const useInputTextClear = (
 	setInputText: React.Dispatch<React.SetStateAction<InputText>>,
 	setInterimText: React.Dispatch<React.SetStateAction<string>>,
 
+	isListening: boolean,
+	resetListening: () => void,
+
 	textareaRef?: React.RefObject<HTMLTextAreaElement | null>,
 	setIsFullTextarea?: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
@@ -401,6 +443,10 @@ export const useInputTextClear = (
 
 		setInputText(InputTextSchema.createDefault());
 		setInterimText("");
+
+		if (isListening) {
+			resetListening();
+		}
 
 		if (textareaRef?.current) {
 			textareaRef.current.focus();
@@ -414,6 +460,8 @@ export const useInputTextClear = (
 		interimTextRef,
 		setInputText,
 		setInterimText,
+		isListening,
+		resetListening,
 		textareaRef,
 		setIsFullTextarea,
 	]);
@@ -425,6 +473,7 @@ export const useInputTextClear = (
 		},
 	};
 };
+
 //  ================================================================
 //      チャット
 //  ================================================================

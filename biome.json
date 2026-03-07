@@ -28,19 +28,6 @@
 				"noUnusedImports": "warn",
 				"noUnusedVariables": "warn",
 				"useExhaustiveDependencies": "off"
-			},
-			"nursery": {
-				"useSortedClasses": {
-					"fix": "safe",
-					"level": "warn",
-					"options": {
-						"functions": [
-							"twMerge",
-							"twJoin",
-							"tv"
-						]
-					}
-				}
 			}
 		}
 	},

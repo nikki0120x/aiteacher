@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useRef } from "react";
 import {
 	useChat,
 	useDragAndDrop,
@@ -6,6 +6,7 @@ import {
 	usePageTitle,
 	useTextarea,
 	useVoiceInput,
+	useExtensionMenu,
 } from "@/app/[language]/[location]/hooks/hookChat";
 
 export const useChatView = () => {
@@ -16,6 +17,7 @@ export const useChatView = () => {
 	const dragAndDropTextRef = useRef<HTMLElement>(null);
 	const pageTitleTextRef = useRef<HTMLElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const stopListeningButtonRef = useRef<HTMLButtonElement>(null);
 
 	//  ================================================================
 	//      States & Actions
@@ -58,6 +60,12 @@ export const useChatView = () => {
 	//  ページタイトル
 	usePageTitle(pageTitleTextRef);
 
+	//  拡張コンテンツ
+	const {
+		states: { activeMenu },
+		actions: { toggleMenu },
+	} = useExtensionMenu();
+
 	//  音声入力
 	const {
 		refs: { interimTextRef, lastClearTimeRef },
@@ -68,8 +76,9 @@ export const useChatView = () => {
 			startListening,
 			stopListening,
 			toggleListening,
+			resetListening,
 		},
-	} = useVoiceInput(inputText, setInputText);
+	} = useVoiceInput(inputText, setInputText, textareaRef, stopListeningButtonRef);
 
 	//  テキストエリア
 	const {
@@ -78,7 +87,6 @@ export const useChatView = () => {
 			singleLineHeight,
 			isOverLimit,
 			isFullTextarea,
-
 			containerHeight,
 		},
 		actions: {
@@ -87,7 +95,7 @@ export const useChatView = () => {
 			setIsOverLimit,
 			setIsFullTextarea,
 		},
-	} = useTextarea(displayText, textareaRef);
+	} = useTextarea(displayText, textareaRef, activeMenu !== "none");
 
 	//  入力テキスト削除
 	const {
@@ -97,15 +105,10 @@ export const useChatView = () => {
 		interimTextRef,
 		setInputText,
 		setInterimText,
+		isListening,
+		resetListening,
 		textareaRef,
 		setIsFullTextarea,
-	);
-
-	const stopButtonCallbackRef = useCallback(
-		(node: HTMLButtonElement | null) => {
-			if (node) node.focus();
-		},
-		[],
 	);
 
 	return {
@@ -113,8 +116,7 @@ export const useChatView = () => {
 			dragAndDropTextRef,
 			pageTitleTextRef,
 			textareaRef,
-
-			stopButtonCallbackRef,
+			stopListeningButtonRef
 		},
 		states: {
 			userStatus,
@@ -126,6 +128,7 @@ export const useChatView = () => {
 			turns,
 			isSent,
 			dragInfo,
+			activeMenu,
 			isListening,
 			interimText,
 			displayText,
@@ -149,6 +152,8 @@ export const useChatView = () => {
 			handleDragEnter,
 			handleDragLeave,
 			handleDrop,
+			handleUploadAndConvert,
+			toggleMenu,
 			setIsListening,
 			setInterimText,
 			startListening,

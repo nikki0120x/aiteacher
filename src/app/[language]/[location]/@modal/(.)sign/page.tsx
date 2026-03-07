@@ -17,7 +17,7 @@ export default function SignModal() {
     };
 
     return (
-        <div className="flex select-none items-center justify-center">
+        <div className="flex select-none items-center justify-center size-full absolute inset-0">
             <AnimatePresence>
                 {isModalOpen && (
                     <motion.div
@@ -40,7 +40,7 @@ export default function SignModal() {
                             exit={{ y: 32, opacity: 0, filter: "blur(1rem)" }}
                             transition={{ duration: 0.5, ease: "backOut" }}
                             style={{ originY: 0 }}
-                            className="p-2 colors absolute z-1000 flex lg:w-md max-lg:w-full max-h-[calc(100%-1rem)] lg:m-auto lg:h-fit lg:inset-0 max-lg:bottom-0 flex-col items-center justify-center lg:rounded-4xl max-lg:rounded-t-4xl lg:border max-lg:border-t border-l5 bg-l1 shadow-lg dark:border-d5 dark:bg-d1"
+                            className="p-2 colors absolute z-1000 flex lg:w-md max-lg:w-full max-h-[calc(100%-1rem)] lg:m-auto lg:h-fit max-lg:bottom-0 flex-col items-center justify-center lg:rounded-4xl max-lg:rounded-t-4xl lg:border max-lg:border-t border-l5 bg-l1 shadow-lg dark:border-d5 dark:bg-d1"
                         >
                             <motion.div layout transition={{ duration: 0.5, ease: "backOut" }} className="flex w-full flex-row items-center justify-between p-2">
                                 <div className="flex size-10 items-center justify-center rounded-full" />
