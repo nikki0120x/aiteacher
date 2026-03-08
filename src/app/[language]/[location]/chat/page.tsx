@@ -538,9 +538,9 @@ export default function Chat() {
 															animate={{ opacity: 1, filter: "blur(0)" }}
 															exit={{ opacity: 0, filter: "blur(1rem)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
-															className="h-full min-w-full w-max flex justify-start items-center gap-4 p-4"
+															className="size-full flex justify-start items-center gap-4 p-4"
 														>
-															<div className="flex items-center justify-start gap-4 h-full">
+															<div className="flex items-center justify-start gap-4 h-full flex-none">
 																<AnimatePresence mode="popLayout">
 																	{states.inputMedia.map((media) => (
 																		<motion.div
@@ -550,7 +550,7 @@ export default function Chat() {
 																			animate={{ opacity: 1, filter: "blur(0)" }}
 																			exit={{ opacity: 0, filter: "blur(1rem)" }}
 																			transition={{ duration: 0.5, ease: "backOut" }}
-																			className="h-full aspect-square overflow-hidden bg-l2 dark:bg-d2 rounded-2xl colors relative"
+																			className="h-full aspect-square overflow-hidden bg-l2 dark:bg-d2 rounded-2xl colors relative flex-none"
 																		>
 																			<MediaPreviewItem
 																				media={media}
@@ -574,7 +574,7 @@ export default function Chat() {
 																animate={{ opacity: 1 }}
 																exit={{ opacity: 0 }}
 																transition={{ duration: 0.5, ease: "backOut" }}
-																className="flex flex-col gap-2 justify-center items-center h-full aspect-square p-4"
+																className="flex flex-col gap-2 justify-center items-center h-full aspect-square p-4 flex-none"
 															>
 																<Button className="flex w-full justify-center items-center bg-blue hover:bg-blue/75 focus-visible:bg-blue/75 rounded-full colors">
 																	<Label
