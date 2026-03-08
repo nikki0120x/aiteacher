@@ -19,6 +19,7 @@
 		"@dnd-kit/sortable": "^10.0.0",
 		"@ducanh2912/next-pwa": "^10.2.9",
 		"@emnapi/runtime": "^1.8.1",
+		"@google-cloud/vertexai": "^1.10.0",
 		"@google/genai": "^1.44.0",
 		"@neondatabase/serverless": "^1.0.2",
 		"@react-email/components": "^1.0.8",

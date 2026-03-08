@@ -626,64 +626,149 @@ export const useChat = () => {
 	const isSent = useMemo(() => turns.length > 0, [turns]);
 
 	// 送信
-	const handleSend = useCallback(() => {
+	const handleSend = useCallback(async () => {
 		if (!inputText.inputText && inputMedia.length === 0) return;
 		if (isUploading) return;
 
 		setUserStatus("sending");
 		setModelStatus("thinking");
 
-		const userMessage = UserMessageSchema.parse({
-			...UserMessageSchema.createDefault(),
-			userMessageId: uuidv7(),
-			blocks: [
-				...(inputText.inputText
-					? [{ type: "text" as const, content: inputText.inputText }]
-					: []),
-				...inputMedia.map((m) => ({
-					type: "medium" as const,
-					content: m.mediumId,
-				})),
-			],
-			media: inputMedia,
-			status: "sending" as const,
-			size:
-				new Blob([inputText.inputText]).size +
-				inputMedia.reduce((sum, m) => sum + m.size, 0),
-		});
+		const currentText = inputText.inputText;
+		const currentMediaUrls = inputMedia.map(m => m.src); // アップロード済みのURL
 
-		const modelMessage = ModelMessageSchema.parse({
+		const targetModelMessageId = uuidv7();
+		const turnId = uuidv7();
+
+		// ユーザーメッセージの生成
+		const userMessage = {
+			...UserMessageSchema.createDefault(),
+			blocks: currentText ? [{ type: "text" as const, content: currentText }] : [],
+		};
+
+		// モデルメッセージ（初期状態）の生成
+		const modelMessage = {
 			...ModelMessageSchema.createDefault(),
-			modelMessageId: uuidv7(),
-			sliderState: sliderState,
+			modelMessageId: targetModelMessageId,
+			sliderState: sliderState, // すでに数値（SliderState型）なのでそのまま渡す
 			switchState: switchState,
 			questionState: questionState,
-			status: "thinking",
-		});
+			status: "thinking" as const,
+			blocks: [],
+		};
 
-		const question = QuestionSchema.parse({
+		// 設問、ページ、ターンの階層構造を構築（parseを使わず直接組み立てる）
+		const question = {
 			...QuestionSchema.createDefault(),
-			messages: {
-				user: userMessage,
-				model: [modelMessage],
-			},
-		});
+			messages: { user: userMessage, model: [modelMessage] }
+		};
 
-		const page = PageSchema.parse({
+		const page = {
 			...PageSchema.createDefault(),
-			questions: [question],
-		});
+			questions: [question]
+		};
 
-		const turn = TurnSchema.parse({
+		const turn = {
 			...TurnSchema.createDefault(),
-			turnId: uuidv7(),
-			pages: [page],
-		});
+			turnId: turnId,
+			pages: [page]
+		};
 
+		// UI反映のために一旦ターンを追加し、入力欄をリセット
 		setTurns((prev) => [...prev, turn]);
 		setInputText(InputTextSchema.createDefault());
 		setInputMedia(MediumListSchema.createDefault());
-	}, [inputText, inputMedia, sliderState, switchState, questionState]);
+
+		try {
+			const response = await fetch("/api/chat", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					text: currentText,
+					mediaUrls: currentMediaUrls,
+				}),
+			});
+
+			if (!response.body) throw new Error("No response body");
+
+			setModelStatus("streaming");
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder("utf-8");
+			let accumulatedText = "";
+
+			// ストリーミング読み込み
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				const chunkText = decoder.decode(value, { stream: true });
+				accumulatedText += chunkText;
+
+				// deeply nested state の更新
+				setTurns((prevTurns) =>
+					prevTurns.map(t => {
+						if (t.turnId !== turnId) return t;
+						return {
+							...t,
+							pages: t.pages.map(p => ({
+								...p,
+								questions: p.questions.map(q => ({
+									...q,
+									messages: {
+										...q.messages,
+										model: q.messages.model.map(m => {
+											if (m.modelMessageId !== targetModelMessageId) return m;
+											return {
+												...m,
+												status: "streaming",
+												blocks: [
+													{ type: "text" as const, content: accumulatedText }
+												]
+											};
+										})
+									}
+								}))
+							}))
+						};
+					})
+				);
+			}
+
+			// 完了時のステータス更新
+			setModelStatus("completed");
+			setUserStatus("completed");
+
+			setTurns((prevTurns) =>
+				prevTurns.map((t) => {
+					if (t.turnId !== turnId) return t;
+					return {
+						...t,
+						pages: t.pages.map((p) => ({
+							...p,
+							questions: p.questions.map((q) => ({
+								...q,
+								messages: {
+									...q.messages,
+									model: q.messages.model.map((m) => {
+										if (m.modelMessageId !== targetModelMessageId) return m;
+										return {
+											...m,
+											status: "completed",
+											blocks: [{ type: "text" as const, content: accumulatedText }],
+										};
+									}),
+								},
+							})),
+						})),
+					};
+				})
+			);
+
+		} catch (error) {
+			console.error("Chat error:", error);
+			setModelStatus("failed");
+		}
+	}, [inputText, inputMedia, sliderState, switchState, questionState, isUploading]);
 
 	const actions = useMemo(
 		() => ({

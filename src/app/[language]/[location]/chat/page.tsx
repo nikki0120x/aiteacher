@@ -16,7 +16,9 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
-import { Button, Input, Label } from "@/components/ui";
+import { Button, Input, Label, Slider, Switch } from "@/components/ui";
+import { Virtuoso } from "react-virtuoso";
+import { useSettingsView } from "@/app/[language]/[location]/views/viewComponents";
 
 const MediaPreviewItem = ({
 	media,
@@ -158,18 +160,50 @@ const MediaPreviewItem = ({
 };
 
 export default function Chat() {
-	const { refs, states, actions } = useChatView();
+	const chat = useChatView();
+	const settings = useSettingsView();
+
+	const renderTurn = (index: number, turn: any) => {
+		const question = turn.pages[0]?.questions[0];
+		if (!question) return null;
+
+		const userBlocks = question.messages.user.blocks;
+		const modelBlocks = question.messages.model[0]?.blocks;
+
+		return (
+			<div className="flex flex-col gap-4 p-4 mb-4 text-d1 dark:text-l1">
+				<div className="flex flex-col items-end gap-2">
+					<div className="bg-blue text-l1 px-4 py-2 rounded-2xl max-w-[80%]">
+						{userBlocks.map((b: any, i: number) => (
+							<span key={`${turn.turnId}-user-block-${i}`}>{b.content || "メディアが送信されました"}</span>
+						))}
+					</div>
+				</div>
+
+				<div className="flex flex-col items-start gap-2">
+					<div className="bg-l2 dark:bg-d2 px-4 py-2 rounded-2xl">
+						{modelBlocks?.length > 0
+							? modelBlocks.map((b: any, i: number) => (
+								<span key={`${turn.turnId}-model-block-${i}`}>{b.content}</span>
+							))
+							: <span className="animate-pulse">考え中...</span>
+						}
+					</div>
+				</div>
+			</div>
+		);
+	};
 
 	return (
 		<div
-			onDragOver={actions.handleDragOver}
-			onDragEnter={actions.handleDragEnter}
-			onDragLeave={actions.handleDragLeave}
-			onDrop={actions.handleDrop}
+			onDragOver={chat.actions.handleDragOver}
+			onDragEnter={chat.actions.handleDragEnter}
+			onDragLeave={chat.actions.handleDragLeave}
+			onDrop={chat.actions.handleDrop}
 			className="colors relative inset-0 flex w-full h-[calc(100dvh-3.75rem)] select-none items-center justify-center bg-l1 p-4 dark:bg-d1"
 		>
 			<AnimatePresence>
-				{states.dragInfo && (
+				{chat.states.dragInfo && (
 					<motion.div
 						layout
 						initial={{ opacity: 0, filter: "blur(16px)", pointerEvents: "none" }}
@@ -187,10 +221,10 @@ export default function Chat() {
 							<motion.span
 								layout
 								transition={{ duration: 0.5, ease: "backOut" }}
-								ref={refs.dragAndDropTextRef}
+								ref={chat.refs.dragAndDropTextRef}
 								className="colors text-center font-black text-2xl text-blue"
 							>
-								{states.dragInfo.count}ファイルをドロップ
+								{chat.states.dragInfo.count}ファイルをドロップ
 							</motion.span>
 						</div>
 					</motion.div>
@@ -198,11 +232,28 @@ export default function Chat() {
 			</AnimatePresence>
 
 			<div className="colors flex size-full max-w-4xl flex-col items-center justify-center">
+				<AnimatePresence>
+					{chat.states.isSent && (
+						<motion.div
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							className="w-full flex-1 overflow-hidden mb-4"
+						>
+							<Virtuoso
+								data={chat.states.turns}
+								itemContent={renderTurn}
+								followOutput="smooth"
+								className="h-full scrollbar-hide"
+							/>
+						</motion.div>
+					)}
+				</AnimatePresence>
+
 				<motion.div
 					layout
 					initial={{ flex: 1, opacity: 0, filter: "blur(16px)" }}
 					animate={{
-						flex: states.isSent ? 0 : 1,
+						flex: chat.states.isSent ? 0 : 1,
 						opacity: 1,
 						filter: "blur(0px)",
 					}}
@@ -211,7 +262,7 @@ export default function Chat() {
 					className="flex size-full flex-col items-center justify-center"
 				>
 					<AnimatePresence>
-						{!states.isSent && !states.isFullTextarea && (
+						{!chat.states.isSent && !chat.states.isFullTextarea && (
 							<motion.div
 								layout
 								initial={{ height: 0, opacity: 0, filter: "blur(16px)" }}
@@ -242,7 +293,7 @@ export default function Chat() {
 									<motion.span
 										layout
 										transition={{ duration: 0.5, ease: "backOut" }}
-										ref={refs.pageTitleTextRef}
+										ref={chat.refs.pageTitleTextRef}
 										className="colors text-center font-bold text-base text-d5 italic dark:text-l5"
 									>
 										分からない問題があるの？なんでも訊いてね！
@@ -256,7 +307,7 @@ export default function Chat() {
 						layout
 						initial={{ height: 0, opacity: 0, filter: "blur(16px)" }}
 						animate={{
-							height: states.containerHeight,
+							height: chat.states.containerHeight,
 							opacity: 1,
 							filter: "blur(0px)",
 						}}
@@ -267,31 +318,31 @@ export default function Chat() {
 						<div className="colors flex size-full flex-col items-center justify-center p-4">
 							<div className="colors flex size-full min-h-10 flex-row items-start justify-center gap-1 mb-2">
 								<motion.textarea
-									style={{ height: states.textareaHeight }}
+									style={{ height: chat.states.textareaHeight }}
 									transition={{ duration: 0.5, ease: "backOut" }}
 									name="prompt"
 									rows={1}
 									placeholder={
-										states.isListening
+										chat.states.isListening
 											? "訊きたい質問を音声入力"
 											: "訊きたい質問を入力"
 									}
-									value={states.displayText}
-									ref={refs.textareaRef}
-									readOnly={states.isListening}
+									value={chat.states.displayText}
+									ref={chat.refs.textareaRef}
+									readOnly={chat.states.isListening}
 									onChange={(e) => {
-										actions.setInterimText("");
-										actions.setInputText((prev) => ({
+										chat.actions.setInterimText("");
+										chat.actions.setInputText((prev) => ({
 											...prev,
 											inputText: e.target.value,
 										}));
 									}}
-									className={`colors my-2 ml-2 size-full animate-caret resize-none text-left font-medium text-base text-d1 outline-none placeholder:text-l5 dark:text-l1 dark:placeholder:text-d5 ${states.isListening ? "cursor-not-allowed" : ""}`}
+									className={`colors my-2 ml-2 size-full animate-caret resize-none text-left font-medium text-base text-d1 outline-none placeholder:text-l5 dark:text-l1 dark:placeholder:text-d5 ${chat.states.isListening ? "cursor-not-allowed" : ""}`}
 								/>
 
 								<div className="colors flex flex-col items-center justify-center gap-1">
 									<AnimatePresence mode="popLayout">
-										{states.displayText && (
+										{chat.states.displayText && (
 											<motion.div
 												layout
 												initial={{ scale: 0, opacity: 0 }}
@@ -300,7 +351,7 @@ export default function Chat() {
 												transition={{ duration: 0.5, ease: "backOut" }}
 											>
 												<Button
-													onClick={actions.handleInputTextClear}
+													onClick={chat.actions.handleInputTextClear}
 													className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 												>
 													<Trash2 className="all text-red" />
@@ -310,7 +361,7 @@ export default function Chat() {
 									</AnimatePresence>
 
 									<AnimatePresence mode="popLayout">
-										{(states.isOverLimit || states.isFullTextarea) && (
+										{(chat.states.isOverLimit || chat.states.isFullTextarea) && (
 											<motion.div
 												layout
 												initial={{ scale: 0, opacity: 0 }}
@@ -320,11 +371,11 @@ export default function Chat() {
 											>
 												<Button
 													onClick={() =>
-														actions.setIsFullTextarea(!states.isFullTextarea)
+														chat.actions.setIsFullTextarea(!chat.states.isFullTextarea)
 													}
 													className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 												>
-													{states.isFullTextarea ? (
+													{chat.states.isFullTextarea ? (
 														<Minimize2 className="all text-blue" />
 													) : (
 														<Maximize2 className="all text-blue" />
@@ -338,7 +389,7 @@ export default function Chat() {
 
 							<div className="colors flex min-h-10 w-full flex-row items-center justify-between">
 								<AnimatePresence mode="wait">
-									{states.isListening ? (
+									{chat.states.isListening ? (
 										<motion.div
 											key="voice-bar"
 											initial={{ y: 16, opacity: 0 }}
@@ -347,7 +398,7 @@ export default function Chat() {
 											className="colors flex h-10 w-full flex-row items-center justify-center gap-1"
 										>
 											<div className="colors h-full flex-1 overflow-hidden">
-												<VoiceVisualizer isListening={states.isListening} />
+												<VoiceVisualizer isListening={chat.states.isListening} />
 											</div>
 
 											<AnimatePresence mode="popLayout">
@@ -362,7 +413,7 @@ export default function Chat() {
 														ref={(node) => {
 															if (node) node.focus();
 														}}
-														onClick={actions.toggleListening}
+														onClick={chat.actions.toggleListening}
 														className="flex size-10 items-center justify-center rounded-full bg-red colors"
 													>
 														<Square fill="currentColor" className="all text-l1" />
@@ -388,9 +439,9 @@ export default function Chat() {
 														transition={{ duration: 0.5, ease: "backOut" }}
 													>
 														<Button
-															onClick={() => actions.toggleMenu("plus")}
+															onClick={() => chat.actions.toggleMenu("plus")}
 															className={`colors flex size-10 items-center justify-center rounded-full
-																${states.activeMenu === "plus" ?
+																${chat.states.activeMenu === "plus" ?
 																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 																}`}
 														>
@@ -408,9 +459,9 @@ export default function Chat() {
 														transition={{ duration: 0.5, ease: "backOut" }}
 													>
 														<Button
-															onClick={() => actions.toggleMenu("settings")}
+															onClick={() => chat.actions.toggleMenu("settings")}
 															className={`colors flex size-10 items-center justify-center rounded-full
-																${states.activeMenu === "settings" ?
+																${chat.states.activeMenu === "settings" ?
 																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 																}`}
 														>
@@ -428,9 +479,9 @@ export default function Chat() {
 														transition={{ duration: 0.5, ease: "backOut" }}
 													>
 														<Button
-															onClick={() => actions.toggleMenu("list")}
+															onClick={() => chat.actions.toggleMenu("list")}
 															className={`colors flex size-10 items-center justify-center rounded-full
-																${states.activeMenu === "list" ?
+																${chat.states.activeMenu === "list" ?
 																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 																}`}
 														>
@@ -450,7 +501,7 @@ export default function Chat() {
 														transition={{ duration: 0.5, ease: "backOut" }}
 													>
 														<Button
-															onClick={actions.toggleListening}
+															onClick={chat.actions.toggleListening}
 															className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 														>
 															<Mic className="text-d1 dark:text-l1 all" />
@@ -459,7 +510,7 @@ export default function Chat() {
 												</AnimatePresence>
 
 												<AnimatePresence mode="popLayout">
-													{(!states.inputText.inputText.trim() && states.inputMedia.length === 0) || states.isUploading ? (
+													{(!chat.states.inputText.inputText.trim() && chat.states.inputMedia.length === 0) || chat.states.isUploading ? (
 														<motion.div
 															key="audio"
 															layout
@@ -485,8 +536,8 @@ export default function Chat() {
 														>
 															<Button
 																onClick={() => {
-																	actions.handleSend();
-																	refs.textareaRef.current?.focus();
+																	chat.actions.handleSend();
+																	chat.refs.textareaRef.current?.focus();
 																}}
 																className="flex size-10 items-center justify-center rounded-full bg-blue colors"
 															>
@@ -502,35 +553,35 @@ export default function Chat() {
 							</div>
 
 							<AnimatePresence>
-								{states.activeMenu !== "none" && !states.isFullTextarea && (
+								{chat.states.activeMenu !== "none" && !chat.states.isFullTextarea && (
 									<motion.div
 										layout
 										initial={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
 										animate={{
-											height: states.isFullTextarea ? 0 : "12.5rem",
-											opacity: states.isFullTextarea ? 0 : 1,
-											filter: states.isFullTextarea ? "blur(1rem)" : "blur(0)"
+											height: chat.states.isFullTextarea ? 0 : "12.5rem",
+											opacity: chat.states.isFullTextarea ? 0 : 1,
+											filter: chat.states.isFullTextarea ? "blur(1rem)" : "blur(0)"
 										}}
 										exit={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
 										transition={{ duration: 0.5, ease: "backOut" }}
 										className="size-full flex flex-none justify-start flex-col items-center"
 									>
-										{states.activeMenu === "plus" &&
-											<div className="mt-2 gap-4 flex flex-row justify-center items-center size-full overflow-x-auto rounded-3xl border-2 border-l5 dark:border-d5 border-dashed colors">
+										{chat.states.activeMenu === "plus" &&
+											<div className="mt-2 gap-2 flex flex-row justify-center items-center size-full p-4 overflow-x-auto rounded-3xl border-2 border-l5 dark:border-d5 border-dashed colors">
 												<Input
 													type="file"
 													id="file-upload"
 													multiple
 													onChange={(e) => {
 														if (e.target.files) {
-															actions.handleUploadAndConvert(e.target.files);
+															chat.actions.handleUploadAndConvert(e.target.files);
 															e.target.value = "";
 														}
 													}}
 												/>
 
 												<AnimatePresence mode="popLayout">
-													{states.inputMedia.length > 0 ? (
+													{chat.states.inputMedia.length > 0 ? (
 														<motion.div
 															key="input-media"
 															layout
@@ -538,11 +589,11 @@ export default function Chat() {
 															animate={{ opacity: 1, filter: "blur(0)" }}
 															exit={{ opacity: 0, filter: "blur(1rem)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
-															className="size-full flex justify-start items-center gap-4 p-4"
+															className="size-full flex justify-start items-center gap-4"
 														>
-															<div className="flex items-center justify-start gap-4 h-full flex-none">
+															<div className="flex items-center justify-start gap-4 h-full">
 																<AnimatePresence mode="popLayout">
-																	{states.inputMedia.map((media) => (
+																	{chat.states.inputMedia.map((media) => (
 																		<motion.div
 																			key={media.mediumId}
 																			layout
@@ -550,15 +601,15 @@ export default function Chat() {
 																			animate={{ opacity: 1, filter: "blur(0)" }}
 																			exit={{ opacity: 0, filter: "blur(1rem)" }}
 																			transition={{ duration: 0.5, ease: "backOut" }}
-																			className="h-full aspect-square overflow-hidden bg-l2 dark:bg-d2 rounded-2xl colors relative flex-none"
+																			className="h-full aspect-square overflow-hidden bg-l2 dark:bg-d2 rounded-2xl colors relative"
 																		>
 																			<MediaPreviewItem
 																				media={media}
-																				progress={states.uploadProgress[media.mediumId]}
+																				progress={chat.states.uploadProgress[media.mediumId]}
 																			/>
 
 																			<Button
-																				onClick={() => actions.handleRemoveMedia(media.mediumId)}
+																				onClick={() => chat.actions.handleRemoveMedia(media.mediumId)}
 																				className="absolute z-10 top-1 right-1 flex size-10 items-center justify-center rounded-full bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors"
 																			>
 																				<Trash2 className="text-red all" />
@@ -574,7 +625,7 @@ export default function Chat() {
 																animate={{ opacity: 1 }}
 																exit={{ opacity: 0 }}
 																transition={{ duration: 0.5, ease: "backOut" }}
-																className="flex flex-col gap-2 justify-center items-center h-full aspect-square p-4 flex-none"
+																className="flex flex-col gap-2 justify-center items-center h-full aspect-square p-4"
 															>
 																<Button className="flex w-full justify-center items-center bg-blue hover:bg-blue/75 focus-visible:bg-blue/75 rounded-full colors">
 																	<Label
@@ -592,7 +643,7 @@ export default function Chat() {
 																</Button>
 
 																<Button
-																	onClick={actions.handleRemoveAllMedia}
+																	onClick={chat.actions.handleRemoveAllMedia}
 																	className="flex justify-center items-center rounded-full colors w-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 																>
 																	<div className="all flex justify-center items-center gap-2 size-full px-4 py-2 cursor-pointer">
@@ -617,7 +668,7 @@ export default function Chat() {
 															animate={{ opacity: 1, filter: "blur(0)" }}
 															exit={{ opacity: 0, filter: "blur(1rem)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
-															className="flex justify-center items-center size-full p-4"
+															className="flex justify-center items-center size-full"
 														>
 															<Button className="flex justify-center items-center bg-blue hover:bg-blue/75 focus-visible:bg-blue/75 rounded-full colors">
 																<Label
@@ -638,8 +689,56 @@ export default function Chat() {
 												</AnimatePresence>
 											</div>
 										}
-										{states.activeMenu === "settings" && <span>Settings メニューの内容</span>}
-										{states.activeMenu === "list" && <span>List メニューの内容</span>}
+
+										{chat.states.activeMenu === "settings" &&
+											<div className="gap-2 p-2 flex flex-col justify-start items-center size-full overflow-y-auto">
+												<div className="w-full">
+													<Slider
+														label="丁寧度"
+														min={0}
+														max={1}
+														step={0.25}
+														value={settings.states.sliderState.politeness}
+														onChange={(e) => settings.actions.updateSlider(Number(e.target.value))}
+														marks={[
+															{ value: 0 },
+															{ value: 0.25, label: "難しい" },
+															{ value: 0.50, label: "普通" },
+															{ value: 0.75, label: "易しい" },
+															{ value: 1 }
+														]}
+													/>
+												</div>
+
+												<div className="grid w-full gap-2 grid-cols-2">
+													<Switch
+														label="要約"
+														checked={settings.states.switchState?.summary}
+														onChange={(e) => settings.actions.updateSwitch("summary", e.target.checked)}
+													/>
+
+													<Switch
+														label="指針"
+														checked={settings.states.switchState?.guidance}
+														onChange={(e) => settings.actions.updateSwitch("guidance", e.target.checked)}
+													/>
+
+													<Switch
+														label="解説 "
+														checked={settings.states.switchState?.explanation}
+														onChange={(e) => settings.actions.updateSwitch("explanation", e.target.checked)}
+													/>
+
+													<Switch
+														label="解答"
+														checked={settings.states.switchState?.answer}
+														onChange={(e) => settings.actions.updateSwitch("answer", e.target.checked)}
+													/>
+
+												</div>
+											</div>
+										}
+										{chat.states.activeMenu === "list" && <span>List メニューの内容</span>}
 									</motion.div>
 								)}
 							</AnimatePresence>
