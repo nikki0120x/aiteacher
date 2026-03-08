@@ -70,35 +70,6 @@ export default function Sidebar() {
 				className="colors max-lg:border-r-(length:--sidebar-border-mobile) z-10000 flex h-full flex-none flex-col items-center justify-between overflow-hidden border-l5 max-lg:absolute max-lg:inset-0 max-lg:w-(--sidebar-w-mobile) max-lg:bg-l1/50 max-lg:opacity-(--sidebar-opacity-mobile) max-lg:shadow-lg max-lg:backdrop-blur-lg lg:relative lg:w-(--sidebar-w-desktop) lg:border-r lg:bg-l1 lg:opacity-100 lg:shadow-none lg:backdrop-blur-none dark:border-d5 dark:lg:bg-d1 dark:max-lg:bg-d1/50"
 			>
 				<div className="flex size-full flex-1 flex-col items-start justify-start gap-2 p-2">
-					<Link href="/dashboard" className="contents">
-						<Button
-							onClick={actions.handleSidebarLinkClick}
-							className={`flex h-10 w-full items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${actions.isPathActive("/dashboard") && "bg-l5! dark:bg-d5!"
-								}`}
-						>
-							<div
-								className={`flex size-full transform flex-row items-center justify-start gap-8 px-2 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
-							>
-								<LayoutDashboard className="colors flex-none text-d1 dark:text-l1" />
-
-								<AnimatePresence>
-									{states.isSidebarOpen && (
-										<motion.span
-											layout
-											initial={{ x: -16, opacity: 0 }}
-											animate={{ x: 0, opacity: 1 }}
-											exit={{ x: -16, opacity: 0 }}
-											transition={{ duration: 0.5, ease: "backOut" }}
-											className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-										>
-											{states.app("bar.dashboard")}
-										</motion.span>
-									)}
-								</AnimatePresence>
-							</div>
-						</Button>
-					</Link>
-
 					<div className="colors h-px w-full rounded-full bg-l5 dark:bg-d5" />
 
 					<Link href="/chat" className="contents">
@@ -123,35 +94,6 @@ export default function Sidebar() {
 											className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
 										>
 											{states.app("bar.questions")}
-										</motion.span>
-									)}
-								</AnimatePresence>
-							</div>
-						</Button>
-					</Link>
-
-					<Link href="/scoring" className="contents">
-						<Button
-							onClick={actions.handleSidebarLinkClick}
-							className={`flex h-10 w-full items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${actions.isPathActive("/scoring") && "bg-l5! dark:bg-d5!"
-								}`}
-						>
-							<div
-								className={`flex size-full transform flex-row items-center justify-start gap-8 px-2 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
-							>
-								<PenLine className="colors flex-none text-d1 dark:text-l1" />
-
-								<AnimatePresence>
-									{states.isSidebarOpen && (
-										<motion.span
-											layout
-											initial={{ x: -16, opacity: 0 }}
-											animate={{ x: 0, opacity: 1 }}
-											exit={{ x: -16, opacity: 0 }}
-											transition={{ duration: 0.5, ease: "backOut" }}
-											className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-										>
-											{states.app("bar.scoring")}
 										</motion.span>
 									)}
 								</AnimatePresence>

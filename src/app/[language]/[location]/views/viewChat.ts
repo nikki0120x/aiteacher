@@ -24,6 +24,13 @@ export const useChatView = () => {
 	//      States & Actions
 	//  ================================================================
 
+	//  拡張コンテンツ
+	const {
+		refs: { extensionRefCallback },
+		states: { activeContent, contentDirection, extensionHeight },
+		actions: { toggleContent, setActiveContent },
+	} = useExtensionContent();
+
 	//  全般
 	const {
 		states: {
@@ -37,6 +44,7 @@ export const useChatView = () => {
 			isSent,
 			uploadProgress,
 			isUploading,
+			activeSettingsTab,
 			teachingMode,
 			isAutoList,
 			listFormatText,
@@ -57,6 +65,7 @@ export const useChatView = () => {
 			handleSend,
 			updateSlider,
 			updateSwitch,
+			setActiveSettingsTab,
 			updateTeachingMode,
 			updateIsAutoList,
 			updateListFormatText,
@@ -64,14 +73,7 @@ export const useChatView = () => {
 			clearListFormat,
 			updateThinkMode,
 		},
-	} = useChat();
-
-	//  拡張コンテンツ
-	const {
-		refs: { extensionRefCallback },
-		states: { activeContent, contentDirection, extensionHeight },
-		actions: { toggleContent, setActiveContent },
-	} = useExtensionContent();
+	} = useChat(setActiveContent);
 
 	//  ドラッグアンドドロップ
 	const {
@@ -159,6 +161,7 @@ export const useChatView = () => {
 			isOverLimit,
 			isFullTextarea,
 			containerHeight,
+			activeSettingsTab,
 			teachingMode,
 			isAutoList,
 			listFormatText,
@@ -194,6 +197,7 @@ export const useChatView = () => {
 			handleInputTextClear,
 			updateSlider,
 			updateSwitch,
+			setActiveSettingsTab,
 			updateTeachingMode,
 			updateIsAutoList,
 			updateListFormatText,

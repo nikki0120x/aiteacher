@@ -526,7 +526,9 @@ export const useInputTextClear = (
 //      チャット
 //  ================================================================
 
-export const useChat = () => {
+export const useChat = (
+	setActiveContent?: React.Dispatch<React.SetStateAction<"none" | "upload" | "config" | "list">>
+) => {
 	const [userStatus, setUserStatus] =
 		useState<keyof typeof USER_STATUS_MAP>("pending");
 	const [modelStatus, setModelStatus] =
@@ -536,9 +538,6 @@ export const useChat = () => {
 	);
 	const [inputMedia, setInputMedia] = useState<MediumList>(
 		MediumListSchema.createDefault(),
-	);
-	const [sliderState, setSliderState] = useState<SliderState>(
-		SliderStateSchema.createDefault(),
 	);
 	const [switchState, setSwitchState] = useState<SwitchState>(
 		SwitchStateSchema.createDefault(),
@@ -563,14 +562,22 @@ export const useChat = () => {
 		setThinkMode(mode);
 	}, []);
 
-	// ===== 設定・Listメニュー用アクション =====
-	const updateSlider = useCallback((value: number) => {
-		setSliderState((prev) => ({ ...prev, politeness: value }));
+	const [sliderState, setSliderState] = useState<Record<string, number>>({
+		standard: 0.5,
+		learning: 0.5,
+		teaching: 0.5,
+	});
+
+	// 引数に現在のタブを追加
+	const updateSlider = useCallback((tab: string, value: number) => {
+		setSliderState((prev) => ({ ...prev, [tab]: value }));
 	}, []);
 
 	const updateSwitch = useCallback((key: keyof SwitchState, checked: boolean) => {
 		setSwitchState((prev) => ({ ...prev, [key]: checked }));
 	}, []);
+
+	const [activeSettingsTab, setActiveSettingsTab] = useState<"standard" | "learning" | "teaching">("learning");
 
 	const updateTeachingMode = useCallback((mode: "choices" | "description") => {
 		setTeachingMode(mode);
@@ -678,7 +685,11 @@ export const useChat = () => {
 	}, []);
 
 	const isUploading = useMemo(() => {
-		return inputMedia.some((m) => uploadProgress[m.mediumId] !== undefined && uploadProgress[m.mediumId] < 100);
+		return inputMedia.some(
+			(m) =>
+				m.src.startsWith("blob:") ||
+				(uploadProgress[m.mediumId] !== undefined && uploadProgress[m.mediumId] < 100)
+		);
 	}, [inputMedia, uploadProgress]);
 
 	// 転送と変換
@@ -796,193 +807,168 @@ export const useChat = () => {
 	const isSent = useMemo(() => turns.length > 0, [turns]);
 
 	// 送信
+	// 送信処理
 	const handleSend = useCallback(async () => {
+		// 入力チェック：テキストもメディアもない場合は中断
 		if (!inputText.inputText && inputMedia.length === 0) return;
+		// アップロード中は送信不可
 		if (isUploading) return;
 
+		// UI：拡張メニューを閉じる
+		if (setActiveContent) {
+			setActiveContent("none");
+		}
+
+		// ステータス更新
 		setUserStatus("sending");
 		setModelStatus("thinking");
 
 		const currentText = inputText.inputText;
-		const currentMediaUrls = inputMedia.map(m => m.src); // アップロード済みのURL
+		const currentMediaFiles = inputMedia.map(m => ({ url: m.src, mimeType: m.mimeType }));
 
+		// ID生成
 		const targetModelMessageId = uuidv7();
 		const turnId = uuidv7();
 
-		// ユーザーメッセージの生成
-		const userMessage = {
-			...UserMessageSchema.createDefault(),
-			blocks: currentText ? [{ type: "text" as const, content: currentText }] : [],
+		// ユーザー側のブロック作成
+		const userBlocks: any[] = [];
+		if (currentText) {
+			userBlocks.push({ type: "text", content: currentText });
+		}
+		for (const media of inputMedia) {
+			userBlocks.push({
+				type: "media",
+				url: media.src,
+				mimeType: media.mimeType,
+				fileName: media.fileName,
+			});
+		}
+
+		// --- 型エラー修正ポイント ---
+		// states.sliderState は Record<string, number> ですが、
+		// モデルのスキーマ (SliderStateSchema) は { isEnabled: boolean; politeness: number } を期待しています。
+		// 現在のタブに応じた値を politeness に割り当てて保存用オブジェクトを作成します。
+		const persistentSliderState = {
+			isEnabled: true,
+			politeness: sliderState[activeSettingsTab] ?? 0.5
 		};
 
-		// モデルメッセージ（初期状態）の生成
+		// メッセージ構造の構築
+		const userMessage = { ...UserMessageSchema.createDefault(), blocks: userBlocks };
+
 		const modelMessage = {
 			...ModelMessageSchema.createDefault(),
 			modelMessageId: targetModelMessageId,
-			sliderState: sliderState, // すでに数値（SliderState型）なのでそのまま渡す
-			switchState: switchState,
-			questionState: questionState,
+			// スキーマに合わせて変換して渡すことで TypeScript エラーを回避
+			sliderState: persistentSliderState as any,
+			switchState,
+			questionState,
 			status: "thinking" as const,
-			blocks: [],
+			blocks: []
 		};
 
-		// 設問、ページ、ターンの階層構造を構築（parseを使わず直接組み立てる）
-		const question = {
-			...QuestionSchema.createDefault(),
-			messages: { user: userMessage, model: [modelMessage] }
-		};
+		const question = { ...QuestionSchema.createDefault(), messages: { user: userMessage, model: [modelMessage] } };
+		const page = { ...PageSchema.createDefault(), questions: [question] };
+		const turn = { ...TurnSchema.createDefault(), turnId: turnId, pages: [page] };
 
-		const page = {
-			...PageSchema.createDefault(),
-			questions: [question]
-		};
-
-		const turn = {
-			...TurnSchema.createDefault(),
-			turnId: turnId,
-			pages: [page]
-		};
-
-		// UI反映のために一旦ターンを追加し、入力欄をリセット
+		// 履歴に追加し、入力をクリア
 		setTurns((prev) => [...prev, turn]);
 		setInputText(InputTextSchema.createDefault());
 		setInputMedia(MediumListSchema.createDefault());
 
 		try {
+			// APIリクエスト
 			const response = await fetch("/api/chat", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					text: currentText,
-					mediaUrls: currentMediaUrls,
+					mediaFiles: currentMediaFiles,
+					mode: thinkMode,
+					activeSettingsTab,
+					sliderState, // API側には Record<string, number> をそのまま送り、route.ts 側で処理させる
+					switchState,
+					teachingMode,
+					listFormatText,
+					isAutoList
 				}),
 			});
 
 			if (!response.body) throw new Error("No response body");
-
 			setModelStatus("streaming");
 
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder("utf-8");
 			let accumulatedText = "";
 
-			// ストリーミング読み込み
+			// ストリーミング処理
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
+				accumulatedText += decoder.decode(value, { stream: true });
 
-				const chunkText = decoder.decode(value, { stream: true });
-				accumulatedText += chunkText;
-
-				// deeply nested state の更新
-				setTurns((prevTurns) =>
-					prevTurns.map(t => {
-						if (t.turnId !== turnId) return t;
-						return {
-							...t,
-							pages: t.pages.map(p => ({
-								...p,
-								questions: p.questions.map(q => ({
-									...q,
-									messages: {
-										...q.messages,
-										model: q.messages.model.map(m => {
-											if (m.modelMessageId !== targetModelMessageId) return m;
-											return {
-												...m,
-												status: "streaming",
-												blocks: [
-													{ type: "text" as const, content: accumulatedText }
-												]
-											};
-										})
-									}
-								}))
+				// 状態更新：逐次テキストを表示
+				setTurns((prevTurns) => prevTurns.map(t => {
+					if (t.turnId !== turnId) return t;
+					return {
+						...t, pages: t.pages.map(p => ({
+							...p, questions: p.questions.map(q => ({
+								...q, messages: {
+									...q.messages, model: q.messages.model.map(m => {
+										if (m.modelMessageId !== targetModelMessageId) return m;
+										return { ...m, status: "streaming", blocks: [{ type: "text" as const, content: accumulatedText }] };
+									})
+								}
 							}))
-						};
-					})
-				);
+						}))
+					};
+				}));
 			}
 
-			// 完了時のステータス更新
+			// 完了ステータスへ
 			setModelStatus("completed");
 			setUserStatus("completed");
 
-			setTurns((prevTurns) =>
-				prevTurns.map((t) => {
-					if (t.turnId !== turnId) return t;
-					return {
-						...t,
-						pages: t.pages.map((p) => ({
-							...p,
-							questions: p.questions.map((q) => ({
-								...q,
-								messages: {
-									...q.messages,
-									model: q.messages.model.map((m) => {
-										if (m.modelMessageId !== targetModelMessageId) return m;
-										return {
-											...m,
-											status: "completed",
-											blocks: [{ type: "text" as const, content: accumulatedText }],
-										};
-									}),
-								},
-							})),
-						})),
-					};
-				})
-			);
-
+			setTurns((prevTurns) => prevTurns.map((t) => {
+				if (t.turnId !== turnId) return t;
+				return {
+					...t, pages: t.pages.map((p) => ({
+						...p, questions: p.questions.map((q) => ({
+							...q, messages: {
+								...q.messages, model: q.messages.model.map((m) => {
+									if (m.modelMessageId !== targetModelMessageId) return m;
+									return { ...m, status: "completed", blocks: [{ type: "text" as const, content: accumulatedText }] };
+								})
+							}
+						}))
+					}))
+				};
+			}));
 		} catch (error) {
 			console.error("Chat error:", error);
 			setModelStatus("failed");
 		}
-	}, [inputText, inputMedia, sliderState, switchState, questionState, isUploading]);
+	}, [
+		inputText,
+		inputMedia,
+		sliderState,
+		switchState,
+		questionState,
+		isUploading,
+		thinkMode,
+		activeSettingsTab,
+		teachingMode,
+		listFormatText,
+		isAutoList,
+		setActiveContent
+	]);
 
-	const actions = useMemo(
-		() => ({
-			setUserStatus,
-			setModelStatus,
-			setInputText,
-			setInputMedia,
-			setSliderState,
-			setSwitchState,
-			setQuestionState,
-			setTurns,
-			handleUploadAndConvert,
-			handleRemoveMedia,
-			handleRemoveAllMedia,
-			handleSend,
-			updateSlider,
-			updateSwitch,
-			updateTeachingMode,
-			updateIsAutoList,
-			updateListFormatText,
-			insertShape,
-			clearListFormat,
-			updateThinkMode,
-		}),
-		[handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateSlider, updateSwitch, updateTeachingMode, updateIsAutoList, updateListFormatText, insertShape, clearListFormat, updateThinkMode],
-	);
+	const actions = useMemo(() => ({
+		setUserStatus, setModelStatus, setInputText, setInputMedia, setSliderState, setSwitchState, setQuestionState, setTurns, setActiveSettingsTab, handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateSlider, updateSwitch, updateTeachingMode, updateIsAutoList, updateListFormatText, insertShape, clearListFormat, updateThinkMode,
+	}), [handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateSlider, updateSwitch, updateTeachingMode, updateIsAutoList, updateListFormatText, insertShape, clearListFormat, updateThinkMode]);
 
 	return {
-		states: {
-			userStatus,
-			modelStatus,
-			inputText,
-			inputMedia,
-			sliderState,
-			switchState,
-			turns,
-			uploadProgress,
-			isUploading,
-			isSent,
-			teachingMode,
-			isAutoList,
-			listFormatText,
-			thinkMode,
-		},
+		states: { userStatus, modelStatus, inputText, inputMedia, sliderState, switchState, turns, uploadProgress, isUploading, isSent, teachingMode, isAutoList, listFormatText, thinkMode, activeSettingsTab },
 		actions,
 	};
 };

@@ -13,14 +13,95 @@ import {
 	Trash2,
 	Zap,
 	Sparkles,
+	ChevronDown,
 	Brain,
 } from "lucide-react";
+import type { Components } from 'react-markdown';
+import rehypeRaw from "rehype-raw";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Button, Input, Label, Slider, Switch } from "@/components/ui";
+
+const MARKDOWN_COMPONENTS: Components = {
+	// 型定義を合わせることでエラーを解消
+	p: ({ children }) => <div className="mb-4 last:mb-0">{children}</div>,
+
+	// カスタムタグの型エラーも React.ReactNode を使うことで回避
+	//@ts-ignore - カスタム要素のため
+	'ai-summary': ({ children }) => <AiAccordion label="要約">{children}</AiAccordion>,
+	//@ts-ignore
+	'ai-guidance': ({ children }) => <AiAccordion label="指針">{children}</AiAccordion>,
+	//@ts-ignore
+	'ai-explanation': ({ children }) => <AiAccordion label="解説">{children}</AiAccordion>,
+	//@ts-ignore
+	'ai-answer': ({ children }) => <AiAccordion label="解答">{children}</AiAccordion>,
+
+	//@ts-ignore
+	'ai-question': ({ qnum, children }) => (
+		<div className="my-6 border-l-4 border-blue pl-4 bg-blue/5 py-2 rounded-r-xl">
+			<div className="font-black text-lg text-blue mb-1">{qnum}</div>
+			<div>{children}</div>
+		</div>
+	)
+};
+
+const AiAccordion = ({ label, children }: { label: string; children: React.ReactNode }) => {
+	const [isOpen, setIsOpen] = useState(false);
+
+	return (
+		<div className="my-4 bg-l1 dark:bg-d1 rounded-2xl border border-l5 dark:border-d5 overflow-hidden shadow-sm">
+			<button
+				type="button"
+				onClick={() => setIsOpen(!isOpen)}
+				className="w-full cursor-pointer font-bold bg-l2 dark:bg-d2 px-5 py-3 select-none hover:bg-l3 dark:hover:bg-d3 transition-all flex items-center justify-between border-none outline-none"
+			>
+				<span className="flex items-center gap-2 text-d1 dark:text-l1">
+					<span className="w-2 h-2 rounded-full bg-blue" />
+					{label}
+				</span>
+				<ChevronDown
+					size={18}
+					className={`text-l5 dark:text-d5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+				/>
+			</button>
+			<AnimatePresence initial={false}>
+				{isOpen && (
+					<motion.div
+						initial={{ height: 0, opacity: 0 }}
+						animate={{ height: "auto", opacity: 1 }}
+						exit={{ height: 0, opacity: 0 }}
+						transition={{ duration: 0.5, ease: "backOut" }}
+						className="overflow-hidden border-t border-l5 dark:border-d5"
+					>
+						<div className="p-5 text-d1 dark:text-l1 leading-relaxed">
+							{children}
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+		</div>
+	);
+};
+
+const MarkdownRenderer = ({ content }: { content: string }) => {
+	return (
+		<div className="markdown-content break-words leading-relaxed text-base">
+			<ReactMarkdown
+				remarkPlugins={[remarkMath]}
+				rehypePlugins={[rehypeKatex, rehypeRaw]}
+				components={MARKDOWN_COMPONENTS} // 固定したオブジェクトを使用
+			>
+				{content}
+			</ReactMarkdown>
+		</div>
+	);
+};
 
 const MediaPreviewItem = ({
 	media,
@@ -167,39 +248,125 @@ const MediaPreviewItem = ({
 
 const createBlockKey = (turnId: string, role: string, index: number) => `${turnId}-${role}-${index}`;
 
+const processCustomTags = (text: string) => {
+	if (!text) return "";
+
+	// タグの開始と終了を検知
+	const tagPattern = /\[\[(\/?)(SUMMARY|GUIDANCE|EXPLANATION|ANSWER|QUESTION:[^\]]+)\]\]/g;
+	const parts = text.split(tagPattern);
+
+	let result = "";
+	let currentTag = "";
+
+	for (let i = 0; i < parts.length; i++) {
+		const part = parts[i];
+		if (part === undefined || part === "") continue;
+
+		// 閉じ記号 "/" 自体はスキップ
+		if (part === "/") continue;
+
+		// タグ名の判定
+		const isTagName = ["SUMMARY", "GUIDANCE", "EXPLANATION", "ANSWER"].includes(part) || part.startsWith("QUESTION:");
+		const isClosing = i > 0 && parts[i - 1] === "/";
+
+		if (isTagName) {
+			if (isClosing) {
+				currentTag = ""; // タグを閉じる
+			} else {
+				currentTag = part; // 新しいタグを開始
+			}
+			continue;
+		}
+
+		// コンテンツ部分の処理
+		const content = part.trim();
+		if (!content) continue;
+
+		if (currentTag === "SUMMARY") result += `\n<ai-summary>\n${content}\n</ai-summary>\n`;
+		else if (currentTag === "GUIDANCE") result += `\n<ai-guidance>\n${content}\n</ai-guidance>\n`;
+		else if (currentTag === "EXPLANATION") result += `\n<ai-explanation>\n${content}\n</ai-explanation>\n`;
+		else if (currentTag === "ANSWER") result += `\n<ai-answer>\n${content}\n</ai-answer>\n`;
+		else if (currentTag.startsWith("QUESTION:")) {
+			const qNum = currentTag.split(":")[1];
+			result += `\n<ai-question qnum="${qNum}">\n${content}\n</ai-question>\n`;
+		} else {
+			result += `\n${content}\n`;
+		}
+
+		// 重要：コンテンツを書き出したら一度 currentTag をクリアする。
+		// これにより、AIが閉じタグを忘れたり入れ子にしたりしても、
+		// 次のループで新しいタグとして独立して処理されるようになります。
+		currentTag = "";
+	}
+
+	return result;
+};
+
 export default function Chat() {
 	const { refs, states, actions } = useChatView();
 
-	const [activeSettingsTab, setActiveSettingsTab] = useState<"standard" | "learning" | "teaching">("learning");
 	const [isThinkModeMenuOpen, setIsThinkModeMenuOpen] = useState(false);
 
 	const renderTurn = (index: number, turn: typeof states.turns[number]) => {
 		const question = turn.pages[0]?.questions[0];
 		if (!question) return null;
 
-		const userBlocks = question.messages.user.blocks as { type?: string; content?: string }[];
+		const userBlocks = question.messages.user.blocks as { type?: string; content?: string; url?: string; mimeType?: string; fileName?: string }[];
 		const modelBlocks = question.messages.model[0]?.blocks as { type?: string; content?: string }[];
 
 		return (
-			<div data-index={index} className="flex flex-col gap-4 p-4 mb-4 text-d1 dark:text-l1">
-				<div className="flex flex-col items-end gap-2">
-					<div className="bg-blue text-l1 px-4 py-2 rounded-2xl max-w-[80%]">
-						{userBlocks.map((b, i) => (
-							<span key={createBlockKey(turn.turnId, "user", i)}>
-								{b.content || "メディアが送信されました"}
-							</span>
-						))}
-					</div>
+			<div data-index={index} className="flex flex-col size-full gap-4">
+				<div className="flex flex-col justify-center items-end gap-2 w-full overflow-x-auto">
+					{userBlocks.filter(b => b.type === "media").map((b, i) => {
+						const isImage = b.mimeType?.startsWith("image/");
+						const isVideo = b.mimeType?.startsWith("video/");
+
+						return (
+							<div key={createBlockKey(turn.turnId, "user-media", i)} className="flex-shrink-0">
+								{isImage ? (
+									<img
+										src={b.url}
+										alt={b.fileName}
+										className="object-cover rounded-2xl size-32 border border-l5 dark:border-d5"
+									/>
+								) : isVideo ? (
+									<video
+										src={b.url}
+										controls
+										className="object-cover size-32 rounded-2xl border border-l5 dark:border-d5"
+									>
+										<track kind="captions" srcLang="ja" label="日本語 (自動生成)" default />
+									</video>
+								) : (
+									<div className="p-4 flex items-center gap-2 bg-l2 dark:bg-d2 rounded-2xl h-32">
+										<Paperclip size={20} className="text-blue" />
+										<span className="text-sm font-medium truncate text-d1 dark:text-l1">{b.fileName}</span>
+									</div>
+								)}
+							</div>
+						);
+					})}
+
+					{userBlocks.filter(b => b.type === "text").map((b, i) => (
+						<div key={createBlockKey(turn.turnId, "user-text", i)} className="bg-l2 dark:bg-d2 px-4 py-2 rounded-4xl max-w-[80%]">
+							<motion.div
+								layout
+								transition={{ duration: 0.5, ease: "backOut" }}
+								className="text-d1 dark:text-l1 font-medium text-base colors"
+							>
+								<MarkdownRenderer content={b.content || ""} />
+							</motion.div>
+						</div>
+					))}
 				</div>
 
-				<div className="flex flex-col items-start gap-2">
-					<div className="bg-l2 dark:bg-d2 px-4 py-2 rounded-2xl">
+				<div className="flex flex-col items-start w-full">
+					<div className="bg-l2 dark:bg-d2 px-6 py-4 rounded-4xl w-full">
 						{modelBlocks?.length > 0
-							?
-							modelBlocks.map((b, i) => (
-								<span key={createBlockKey(turn.turnId, "model", i)}>
-									{b.content}
-								</span>
+							? modelBlocks.map((b, i) => (
+								<div key={createBlockKey(turn.turnId, "model", i)} className="w-full">
+									<MarkdownRenderer content={processCustomTags(b.content || "")} />
+								</div>
 							))
 							: <span className="animate-pulse">考え中...</span>
 						}
@@ -310,7 +477,7 @@ export default function Chat() {
 										ref={refs.pageTitleTextRef}
 										className="colors text-center font-bold text-base text-d5 italic dark:text-l5"
 									>
-										分からない問題があるの？なんでも訊いてね！
+										AIの返答部分が未完成です。今週中には完成予定なのでアンケートの回答はすぐでなくてもいいです。
 									</motion.span>
 								</div>
 							</motion.div>
@@ -813,11 +980,11 @@ export default function Chat() {
 																	name="settings_tab"
 																	value={tab.id}
 																	visibility={false}
-																	checked={activeSettingsTab === tab.id}
-																	onChange={() => setActiveSettingsTab(tab.id as "standard" | "learning" | "teaching")}
+																	checked={states.activeSettingsTab === tab.id}
+																	onChange={() => actions.setActiveSettingsTab(tab.id as "standard" | "learning" | "teaching")}
 																/>
 
-																{activeSettingsTab === tab.id && (
+																{states.activeSettingsTab === tab.id && (
 																	<motion.div
 																		layoutId="activeSettingsTab"
 																		transition={{
@@ -832,7 +999,7 @@ export default function Chat() {
 																	<motion.span
 																		layout
 																		transition={{ duration: 0.5, ease: "backOut" }}
-																		className={`colors relative z-10 whitespace-nowrap text-center font-medium text-base ${activeSettingsTab === tab.id
+																		className={`colors relative z-10 whitespace-nowrap text-center font-medium text-base ${states.activeSettingsTab === tab.id
 																			? "text-l1"
 																			: "text-l5 group-hover:text-d1 dark:text-d5 dark:group-hover:text-l1"
 																			}`}
@@ -847,7 +1014,7 @@ export default function Chat() {
 													<div className="relative size-full">
 														<AnimatePresence mode="popLayout">
 															<motion.div
-																key={activeSettingsTab}
+																key={states.activeSettingsTab}
 																layout
 																initial={{ y: 8, opacity: 0 }}
 																animate={{ y: 0, opacity: 1 }}
@@ -856,24 +1023,29 @@ export default function Chat() {
 																className="flex gap-2 flex-col p-2 size-full"
 															>
 																<div className="w-full">
-																	<Slider
-																		label="丁寧度"
-																		min={0}
-																		max={1}
-																		step={0.25}
-																		value={states.sliderState.politeness}
-																		onChange={(e) => actions.updateSlider(Number(e.target.value))}
-																		marks={[
-																			{ value: 0 },
-																			{ value: 0.25, label: "難しい" },
-																			{ value: 0.50, label: "普通" },
-																			{ value: 0.75, label: "易しい" },
-																			{ value: 1 }
-																		]}
-																	/>
+																	<div className="w-full">
+																		<Slider
+																			label={
+																				states.activeSettingsTab === "standard" ? "丁寧度" :
+																					states.activeSettingsTab === "learning" ? "難易度" : "指導の細かさ"
+																			}
+																			min={0}
+																			max={1}
+																			step={0.25}
+																			value={states.sliderState[states.activeSettingsTab]}
+																			onChange={(e) => actions.updateSlider(states.activeSettingsTab, Number(e.target.value))}
+																			marks={[
+																				{ value: 0 },
+																				{ value: 0.25, label: states.activeSettingsTab === "standard" ? "専門的" : "難しい" },
+																				{ value: 0.50, label: "普通" },
+																				{ value: 0.75, label: states.activeSettingsTab === "standard" ? "易しい" : "易しい" },
+																				{ value: 1 }
+																			]}
+																		/>
+																	</div>
 																</div>
 
-																{activeSettingsTab === "learning" && (
+																{states.activeSettingsTab === "learning" && (
 																	<div className="grid w-full gap-2 grid-cols-2">
 																		<Switch
 																			label="要約"
@@ -901,7 +1073,7 @@ export default function Chat() {
 																	</div>
 																)}
 
-																{activeSettingsTab === "teaching" && (
+																{states.activeSettingsTab === "teaching" && (
 																	<div className="flex w-full gap-2 items-center justify-between rounded-2xl">
 																		<Label className={`flex w-full items-center justify-center gap-2 rounded-2xl p-2 hover:bg-l2 dark:hover:bg-d2 colors ${states.teachingMode === "choices" && "bg-l2 dark:bg-d2"}`}>
 																			<Input
