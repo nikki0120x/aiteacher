@@ -11,6 +11,9 @@ import {
 	Settings2,
 	Square,
 	Trash2,
+	Zap,
+	Sparkles,
+	Brain,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -168,6 +171,7 @@ export default function Chat() {
 	const { refs, states, actions } = useChatView();
 
 	const [activeSettingsTab, setActiveSettingsTab] = useState<"standard" | "learning" | "teaching">("learning");
+	const [isThinkModeMenuOpen, setIsThinkModeMenuOpen] = useState(false);
 
 	const renderTurn = (index: number, turn: typeof states.turns[number]) => {
 		const question = turn.pages[0]?.questions[0];
@@ -262,13 +266,12 @@ export default function Chat() {
 
 				<motion.div
 					layout
-					initial={{ flex: 1, opacity: 0, filter: "blur(16px)" }}
+					initial={{ flex: 1, opacity: 0 }}
 					animate={{
 						flex: states.isSent ? 0 : 1,
 						opacity: 1,
-						filter: "blur(0px)",
 					}}
-					exit={{ flex: 1, opacity: 1, filter: "blur(16px)" }}
+					exit={{ flex: 1, opacity: 1 }}
 					transition={{ duration: 0.5, ease: "backOut" }}
 					className="flex size-full flex-col items-center justify-center"
 				>
@@ -316,13 +319,12 @@ export default function Chat() {
 
 					<motion.div
 						layout
-						initial={{ height: 0, opacity: 0, filter: "blur(16px)" }}
+						initial={{ height: 0, opacity: 0 }}
 						animate={{
 							height: states.containerHeight,
 							opacity: 1,
-							filter: "blur(0px)",
 						}}
-						exit={{ height: 0, opacity: 1, filter: "blur(16px)" }}
+						exit={{ height: 0, opacity: 1 }}
 						transition={{ duration: 0.5, ease: "backOut" }}
 						className="colors flex size-full flex-col items-center justify-center rounded-4xl border border-l5 dark:border-d5"
 					>
@@ -503,6 +505,79 @@ export default function Chat() {
 											</div>
 
 											<div className="colors flex size-full flex-row items-center justify-end gap-1">
+												<AnimatePresence mode="popLayout">
+													<motion.div
+														layout
+														initial={{ scale: 0, opacity: 0 }}
+														animate={{ scale: 1, opacity: 1 }}
+														exit={{ scale: 0, opacity: 0 }}
+														transition={{ duration: 0.5, ease: "backOut" }}
+														className="relative"
+													>
+														<Button
+															onClick={() => setIsThinkModeMenuOpen(!isThinkModeMenuOpen)}
+															className={`colors flex size-10 items-center justify-center rounded-full
+																	${isThinkModeMenuOpen ?
+																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																}`}
+														>
+															{states.thinkMode === "fast" && <Zap className="all text-blue" />}
+															{states.thinkMode === "standard" && <Sparkles className="all text-blue" />}
+															{states.thinkMode === "think" && <Brain className="all text-blue" />}
+														</Button>
+
+														<AnimatePresence mode="popLayout">
+															{isThinkModeMenuOpen && (
+																<motion.div
+																	initial={{ opacity: 0, filter: "blur(1rem)", scale: 0.5 }}
+																	animate={{ opacity: 1, filter: "blur(0)", scale: 1 }}
+																	exit={{ opacity: 0, filter: "blur(1rem)", scale: 0.5 }}
+																	transition={{ duration: 0.5, ease: "backOut" }}
+																	style={{ originX: 1, originY: 0 }}
+																	className="absolute top-[calc(100%+1rem)] right-0 z-10 w-64 flex flex-col gap-1 rounded-4xl border border-l5 bg-l1/50 p-2 shadow-lg backdrop-blur-lg dark:border-d5 dark:bg-d1/50 colors"
+																>
+																	{[
+																		{ id: "fast", label: "高速", icon: Zap },
+																		{ id: "standard", label: "標準", icon: Sparkles },
+																		{ id: "think", label: "思考", icon: Brain },
+																	].map((mode) => (
+																		<Label
+																			key={mode.id}
+																			className={`colors flex items-center w-full justify-center rounded-full px-4 py-2
+																				${states.thinkMode === mode.id
+																					? "bg-l5/50 dark:bg-d5/50"
+																					: "hover:bg-l2/50 dark:hover:bg-d2/50"
+																				}`}
+																		>
+																			<Input
+																				type="radio"
+																				name="model"
+																				value={mode.id}
+																				checked={states.thinkMode === mode.id}
+																				visibility={false}
+																				onChange={() => {
+																					actions.updateThinkMode(mode.id as "fast" | "standard" | "think");
+																					setIsThinkModeMenuOpen(false);
+																				}}
+																			/>
+
+																			<div className="w-full flex flex-row gap-2 justify-start items-center">
+																				<mode.icon className={states.thinkMode === mode.id ? "text-blue colors" : "text-l5 dark:text-d5 colors"} />
+
+																				<motion.span
+																					className="whitespace-nowrap font-medium text-left text-base text-d1 dark:text-l1 colors"
+																				>
+																					{mode.label}
+																				</motion.span>
+																			</div>
+																		</Label>
+																	))}
+																</motion.div>
+															)}
+														</AnimatePresence>
+													</motion.div>
+												</AnimatePresence>
+
 												<AnimatePresence mode="popLayout">
 													<motion.div
 														layout

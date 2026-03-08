@@ -557,6 +557,12 @@ export const useChat = () => {
 	const lastShapeRef = useRef<string | null>(null);
 	const shapeStackRef = useRef<string[]>([]);
 
+	const [thinkMode, setThinkMode] = useState<"fast" | "standard" | "think">("fast");
+
+	const updateThinkMode = useCallback((mode: "fast" | "standard" | "think") => {
+		setThinkMode(mode);
+	}, []);
+
 	// ===== 設定・Listメニュー用アクション =====
 	const updateSlider = useCallback((value: number) => {
 		setSliderState((prev) => ({ ...prev, politeness: value }));
@@ -955,8 +961,9 @@ export const useChat = () => {
 			updateListFormatText,
 			insertShape,
 			clearListFormat,
+			updateThinkMode,
 		}),
-		[handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateSlider, updateSwitch, updateTeachingMode, updateIsAutoList, updateListFormatText, insertShape, clearListFormat],
+		[handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateSlider, updateSwitch, updateTeachingMode, updateIsAutoList, updateListFormatText, insertShape, clearListFormat, updateThinkMode],
 	);
 
 	return {
@@ -974,6 +981,7 @@ export const useChat = () => {
 			teachingMode,
 			isAutoList,
 			listFormatText,
+			thinkMode,
 		},
 		actions,
 	};

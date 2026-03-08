@@ -40,6 +40,7 @@ export const useChatView = () => {
 			teachingMode,
 			isAutoList,
 			listFormatText,
+			thinkMode,
 		},
 		actions: {
 			setUserStatus,
@@ -61,6 +62,7 @@ export const useChatView = () => {
 			updateListFormatText,
 			insertShape,
 			clearListFormat,
+			updateThinkMode,
 		},
 	} = useChat();
 
@@ -160,6 +162,7 @@ export const useChatView = () => {
 			teachingMode,
 			isAutoList,
 			listFormatText,
+			thinkMode,
 		},
 		actions: {
 			setUserStatus,
@@ -196,6 +199,7 @@ export const useChatView = () => {
 			updateListFormatText,
 			insertShape,
 			clearListFormat,
+			updateThinkMode,
 		},
 	};
 };
