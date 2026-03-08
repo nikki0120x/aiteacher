@@ -538,7 +538,7 @@ export default function Chat() {
 															animate={{ opacity: 1, filter: "blur(0)" }}
 															exit={{ opacity: 0, filter: "blur(1rem)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
-															className="size-full flex justify-start items-center gap-4 p-4"
+															className="h-full min-w-full w-max flex justify-start items-center gap-4 p-4"
 														>
 															<div className="flex items-center justify-start gap-4 h-full">
 																<AnimatePresence mode="popLayout">
