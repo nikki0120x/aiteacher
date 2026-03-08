@@ -33,8 +33,9 @@ export const useChatView = () => {
 			sliderState,
 			switchState,
 			turns,
-
 			isSent,
+			uploadProgress,
+			isUploading,
 		},
 		actions: {
 			setUserStatus,
@@ -45,26 +46,27 @@ export const useChatView = () => {
 			setSwitchState,
 			setQuestionState,
 			setTurns,
-
 			handleUploadAndConvert,
+			handleRemoveMedia,
+			handleRemoveAllMedia,
 			handleSend,
 		},
 	} = useChat();
+
+	//  拡張コンテンツ
+	const {
+		states: { activeMenu },
+		actions: { toggleMenu, setActiveMenu },
+	} = useExtensionMenu();
 
 	//  ドラッグアンドドロップ
 	const {
 		states: { dragInfo },
 		actions: { handleDragOver, handleDragEnter, handleDragLeave, handleDrop },
-	} = useDragAndDrop(handleUploadAndConvert, dragAndDropTextRef);
+	} = useDragAndDrop(handleUploadAndConvert, dragAndDropTextRef, setActiveMenu);
 
 	//  ページタイトル
 	usePageTitle(pageTitleTextRef);
-
-	//  拡張コンテンツ
-	const {
-		states: { activeMenu },
-		actions: { toggleMenu },
-	} = useExtensionMenu();
 
 	//  音声入力
 	const {
@@ -126,6 +128,8 @@ export const useChatView = () => {
 			sliderState,
 			switchState,
 			turns,
+			uploadProgress,
+			isUploading,
 			isSent,
 			dragInfo,
 			activeMenu,
@@ -153,6 +157,8 @@ export const useChatView = () => {
 			handleDragLeave,
 			handleDrop,
 			handleUploadAndConvert,
+			handleRemoveMedia,
+			handleRemoveAllMedia,
 			toggleMenu,
 			setIsListening,
 			setInterimText,

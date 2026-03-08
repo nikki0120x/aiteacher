@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import {
 	AudioLines,
 	ListOrdered,
@@ -16,6 +17,145 @@ import { AnimatePresence, motion } from "motion/react";
 import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Button, Input, Label } from "@/components/ui";
+
+const MediaPreviewItem = ({
+	media,
+	progress,
+}: {
+	media: { mimeType: string; src: string; fileName: string };
+	progress?: number;
+}) => {
+	const [duration, setDuration] = useState<string | null>(null);
+
+	const isImage = ["image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"].includes(media.mimeType);
+	const isVideo = ["video/x-flv", "video/quicktime", "video/mpeg", "video/mpegs", "video/mpg", "video/mp4", "video/webm", "video/wmv", "video/3gpp"].includes(media.mimeType);
+
+	const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+		const seconds = e.currentTarget.duration;
+		if (!Number.isNaN(seconds) && seconds !== Infinity) {
+			const m = Math.floor(seconds / 60);
+			const s = Math.floor(seconds % 60);
+			setDuration(`${m}:${s.toString().padStart(2, "0")}`);
+		}
+	};
+
+	const CircularProgress = () => {
+		if (progress === undefined || progress >= 100) return null;
+		const radius = 20;
+		const circumference = 2 * Math.PI * radius;
+		const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+		return (
+			<div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
+				<svg
+					className="h-12 w-12 -rotate-90 transform"
+					viewBox="0 0 48 48"
+					aria-labelledby="upload-progress-title"
+					role="img"
+				>
+					<title id="upload-progress-title">Uploading progress: {Math.round(progress)}%</title>
+
+					<circle
+						cx="24"
+						cy="24"
+						r={radius}
+						stroke="currentColor"
+						strokeWidth="4"
+						fill="transparent"
+						className="text-l5 dark:text-d5 colors"
+					/>
+
+					<circle
+						cx="24"
+						cy="24"
+						r={radius}
+						stroke="currentColor"
+						strokeWidth="4"
+						fill="transparent"
+						strokeDasharray={circumference}
+						strokeDashoffset={strokeDashoffset}
+						strokeLinecap="round"
+						className="text-blue colors"
+					/>
+				</svg>
+
+				<motion.span
+					layout
+					transition={{ duration: 0.5, ease: "backOut" }}
+					className="absolute text-xs font-medium text-d1 dark:text-l1 colors"
+				>
+					{Math.round(progress)}%
+				</motion.span>
+			</div>
+		);
+	};
+
+	if (isImage) {
+		return (
+			<div className="relative size-full">
+				<CircularProgress />
+
+				{/* biome-ignore lint/performance/noImgElement: ローカルのBlob URLプレビューのため最適化不要 */}
+				<img src={media.src} alt={media.fileName} className="size-full object-cover" />
+			</div>
+		);
+	}
+
+	if (isVideo) {
+		return (
+			<div className="relative size-full">
+				<CircularProgress />
+				{/* biome-ignore lint/a11y/useMediaCaption: ローカル動画のプレビューのため字幕トラックは不要 */}
+				<video
+					src={media.src}
+					className="size-full object-cover"
+					onLoadedMetadata={handleLoadedMetadata}
+					preload="metadata"
+				/>
+
+				{duration && (
+					<div className="flex justify-center items-center absolute bottom-1 left-1 rounded-full px-2 py-1 bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
+						<motion.span
+							layout
+							transition={{ duration: 0.5, ease: "backOut" }}
+							className="text-d1 dark:text-l1 text-left text-sm font-medium colors"
+						>
+							{duration}
+						</motion.span>
+					</div>
+				)}
+			</div>
+		);
+	}
+
+	const lastDotIndex = media.fileName.lastIndexOf(".");
+	const hasExtension = lastDotIndex !== -1 && lastDotIndex !== 0 && lastDotIndex !== media.fileName.length - 1;
+
+	const name = hasExtension ? media.fileName.slice(0, lastDotIndex) : media.fileName;
+	const extension = hasExtension ? media.fileName.slice(lastDotIndex + 1).toUpperCase() : "";
+
+	return (
+		<div className="relative flex size-full flex-col items-center justify-center p-2">
+			<CircularProgress />
+
+			<span className="colors break-all text-center font-medium text-base text-d1 dark:text-l1 line-clamp-2">
+				{name}
+			</span>
+
+			{extension && (
+				<div className="flex justify-center items-center absolute bottom-1 left-1 rounded-full px-2 py-1 bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
+					<motion.span
+						layout
+						transition={{ duration: 0.5, ease: "backOut" }}
+						className="text-d1 dark:text-l1 text-left text-sm font-medium colors"
+					>
+						{extension}
+					</motion.span>
+				</div>
+			)}
+		</div>
+	);
+};
 
 export default function Chat() {
 	const { refs, states, actions } = useChatView();
@@ -125,7 +265,7 @@ export default function Chat() {
 						className="colors flex size-full flex-col items-center justify-center rounded-4xl border border-l5 dark:border-d5"
 					>
 						<div className="colors flex size-full flex-col items-center justify-center p-4">
-							<div className="colors flex w-full min-h-10 flex-row items-start justify-center gap-1 mb-2">
+							<div className="colors flex size-full min-h-10 flex-row items-start justify-center gap-1 mb-2">
 								<motion.textarea
 									style={{ height: states.textareaHeight }}
 									transition={{ duration: 0.5, ease: "backOut" }}
@@ -249,7 +389,10 @@ export default function Chat() {
 													>
 														<Button
 															onClick={() => actions.toggleMenu("plus")}
-															className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+															className={`colors flex size-10 items-center justify-center rounded-full
+																${states.activeMenu === "plus" ?
+																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																}`}
 														>
 															<Plus className="text-d1 dark:text-l1 all" />
 														</Button>
@@ -266,7 +409,10 @@ export default function Chat() {
 													>
 														<Button
 															onClick={() => actions.toggleMenu("settings")}
-															className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+															className={`colors flex size-10 items-center justify-center rounded-full
+																${states.activeMenu === "settings" ?
+																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																}`}
 														>
 															<Settings2 className="text-d1 dark:text-l1 all" />
 														</Button>
@@ -283,7 +429,10 @@ export default function Chat() {
 													>
 														<Button
 															onClick={() => actions.toggleMenu("list")}
-															className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+															className={`colors flex size-10 items-center justify-center rounded-full
+																${states.activeMenu === "list" ?
+																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																}`}
 														>
 															<ListOrdered className="text-d1 dark:text-l1 all" />
 														</Button>
@@ -310,8 +459,9 @@ export default function Chat() {
 												</AnimatePresence>
 
 												<AnimatePresence mode="popLayout">
-													{!states.inputText.inputText.trim() && (
+													{(!states.inputText.inputText.trim() && states.inputMedia.length === 0) || states.isUploading ? (
 														<motion.div
+															key="audio"
 															layout
 															initial={{ scale: 0, opacity: 0 }}
 															animate={{ scale: 1, opacity: 1 }}
@@ -324,12 +474,9 @@ export default function Chat() {
 																<AudioLines className="text-l1 dark:text-d1 all" />
 															</Button>
 														</motion.div>
-													)}
-												</AnimatePresence>
-
-												<AnimatePresence mode="popLayout">
-													{states.inputText.inputText.trim() && (
+													) : (
 														<motion.div
+															key="send"
 															layout
 															initial={{ scale: 0, opacity: 0 }}
 															animate={{ scale: 1, opacity: 1 }}
@@ -355,14 +502,18 @@ export default function Chat() {
 							</div>
 
 							<AnimatePresence>
-								{states.activeMenu !== "none" && (
+								{states.activeMenu !== "none" && !states.isFullTextarea && (
 									<motion.div
 										layout
 										initial={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
-										animate={{ height: "12.5rem", opacity: 1, filter: "blur(0)" }}
+										animate={{
+											height: states.isFullTextarea ? 0 : "12.5rem",
+											opacity: states.isFullTextarea ? 0 : 1,
+											filter: states.isFullTextarea ? "blur(1rem)" : "blur(0)"
+										}}
 										exit={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
 										transition={{ duration: 0.5, ease: "backOut" }}
-										className="w-full flex justify-start flex-col items-center"
+										className="size-full flex flex-none justify-start flex-col items-center"
 									>
 										{states.activeMenu === "plus" &&
 											<div className="mt-2 gap-4 flex flex-row justify-center items-center size-full overflow-x-auto rounded-3xl border-2 border-l5 dark:border-d5 border-dashed colors">
@@ -398,15 +549,20 @@ export default function Chat() {
 																			initial={{ opacity: 0, filter: "blur(1rem)" }}
 																			animate={{ opacity: 1, filter: "blur(0)" }}
 																			exit={{ opacity: 0, filter: "blur(1rem)" }}
-																			className="h-full aspect-square overflow-hidden bg-l2 dark:bg-d2 rounded-2xl colors"
+																			transition={{ duration: 0.5, ease: "backOut" }}
+																			className="h-full aspect-square overflow-hidden bg-l2 dark:bg-d2 rounded-2xl colors relative"
 																		>
-																			<motion.span
-																				layout
-																				transition={{ duration: 0.5, ease: "backOut" }}
-																				className="colors font-medium text-sm text-d1 dark:text-l1"
+																			<MediaPreviewItem
+																				media={media}
+																				progress={states.uploadProgress[media.mediumId]}
+																			/>
+
+																			<Button
+																				onClick={() => actions.handleRemoveMedia(media.mediumId)}
+																				className="absolute z-10 top-1 right-1 flex size-10 items-center justify-center rounded-full bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors"
 																			>
-																				{media.fileName}
-																			</motion.span>
+																				<Trash2 className="text-red all" />
+																			</Button>
 																		</motion.div>
 																	))}
 																</AnimatePresence>
@@ -418,9 +574,9 @@ export default function Chat() {
 																animate={{ opacity: 1 }}
 																exit={{ opacity: 0 }}
 																transition={{ duration: 0.5, ease: "backOut" }}
-																className="flex justify-center items-center h-full aspect-square p-4"
+																className="flex flex-col gap-2 justify-center items-center h-full aspect-square p-4"
 															>
-																<Button className="flex justify-center items-center bg-blue hover:bg-blue/75 focus-visible:bg-blue/75 rounded-full colors">
+																<Button className="flex w-full justify-center items-center bg-blue hover:bg-blue/75 focus-visible:bg-blue/75 rounded-full colors">
 																	<Label
 																		htmlFor="file-upload"
 																		className="all flex justify-center items-center size-full px-4 py-2"
@@ -433,6 +589,23 @@ export default function Chat() {
 																			アップロード
 																		</motion.span>
 																	</Label>
+																</Button>
+
+																<Button
+																	onClick={actions.handleRemoveAllMedia}
+																	className="flex justify-center items-center rounded-full colors w-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																>
+																	<div className="all flex justify-center items-center gap-2 size-full px-4 py-2 cursor-pointer">
+																		<Trash2 className="text-red all" />
+
+																		<motion.span
+																			layout
+																			transition={{ duration: 0.5, ease: "backOut" }}
+																			className="colors whitespace-nowrap text-center font-bold text-lg text-red"
+																		>
+																			全削除
+																		</motion.span>
+																	</div>
 																</Button>
 															</motion.div>
 														</motion.div>

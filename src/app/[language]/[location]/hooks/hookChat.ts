@@ -33,12 +33,30 @@ import {
 import { useLocale } from "next-intl";
 
 //  ================================================================
+//      拡張コンテンツ
+//  ================================================================
+
+export const useExtensionMenu = () => {
+	const [activeMenu, setActiveMenu] = useState<"none" | "plus" | "settings" | "list">("none");
+
+	const toggleMenu = useCallback((menu: "plus" | "settings" | "list") => {
+		setActiveMenu((prev) => (prev === menu ? "none" : menu));
+	}, []);
+
+	return {
+		states: { activeMenu },
+		actions: { toggleMenu, setActiveMenu },
+	};
+};
+
+//  ================================================================
 //      ドラッグアンドドロップ
 //  ================================================================
 
 export const useDragAndDrop = (
 	onDropCallback: (files: FileList) => void,
 	ref: React.RefObject<HTMLElement | null>,
+	setActiveMenu?: React.Dispatch<React.SetStateAction<"none" | "plus" | "settings" | "list">>
 ) => {
 	const [dragInfo, setDragInfo] = useState<{
 		count: number;
@@ -91,6 +109,10 @@ export const useDragAndDrop = (
 
 			if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
 				onDropCallback(e.dataTransfer.files);
+
+				if (setActiveMenu) {
+					setActiveMenu("plus");
+				}
 			}
 		},
 		[onDropCallback],
@@ -130,23 +152,6 @@ export const usePageTitle = (ref: React.RefObject<HTMLElement | null>) => {
 	}, [textSplit]);
 
 	return { textSplit };
-};
-
-//  ================================================================
-//      拡張コンテンツ
-//  ================================================================
-
-export const useExtensionMenu = () => {
-	const [activeMenu, setActiveMenu] = useState<"none" | "plus" | "settings" | "list">("none");
-
-	const toggleMenu = useCallback((menu: "plus" | "settings" | "list") => {
-		setActiveMenu((prev) => (prev === menu ? "none" : menu));
-	}, []);
-
-	return {
-		states: { activeMenu },
-		actions: { toggleMenu },
-	};
 };
 
 //  ================================================================
@@ -500,30 +505,130 @@ export const useChat = () => {
 	);
 	const [turns, setTurns] = useState<TurnList>(TurnListSchema.createDefault());
 
-	//	送信か
-	const isSent = useMemo(() => turns.length > 0, [turns]);
+	const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+
+	const isUploading = useMemo(() => {
+		return inputMedia.some((m) => uploadProgress[m.mediumId] !== undefined && uploadProgress[m.mediumId] < 100);
+	}, [inputMedia, uploadProgress]);
 
 	// 転送と変換
 	const handleUploadAndConvert = useCallback(async (files: FileList | null) => {
 		if (!files) return;
 		const fileArray = Array.from(files);
-		const medium = fileArray.map((file) =>
-			MediumSchema.parse({
-				...MediumSchema.createDefault(),
-				mediumId: uuidv7(),
-				src: URL.createObjectURL(file),
+
+		const initialMedia = fileArray.map((file) => {
+			const tempId = uuidv7();
+			const localUrl = URL.createObjectURL(file);
+			return {
+				id: tempId,
 				file: file,
-				fileName: file.name,
-				mimeType: file.type,
-				size: file.size,
-			}),
+				localUrl: localUrl,
+				medium: MediumSchema.parse({
+					...MediumSchema.createDefault(),
+					mediumId: tempId,
+					src: localUrl,
+					fileName: file.name,
+					mimeType: file.type,
+					size: file.size,
+				}),
+			};
+		});
+
+		setInputMedia((prev) => [...prev, ...initialMedia.map((m) => m.medium)]);
+		setUploadProgress((prev) => {
+			const newProg = { ...prev };
+			for (const m of initialMedia) newProg[m.id] = 0;
+			return newProg;
+		});
+
+		await Promise.all(
+			initialMedia.map(async ({ id, file, localUrl }) => {
+				const uploadWithXHR = () =>
+					new Promise<{ url: string }>((resolve, reject) => {
+						const xhr = new XMLHttpRequest();
+						xhr.open("POST", `/api/upload?filename=${encodeURIComponent(file.name)}`);
+
+						xhr.upload.onprogress = (event) => {
+							if (event.lengthComputable) {
+								const percentComplete = (event.loaded / event.total) * 100;
+								setUploadProgress((prev) => ({ ...prev, [id]: percentComplete }));
+							}
+						};
+
+						xhr.onload = () => {
+							if (xhr.status >= 200 && xhr.status < 300) {
+								resolve(JSON.parse(xhr.responseText));
+							} else {
+								reject(new Error("Upload failed"));
+							}
+						};
+
+						xhr.onerror = () => reject(new Error("Network Error"));
+						xhr.send(file);
+					});
+
+				try {
+					const newBlob = await uploadWithXHR();
+
+					setInputMedia((prev) =>
+						prev.map((m) => (m.mediumId === id ? { ...m, src: newBlob.url } : m))
+					);
+					setUploadProgress((prev) => ({ ...prev, [id]: 100 }));
+					URL.revokeObjectURL(localUrl);
+				} catch (error) {
+					console.error("Upload failed for", file.name, error);
+					setInputMedia((prev) => prev.filter((m) => m.mediumId !== id));
+					setUploadProgress((prev) => {
+						const newProg = { ...prev };
+						delete newProg[id];
+						return newProg;
+					});
+					URL.revokeObjectURL(localUrl);
+				}
+			})
 		);
-		setInputMedia((prev) => [...prev, ...medium]);
 	}, []);
+
+	//	メディア削除
+	const handleRemoveMedia = useCallback((targetId: string) => {
+		setInputMedia((prev) => {
+			const targetMedia = prev.find((m) => m.mediumId === targetId);
+			if (targetMedia && targetMedia.src.startsWith("http")) {
+				fetch(`/api/upload?url=${encodeURIComponent(targetMedia.src)}`, {
+					method: "DELETE",
+				}).catch(console.error);
+			}
+			return prev.filter((m) => m.mediumId !== targetId);
+		});
+		setUploadProgress((prev) => {
+			const newProg = { ...prev };
+			delete newProg[targetId];
+			return newProg;
+		});
+	}, []);
+
+	// 全メディア削除
+	const handleRemoveAllMedia = useCallback(() => {
+		setInputMedia((prev) => {
+			for (const media of prev) {
+				if (media.src.startsWith("http")) {
+					fetch(`/api/upload?url=${encodeURIComponent(media.src)}`, {
+						method: "DELETE",
+					}).catch(console.error);
+				}
+			}
+			return MediumListSchema.createDefault();
+		});
+		setUploadProgress({});
+	}, []);
+
+	//	送信か
+	const isSent = useMemo(() => turns.length > 0, [turns]);
 
 	// 送信
 	const handleSend = useCallback(() => {
 		if (!inputText.inputText && inputMedia.length === 0) return;
+		if (isUploading) return;
 
 		setUserStatus("sending");
 		setModelStatus("thinking");
@@ -590,11 +695,12 @@ export const useChat = () => {
 			setSwitchState,
 			setQuestionState,
 			setTurns,
-
 			handleUploadAndConvert,
+			handleRemoveMedia,
+			handleRemoveAllMedia,
 			handleSend,
 		}),
-		[handleUploadAndConvert, handleSend],
+		[handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend],
 	);
 
 	return {
@@ -606,7 +712,8 @@ export const useChat = () => {
 			sliderState,
 			switchState,
 			turns,
-
+			uploadProgress,
+			isUploading,
 			isSent,
 		},
 		actions,
