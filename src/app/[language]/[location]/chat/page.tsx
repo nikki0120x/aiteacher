@@ -533,8 +533,8 @@ export default function Chat() {
 																	animate={{ opacity: 1, filter: "blur(0)", scale: 1 }}
 																	exit={{ opacity: 0, filter: "blur(1rem)", scale: 0.5 }}
 																	transition={{ duration: 0.5, ease: "backOut" }}
-																	style={{ originX: 1, originY: 0 }}
-																	className="absolute top-[calc(100%+1rem)] right-0 z-10 w-64 flex flex-col gap-1 rounded-4xl border border-l5 bg-l1/50 p-2 shadow-lg backdrop-blur-lg dark:border-d5 dark:bg-d1/50 colors"
+																	style={{ originX: 1, originY: 1 }}
+																	className="absolute bottom-[calc(100%+1rem)] right-0 z-10 flex flex-col gap-1 rounded-4xl border border-l5 bg-l1/50 p-2 shadow-lg backdrop-blur-lg dark:border-d5 dark:bg-d1/50 colors"
 																>
 																	{[
 																		{ id: "fast", label: "高速", icon: Zap },
