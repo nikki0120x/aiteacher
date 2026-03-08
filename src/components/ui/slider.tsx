@@ -32,7 +32,7 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
         const maxNum = Number(max);
 
         const ratio = Math.max(0, Math.min(1, (internalValue - minNum) / (maxNum - minNum)));
-        const percentStr = Math.round(ratio * 100) + "%";
+        const percentStr = `${Math.round(ratio * 100)}%`;
 
         const getPositionStyle = (val: number) => {
             const r = Math.max(0, Math.min(1, (val - minNum) / (maxNum - minNum)));

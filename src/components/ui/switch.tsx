@@ -25,7 +25,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
         return (
             <Label
                 className={cn(
-                    "colors flex w-full cursor-pointer items-center justify-between gap-4 rounded-2xl p-2 hover:bg-l2 dark:hover:bg-d2",
+                    "colors flex w-full cursor-pointer items-center justify-between gap-2 rounded-full p-2 hover:bg-l2 dark:hover:bg-d2",
                     "has-focus-visible:ring-2 has-focus-visible:ring-blue",
                     className
                 )}

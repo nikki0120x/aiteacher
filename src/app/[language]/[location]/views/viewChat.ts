@@ -6,7 +6,7 @@ import {
 	usePageTitle,
 	useTextarea,
 	useVoiceInput,
-	useExtensionMenu,
+	useExtensionContent,
 } from "@/app/[language]/[location]/hooks/hookChat";
 
 export const useChatView = () => {
@@ -18,6 +18,7 @@ export const useChatView = () => {
 	const pageTitleTextRef = useRef<HTMLElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const stopListeningButtonRef = useRef<HTMLButtonElement>(null);
+	const listInputRef = useRef<HTMLInputElement>(null);
 
 	//  ================================================================
 	//      States & Actions
@@ -36,6 +37,9 @@ export const useChatView = () => {
 			isSent,
 			uploadProgress,
 			isUploading,
+			teachingMode,
+			isAutoList,
+			listFormatText,
 		},
 		actions: {
 			setUserStatus,
@@ -50,20 +54,28 @@ export const useChatView = () => {
 			handleRemoveMedia,
 			handleRemoveAllMedia,
 			handleSend,
+			updateSlider,
+			updateSwitch,
+			updateTeachingMode,
+			updateIsAutoList,
+			updateListFormatText,
+			insertShape,
+			clearListFormat,
 		},
 	} = useChat();
 
 	//  拡張コンテンツ
 	const {
-		states: { activeMenu },
-		actions: { toggleMenu, setActiveMenu },
-	} = useExtensionMenu();
+		refs: { extensionRefCallback },
+		states: { activeContent, contentDirection, extensionHeight },
+		actions: { toggleContent, setActiveContent },
+	} = useExtensionContent();
 
 	//  ドラッグアンドドロップ
 	const {
 		states: { dragInfo },
 		actions: { handleDragOver, handleDragEnter, handleDragLeave, handleDrop },
-	} = useDragAndDrop(handleUploadAndConvert, dragAndDropTextRef, setActiveMenu);
+	} = useDragAndDrop(handleUploadAndConvert, dragAndDropTextRef, setActiveContent);
 
 	//  ページタイトル
 	usePageTitle(pageTitleTextRef);
@@ -97,7 +109,7 @@ export const useChatView = () => {
 			setIsOverLimit,
 			setIsFullTextarea,
 		},
-	} = useTextarea(displayText, textareaRef, activeMenu !== "none");
+	} = useTextarea(displayText, textareaRef, activeContent === "none" ? 0 : extensionHeight);
 
 	//  入力テキスト削除
 	const {
@@ -115,10 +127,12 @@ export const useChatView = () => {
 
 	return {
 		refs: {
+			extensionRefCallback,
 			dragAndDropTextRef,
 			pageTitleTextRef,
 			textareaRef,
-			stopListeningButtonRef
+			stopListeningButtonRef,
+			listInputRef,
 		},
 		states: {
 			userStatus,
@@ -132,7 +146,9 @@ export const useChatView = () => {
 			isUploading,
 			isSent,
 			dragInfo,
-			activeMenu,
+			activeContent,
+			contentDirection,
+			extensionHeight,
 			isListening,
 			interimText,
 			displayText,
@@ -141,6 +157,9 @@ export const useChatView = () => {
 			isOverLimit,
 			isFullTextarea,
 			containerHeight,
+			teachingMode,
+			isAutoList,
+			listFormatText,
 		},
 		actions: {
 			setUserStatus,
@@ -159,7 +178,7 @@ export const useChatView = () => {
 			handleUploadAndConvert,
 			handleRemoveMedia,
 			handleRemoveAllMedia,
-			toggleMenu,
+			toggleContent,
 			setIsListening,
 			setInterimText,
 			startListening,
@@ -170,6 +189,13 @@ export const useChatView = () => {
 			setIsOverLimit,
 			setIsFullTextarea,
 			handleInputTextClear,
+			updateSlider,
+			updateSwitch,
+			updateTeachingMode,
+			updateIsAutoList,
+			updateListFormatText,
+			insertShape,
+			clearListFormat,
 		},
 	};
 };

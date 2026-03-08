@@ -36,16 +36,59 @@ import { useLocale } from "next-intl";
 //      拡張コンテンツ
 //  ================================================================
 
-export const useExtensionMenu = () => {
-	const [activeMenu, setActiveMenu] = useState<"none" | "plus" | "settings" | "list">("none");
+export const useExtensionContent = () => {
+	const [activeContent, setActiveContent] = useState<"none" | "upload" | "config" | "list">("none");
+	const [contentDirection, setContentDirection] = useState<number>(0);
 
-	const toggleMenu = useCallback((menu: "plus" | "settings" | "list") => {
-		setActiveMenu((prev) => (prev === menu ? "none" : menu));
+	const [extensionHeight, setExtensionHeight] = useState(0);
+	const observerRef = useRef<ResizeObserver | null>(null);
+
+	const extensionRefCallback = useCallback((node: HTMLDivElement | null) => {
+		if (observerRef.current) {
+			observerRef.current.disconnect();
+			observerRef.current = null;
+		}
+		if (node) {
+			const observer = new ResizeObserver((entries) => {
+				for (const entry of entries) {
+					const height =
+						entry.borderBoxSize?.[0]?.blockSize ??
+						entry.target.getBoundingClientRect().height;
+					setExtensionHeight(height);
+				}
+			});
+			observer.observe(node);
+			observerRef.current = observer;
+		} else {
+			setExtensionHeight(0);
+		}
 	}, []);
 
+	const MENU_ORDER = useMemo(() => ["upload", "config", "list"], []);
+
+	const toggleContent = useCallback((menu: "upload" | "config" | "list") => {
+		setActiveContent((prev) => {
+			if (prev === menu) {
+				setContentDirection(0);
+				return "none";
+			}
+
+			let newDirection = 0;
+			if (prev !== "none") {
+				const prevIndex = MENU_ORDER.indexOf(prev);
+				const nextIndex = MENU_ORDER.indexOf(menu);
+				newDirection = nextIndex > prevIndex ? 1 : -1;
+			}
+
+			setContentDirection(newDirection);
+			return menu;
+		});
+	}, [MENU_ORDER]);
+
 	return {
-		states: { activeMenu },
-		actions: { toggleMenu, setActiveMenu },
+		refs: { extensionRefCallback },
+		states: { activeContent, contentDirection, extensionHeight },
+		actions: { toggleContent, setActiveContent },
 	};
 };
 
@@ -56,7 +99,7 @@ export const useExtensionMenu = () => {
 export const useDragAndDrop = (
 	onDropCallback: (files: FileList) => void,
 	ref: React.RefObject<HTMLElement | null>,
-	setActiveMenu?: React.Dispatch<React.SetStateAction<"none" | "plus" | "settings" | "list">>
+	setActiveMenu?: React.Dispatch<React.SetStateAction<"none" | "upload" | "config" | "list">>
 ) => {
 	const [dragInfo, setDragInfo] = useState<{
 		count: number;
@@ -111,7 +154,7 @@ export const useDragAndDrop = (
 				onDropCallback(e.dataTransfer.files);
 
 				if (setActiveMenu) {
-					setActiveMenu("plus");
+					setActiveMenu("upload");
 				}
 			}
 		},
@@ -347,7 +390,7 @@ export const useVoiceInput = (
 export const useTextarea = (
 	displayText: string,
 	ref: React.RefObject<HTMLTextAreaElement | null>,
-	isExtensionOpen: boolean
+	extensionHeight: number
 ) => {
 	const [textareaHeight, setTextareaHeight] = useState<number | string>("auto");
 	const [singleLineHeight, setSingleLineHeight] = useState<number>(0);
@@ -392,14 +435,14 @@ export const useTextarea = (
 		const textareaSpace =
 			typeof textareaHeight === "number" ? textareaHeight : 0;
 
-		const BLANK_SPACE = 98 + (isExtensionOpen ? 200 : 0);
+		const BLANK_SPACE = 98 + extensionHeight;
 
 		if (textareaSpace > 0) {
 			return textareaSpace + BLANK_SPACE;
 		}
 
 		return "auto";
-	}, [isFullTextarea, textareaHeight, isExtensionOpen]);
+	}, [isFullTextarea, textareaHeight, extensionHeight]);
 
 	const actions = useMemo(
 		() => ({
@@ -507,6 +550,127 @@ export const useChat = () => {
 
 	const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
 
+	const [teachingMode, setTeachingMode] = useState<"choices" | "description">("choices");
+	const [isAutoList, setIsAutoList] = useState(true);
+	const [listFormatText, setListFormatText] = useState("");
+
+	const lastShapeRef = useRef<string | null>(null);
+	const shapeStackRef = useRef<string[]>([]);
+
+	// ===== 設定・Listメニュー用アクション =====
+	const updateSlider = useCallback((value: number) => {
+		setSliderState((prev) => ({ ...prev, politeness: value }));
+	}, []);
+
+	const updateSwitch = useCallback((key: keyof SwitchState, checked: boolean) => {
+		setSwitchState((prev) => ({ ...prev, [key]: checked }));
+	}, []);
+
+	const updateTeachingMode = useCallback((mode: "choices" | "description") => {
+		setTeachingMode(mode);
+	}, []);
+
+	const updateIsAutoList = useCallback((checked: boolean) => {
+		setIsAutoList(checked);
+	}, []);
+
+	const updateListFormatText = useCallback((text: string) => {
+		setListFormatText(text);
+	}, []);
+
+	const insertShape = useCallback((open: string, close: string, shape: string, inputRef: React.RefObject<HTMLInputElement | null>) => {
+		const input = inputRef.current;
+
+		setListFormatText(prev => {
+			let start = prev.length;
+
+			if (input) {
+				start = input.selectionStart ?? prev.length;
+			}
+
+			const pairs = [
+				{ o: "(", c: ")" }, { o: "{", c: "}" }, { o: "[", c: "]" },
+				{ o: "□", c: "□" }, { o: "○", c: "○" }, { o: "◎", c: "◎" },
+				{ o: "◇", c: "◇" }, { o: "△", c: "△" }, { o: "▽", c: "▽" },
+				{ o: "◁", c: "◁" }, { o: "▷", c: "▷" }, { o: "☆", c: "☆" }
+			];
+
+			const stack: string[] = [];
+			for (let i = 0; i < start; i++) {
+				const char = prev[i];
+				const pair = pairs.find(p => p.o === char || p.c === char);
+
+				if (pair) {
+					// 開きと閉じが同じ記号（□など）の場合
+					if (pair.o === pair.c) {
+						if (stack[stack.length - 1] === char) stack.pop(); // 閉じとして扱う
+						else stack.push(char); // 開きとして扱う
+					}
+					// 開きと閉じが異なる記号（()など）の場合
+					else {
+						if (char === pair.o) stack.push(char);
+						else if (char === pair.c && stack[stack.length - 1] === pair.o) stack.pop();
+					}
+				}
+			}
+
+			// スタックが残っている ＝ 何らかの図形の内側にカーソルがある場合は入力を弾く
+			if (stack.length > 0) {
+				return prev;
+			}
+			// ==========================================
+
+			let textBefore = prev;
+			let textAfter = "";
+
+			if (input) {
+				const end = input.selectionEnd ?? prev.length;
+				textBefore = prev.substring(0, start);
+				textAfter = prev.substring(end);
+			}
+
+			let separator = "";
+
+			// すべての記号を階層管理の対象とする
+			if (textBefore.trim().length > 0) {
+				if (lastShapeRef.current === shape) {
+					separator = ","; // 同階層
+				} else if (shapeStackRef.current.includes(shape)) {
+					separator = "|"; // 階層を戻る
+					while (shapeStackRef.current.length > 0 && shapeStackRef.current[shapeStackRef.current.length - 1] !== shape) {
+						shapeStackRef.current.pop();
+					}
+				} else {
+					separator = "/"; // 下位階層へ
+					shapeStackRef.current.push(shape);
+				}
+				lastShapeRef.current = shape;
+			} else {
+				shapeStackRef.current = [shape];
+				lastShapeRef.current = shape;
+			}
+
+			const insertion = separator + open + close;
+
+			if (input) {
+				setTimeout(() => {
+					input.focus();
+					// 開き記号と閉じ記号の間にカーソルを移動
+					const newCursorPos = start + separator.length + open.length;
+					input.setSelectionRange(newCursorPos, newCursorPos);
+				}, 0);
+			}
+
+			return textBefore + insertion + textAfter;
+		});
+	}, []);
+
+	const clearListFormat = useCallback(() => {
+		setListFormatText("");
+		lastShapeRef.current = null;
+		shapeStackRef.current = [];
+	}, []);
+
 	const isUploading = useMemo(() => {
 		return inputMedia.some((m) => uploadProgress[m.mediumId] !== undefined && uploadProgress[m.mediumId] < 100);
 	}, [inputMedia, uploadProgress]);
@@ -593,7 +757,7 @@ export const useChat = () => {
 	const handleRemoveMedia = useCallback((targetId: string) => {
 		setInputMedia((prev) => {
 			const targetMedia = prev.find((m) => m.mediumId === targetId);
-			if (targetMedia && targetMedia.src.startsWith("http")) {
+			if (targetMedia?.src.startsWith("http")) {
 				fetch(`/api/upload?url=${encodeURIComponent(targetMedia.src)}`, {
 					method: "DELETE",
 				}).catch(console.error);
@@ -784,8 +948,15 @@ export const useChat = () => {
 			handleRemoveMedia,
 			handleRemoveAllMedia,
 			handleSend,
+			updateSlider,
+			updateSwitch,
+			updateTeachingMode,
+			updateIsAutoList,
+			updateListFormatText,
+			insertShape,
+			clearListFormat,
 		}),
-		[handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend],
+		[handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateSlider, updateSwitch, updateTeachingMode, updateIsAutoList, updateListFormatText, insertShape, clearListFormat],
 	);
 
 	return {
@@ -800,6 +971,9 @@ export const useChat = () => {
 			uploadProgress,
 			isUploading,
 			isSent,
+			teachingMode,
+			isAutoList,
+			listFormatText,
 		},
 		actions,
 	};

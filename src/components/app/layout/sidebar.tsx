@@ -2,7 +2,6 @@
 import {
 	BellRing,
 	BrickWallShield,
-	ChevronLeft,
 	ChevronRight,
 	CircleUserRound,
 	Info,

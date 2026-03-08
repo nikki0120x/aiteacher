@@ -111,7 +111,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 								</div>
 							)}
 
-							<div className="relative ml-4 flex flex-1 items-center justify-center">
+							<div className={cn(
+								"relative flex flex-1 items-center justify-center",
+								!leftContent && "ml-4"
+							)}>
 								<input
 									{...props}
 									ref={innerRef}
@@ -122,6 +125,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 									onChange={handleInputChange}
 									className={cn(
 										"peer size-full bg-transparent pt-2 text-left font-medium text-base text-d1 caret-blue outline-none placeholder:text-l5 dark:text-l1 dark:placeholder:text-d5",
+										props.disabled && "cursor-not-allowed",
 										autofillClass,
 									)}
 								/>
