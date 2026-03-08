@@ -6,7 +6,6 @@ export const useSettingsView = () => {
     //     Refs
     // ================================================================
 
-    // スライダーやスイッチに直接フォーカスなどを当てたい場合のためのRef
     const sliderRef = useRef<HTMLInputElement>(null);
     const summarySwitchRef = useRef<HTMLInputElement>(null);
     const guidanceSwitchRef = useRef<HTMLInputElement>(null);
@@ -21,12 +20,15 @@ export const useSettingsView = () => {
         states: {
             sliderState,
             switchState,
+            teachingMode,
         },
         actions: {
             setSliderState,
             setSwitchState,
+            setTeachingMode,
             updateSlider,
             updateSwitch,
+            updateTeachingMode,
         },
     } = useSettings();
 
@@ -41,12 +43,15 @@ export const useSettingsView = () => {
         states: {
             sliderState,
             switchState,
+            teachingMode,
         },
         actions: {
             setSliderState,
             setSwitchState,
+            setTeachingMode,
             updateSlider,
             updateSwitch,
+            updateTeachingMode,
         },
     };
 };

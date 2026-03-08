@@ -163,6 +163,8 @@ export default function Chat() {
 	const chat = useChatView();
 	const settings = useSettingsView();
 
+	const [activeSettingsTab, setActiveSettingsTab] = useState<"standard" | "learning" | "teaching">("learning");
+
 	const renderTurn = (index: number, turn: any) => {
 		const question = turn.pages[0]?.questions[0];
 		if (!question) return null;
@@ -691,53 +693,149 @@ export default function Chat() {
 										}
 
 										{chat.states.activeMenu === "settings" &&
-											<div className="gap-2 p-2 flex flex-col justify-start items-center size-full overflow-y-auto">
-												<div className="w-full">
-													<Slider
-														label="丁寧度"
-														min={0}
-														max={1}
-														step={0.25}
-														value={settings.states.sliderState.politeness}
-														onChange={(e) => settings.actions.updateSlider(Number(e.target.value))}
-														marks={[
-															{ value: 0 },
-															{ value: 0.25, label: "難しい" },
-															{ value: 0.50, label: "普通" },
-															{ value: 0.75, label: "易しい" },
-															{ value: 1 }
-														]}
-													/>
+											<div className="p-2 flex flex-col justify-start items-center size-full overflow-hidden">
+												<div className="colors relative flex w-full flex-none items-center justify-center gap-1 overflow-hidden rounded-full bg-l2 p-1 dark:bg-d2">
+													{[
+														{ id: "standard", label: "標準" },
+														{ id: "learning", label: "学習" },
+														{ id: "teaching", label: "指導" },
+													].map((tab) => (
+														<Label
+															key={tab.id}
+															className="overflow-visible colors group relative flex size-full flex-1 items-center justify-center rounded-full py-2 hover:bg-l3 hover:dark:bg-d3"
+														>
+															<Input
+																type="radio"
+																name="settings_tab"
+																value={tab.id}
+																visibility={false}
+																checked={activeSettingsTab === tab.id}
+																onChange={() => setActiveSettingsTab(tab.id as any)}
+															/>
+
+															{activeSettingsTab === tab.id && (
+																<motion.div
+																	layoutId="activeSettingsTab"
+																	transition={{
+																		duration: 0.5,
+																		ease: "backOut",
+																	}}
+																	className="colors absolute inset-0 z-10 size-full rounded-full bg-blue"
+																/>
+															)}
+
+															<AnimatePresence mode="popLayout">
+																<motion.span
+																	layout
+																	transition={{ duration: 0.5, ease: "backOut" }}
+																	className={`colors relative z-10 whitespace-nowrap text-center font-medium text-base ${activeSettingsTab === tab.id
+																		? "text-l1"
+																		: "text-l5 group-hover:text-d1 dark:text-d5 dark:group-hover:text-l1"
+																		}`}
+																>
+																	{tab.label}
+																</motion.span>
+															</AnimatePresence>
+														</Label>
+													))}
 												</div>
 
-												<div className="grid w-full gap-2 grid-cols-2">
-													<Switch
-														label="要約"
-														checked={settings.states.switchState?.summary}
-														onChange={(e) => settings.actions.updateSwitch("summary", e.target.checked)}
-													/>
+												<div className="relative size-full">
+													<AnimatePresence mode="wait">
+														<motion.div
+															key={activeSettingsTab}
+															layout
+															initial={{ opacity: 0, y: 8 }}
+															animate={{ opacity: 1, y: 0 }}
+															exit={{ opacity: 0, y: -8 }}
+															transition={{ duration: 0.5, ease: "backOut" }}
+															className="absolute inset-0 flex gap-2 flex-col overflow-y-auto p-2"
+														>
+															<div className="w-full">
+																<Slider
+																	label="丁寧度"
+																	min={0}
+																	max={1}
+																	step={0.25}
+																	value={settings.states.sliderState.politeness}
+																	onChange={(e) => settings.actions.updateSlider(Number(e.target.value))}
+																	marks={[
+																		{ value: 0 },
+																		{ value: 0.25, label: "難しい" },
+																		{ value: 0.50, label: "普通" },
+																		{ value: 0.75, label: "易しい" },
+																		{ value: 1 }
+																	]}
+																/>
+															</div>
 
-													<Switch
-														label="指針"
-														checked={settings.states.switchState?.guidance}
-														onChange={(e) => settings.actions.updateSwitch("guidance", e.target.checked)}
-													/>
+															{activeSettingsTab === "learning" && (
+																<div className="grid w-full gap-2 grid-cols-2">
+																	<Switch
+																		label="要約"
+																		checked={settings.states.switchState?.summary}
+																		onChange={(e) => settings.actions.updateSwitch("summary", e.target.checked)}
+																	/>
 
-													<Switch
-														label="解説 "
-														checked={settings.states.switchState?.explanation}
-														onChange={(e) => settings.actions.updateSwitch("explanation", e.target.checked)}
-													/>
+																	<Switch
+																		label="指針"
+																		checked={settings.states.switchState?.guidance}
+																		onChange={(e) => settings.actions.updateSwitch("guidance", e.target.checked)}
+																	/>
 
-													<Switch
-														label="解答"
-														checked={settings.states.switchState?.answer}
-														onChange={(e) => settings.actions.updateSwitch("answer", e.target.checked)}
-													/>
+																	<Switch
+																		label="解説"
+																		checked={settings.states.switchState?.explanation}
+																		onChange={(e) => settings.actions.updateSwitch("explanation", e.target.checked)}
+																	/>
 
+																	<Switch
+																		label="解答"
+																		checked={settings.states.switchState?.answer}
+																		onChange={(e) => settings.actions.updateSwitch("answer", e.target.checked)}
+																	/>
+																</div>
+															)}
+
+															{activeSettingsTab === "teaching" && (
+																<div className="flex w-full gap-2 items-center justify-between rounded-2xl">
+																	<Label className={`flex w-full items-center justify-center gap-2 rounded-2xl p-2 hover:bg-l2 dark:hover:bg-d2 colors ${settings.states.teachingMode === "choices" && "bg-l2 dark:bg-d2"}`}>
+																		<Input
+																			type="radio"
+																			name="teaching_mode"
+																			value="choices"
+																			checked={settings.states.teachingMode === "choices"}
+																			onChange={() => settings.actions.updateTeachingMode?.("choices")}
+																			className="colors flex size-5 items-center justify-center rounded-full border-l5 dark:border-d5"
+																		/>
+
+																		<motion.span
+
+																			className="font-medium text-base text-d1 dark:text-l1 colors"
+																		>
+																			選択肢
+																		</motion.span>
+																	</Label>
+
+																	<Label className={`flex w-full items-center justify-center gap-2 rounded-2xl p-2 hover:bg-l2 dark:hover:bg-d2 colors ${settings.states.teachingMode === "description" && "bg-l2 dark:bg-d2"}`}>
+																		<Input
+																			type="radio"
+																			name="teaching_mode"
+																			value="description"
+																			checked={settings.states.teachingMode === "description"}
+																			onChange={() => settings.actions.updateTeachingMode?.("description")}
+																			className="colors flex size-5 items-center justify-center rounded-full border-l5 dark:border-d5"
+																		/>
+																		<span className="font-medium text-base text-d1 dark:text-l1 colors">記述</span>
+																	</Label>
+																</div>
+															)}
+														</motion.div>
+													</AnimatePresence>
 												</div>
 											</div>
 										}
+
 										{chat.states.activeMenu === "list" && <span>List メニューの内容</span>}
 									</motion.div>
 								)}

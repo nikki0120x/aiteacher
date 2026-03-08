@@ -7,15 +7,14 @@ import {
 } from "@/models/modelChat";
 
 export const useSettings = () => {
-    // State: modelChat.tsのスキーマから初期値を生成
     const [sliderState, setSliderState] = useState<SliderState>(
         SliderStateSchema.createDefault(),
     );
     const [switchState, setSwitchState] = useState<SwitchState>(
         SwitchStateSchema.createDefault(),
     );
+    const [teachingMode, setTeachingMode] = useState<"choices" | "description">("choices");
 
-    // Action: スライダーの更新ロジック
     const updateSlider = useCallback((value: number) => {
         setSliderState((prev) => ({
             ...prev,
@@ -23,7 +22,6 @@ export const useSettings = () => {
         }));
     }, []);
 
-    // Action: スイッチの更新ロジック
     const updateSwitch = useCallback((key: keyof SwitchState, checked: boolean) => {
         setSwitchState((prev) => ({
             ...prev,
@@ -31,20 +29,27 @@ export const useSettings = () => {
         }));
     }, []);
 
+    const updateTeachingMode = useCallback((mode: "choices" | "description") => {
+        setTeachingMode(mode);
+    }, []);
+
     const actions = useMemo(
         () => ({
             setSliderState,
             setSwitchState,
+            setTeachingMode,
             updateSlider,
             updateSwitch,
+            updateTeachingMode,
         }),
-        [updateSlider, updateSwitch],
+        [updateSlider, updateSwitch, updateTeachingMode],
     );
 
     return {
         states: {
             sliderState,
             switchState,
+            teachingMode,
         },
         actions,
     };
