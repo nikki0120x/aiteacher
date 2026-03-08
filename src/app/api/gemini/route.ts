@@ -1,4 +1,4 @@
-/* src/app/api/gemini/route.ts */
+/* src/app/api/gemini/route.t */
 import * as fs from "node:fs";
 import { GoogleGenAI } from "@google/genai";
 import type { NextRequest } from "next/server";
