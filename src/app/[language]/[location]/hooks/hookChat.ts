@@ -14,16 +14,11 @@ import {
 	type MediumList,
 	MediumListSchema,
 	MediumSchema,
+	ChatFlowSchema,
+	type ChatFlow,
 	type MODEL_STATUS_MAP,
 	ModelMessageSchema,
 	PageSchema,
-	QuestionSchema,
-	type QuestionState,
-	QuestionStateSchema,
-	type SliderState,
-	SliderStateSchema,
-	type SwitchState,
-	SwitchStateSchema,
 	type TurnList,
 	TurnListSchema,
 	TurnSchema,
@@ -37,7 +32,7 @@ import { useLocale } from "next-intl";
 //  ================================================================
 
 export const useExtensionContent = () => {
-	const [activeContent, setActiveContent] = useState<"none" | "upload" | "config" | "list">("none");
+	const [activeContent, setActiveContent] = useState<"none" | "upload">("none");
 	const [contentDirection, setContentDirection] = useState<number>(0);
 
 	const [extensionHeight, setExtensionHeight] = useState(0);
@@ -64,9 +59,9 @@ export const useExtensionContent = () => {
 		}
 	}, []);
 
-	const MENU_ORDER = useMemo(() => ["upload", "config", "list"], []);
+	const MENU_ORDER = useMemo(() => ["upload"], []);
 
-	const toggleContent = useCallback((menu: "upload" | "config" | "list") => {
+	const toggleContent = useCallback((menu: "upload") => {
 		setActiveContent((prev) => {
 			if (prev === menu) {
 				setContentDirection(0);
@@ -99,7 +94,7 @@ export const useExtensionContent = () => {
 export const useDragAndDrop = (
 	onDropCallback: (files: FileList) => void,
 	ref: React.RefObject<HTMLElement | null>,
-	setActiveMenu?: React.Dispatch<React.SetStateAction<"none" | "upload" | "config" | "list">>
+	setActiveMenu?: React.Dispatch<React.SetStateAction<"none" | "upload">>
 ) => {
 	const [dragInfo, setDragInfo] = useState<{
 		count: number;
@@ -527,161 +522,21 @@ export const useInputTextClear = (
 //  ================================================================
 
 export const useChat = (
-	setActiveContent?: React.Dispatch<React.SetStateAction<"none" | "upload" | "config" | "list">>
+	setActiveContent?: React.Dispatch<React.SetStateAction<"none" | "upload">>
 ) => {
-	const [userStatus, setUserStatus] =
-		useState<keyof typeof USER_STATUS_MAP>("pending");
-	const [modelStatus, setModelStatus] =
-		useState<keyof typeof MODEL_STATUS_MAP>("pending");
-	const [inputText, setInputText] = useState<InputText>(
-		InputTextSchema.createDefault(),
-	);
-	const [inputMedia, setInputMedia] = useState<MediumList>(
-		MediumListSchema.createDefault(),
-	);
-	const [switchState, setSwitchState] = useState<SwitchState>(
-		SwitchStateSchema.createDefault(),
-	);
-	const [questionState, setQuestionState] = useState<QuestionState>(
-		QuestionStateSchema.createDefault(),
-	);
-	const [turns, setTurns] = useState<TurnList>(TurnListSchema.createDefault());
+	const [userStatus, setUserStatus] = useState<keyof typeof USER_STATUS_MAP>("pending");
+	const [modelStatus, setModelStatus] = useState<keyof typeof MODEL_STATUS_MAP>("pending");
+
+	const [chatFlow, setChatFlow] = useState<ChatFlow>(ChatFlowSchema.createDefault());
+
+	const [inputText, setInputText] = useState<InputText>(InputTextSchema.createDefault());
+	const [inputMedia, setInputMedia] = useState<MediumList>(MediumListSchema.createDefault());
 
 	const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-
-	const [teachingMode, setTeachingMode] = useState<"choices" | "description">("choices");
-	const [isAutoList, setIsAutoList] = useState(true);
-	const [listFormatText, setListFormatText] = useState("");
-
-	const lastShapeRef = useRef<string | null>(null);
-	const shapeStackRef = useRef<string[]>([]);
-
 	const [thinkMode, setThinkMode] = useState<"fast" | "standard" | "think">("fast");
 
 	const updateThinkMode = useCallback((mode: "fast" | "standard" | "think") => {
 		setThinkMode(mode);
-	}, []);
-
-	const [sliderState, setSliderState] = useState<Record<string, number>>({
-		standard: 0.5,
-		learning: 0.5,
-		teaching: 0.5,
-	});
-
-	// 引数に現在のタブを追加
-	const updateSlider = useCallback((tab: string, value: number) => {
-		setSliderState((prev) => ({ ...prev, [tab]: value }));
-	}, []);
-
-	const updateSwitch = useCallback((key: keyof SwitchState, checked: boolean) => {
-		setSwitchState((prev) => ({ ...prev, [key]: checked }));
-	}, []);
-
-	const [activeSettingsTab, setActiveSettingsTab] = useState<"standard" | "learning" | "teaching">("learning");
-
-	const updateTeachingMode = useCallback((mode: "choices" | "description") => {
-		setTeachingMode(mode);
-	}, []);
-
-	const updateIsAutoList = useCallback((checked: boolean) => {
-		setIsAutoList(checked);
-	}, []);
-
-	const updateListFormatText = useCallback((text: string) => {
-		setListFormatText(text);
-	}, []);
-
-	const insertShape = useCallback((open: string, close: string, shape: string, inputRef: React.RefObject<HTMLInputElement | null>) => {
-		const input = inputRef.current;
-
-		setListFormatText(prev => {
-			let start = prev.length;
-
-			if (input) {
-				start = input.selectionStart ?? prev.length;
-			}
-
-			const pairs = [
-				{ o: "(", c: ")" }, { o: "{", c: "}" }, { o: "[", c: "]" },
-				{ o: "□", c: "□" }, { o: "○", c: "○" }, { o: "◎", c: "◎" },
-				{ o: "◇", c: "◇" }, { o: "△", c: "△" }, { o: "▽", c: "▽" },
-				{ o: "◁", c: "◁" }, { o: "▷", c: "▷" }, { o: "☆", c: "☆" }
-			];
-
-			const stack: string[] = [];
-			for (let i = 0; i < start; i++) {
-				const char = prev[i];
-				const pair = pairs.find(p => p.o === char || p.c === char);
-
-				if (pair) {
-					// 開きと閉じが同じ記号（□など）の場合
-					if (pair.o === pair.c) {
-						if (stack[stack.length - 1] === char) stack.pop(); // 閉じとして扱う
-						else stack.push(char); // 開きとして扱う
-					}
-					// 開きと閉じが異なる記号（()など）の場合
-					else {
-						if (char === pair.o) stack.push(char);
-						else if (char === pair.c && stack[stack.length - 1] === pair.o) stack.pop();
-					}
-				}
-			}
-
-			// スタックが残っている ＝ 何らかの図形の内側にカーソルがある場合は入力を弾く
-			if (stack.length > 0) {
-				return prev;
-			}
-			// ==========================================
-
-			let textBefore = prev;
-			let textAfter = "";
-
-			if (input) {
-				const end = input.selectionEnd ?? prev.length;
-				textBefore = prev.substring(0, start);
-				textAfter = prev.substring(end);
-			}
-
-			let separator = "";
-
-			// すべての記号を階層管理の対象とする
-			if (textBefore.trim().length > 0) {
-				if (lastShapeRef.current === shape) {
-					separator = ","; // 同階層
-				} else if (shapeStackRef.current.includes(shape)) {
-					separator = "|"; // 階層を戻る
-					while (shapeStackRef.current.length > 0 && shapeStackRef.current[shapeStackRef.current.length - 1] !== shape) {
-						shapeStackRef.current.pop();
-					}
-				} else {
-					separator = "/"; // 下位階層へ
-					shapeStackRef.current.push(shape);
-				}
-				lastShapeRef.current = shape;
-			} else {
-				shapeStackRef.current = [shape];
-				lastShapeRef.current = shape;
-			}
-
-			const insertion = separator + open + close;
-
-			if (input) {
-				setTimeout(() => {
-					input.focus();
-					// 開き記号と閉じ記号の間にカーソルを移動
-					const newCursorPos = start + separator.length + open.length;
-					input.setSelectionRange(newCursorPos, newCursorPos);
-				}, 0);
-			}
-
-			return textBefore + insertion + textAfter;
-		});
-	}, []);
-
-	const clearListFormat = useCallback(() => {
-		setListFormatText("");
-		lastShapeRef.current = null;
-		shapeStackRef.current = [];
 	}, []);
 
 	const isUploading = useMemo(() => {
@@ -714,7 +569,6 @@ export const useChat = (
 				}),
 			};
 		});
-
 		setInputMedia((prev) => [...prev, ...initialMedia.map((m) => m.medium)]);
 		setUploadProgress((prev) => {
 			const newProg = { ...prev };
@@ -803,172 +657,167 @@ export const useChat = (
 		setUploadProgress({});
 	}, []);
 
-	//	送信か
-	const isSent = useMemo(() => turns.length > 0, [turns]);
-
 	// 送信
-	// 送信処理
 	const handleSend = useCallback(async () => {
-		// 入力チェック：テキストもメディアもない場合は中断
 		if (!inputText.inputText && inputMedia.length === 0) return;
-		// アップロード中は送信不可
 		if (isUploading) return;
 
-		// UI：拡張メニューを閉じる
 		if (setActiveContent) {
 			setActiveContent("none");
 		}
 
-		// ステータス更新
 		setUserStatus("sending");
 		setModelStatus("thinking");
 
 		const currentText = inputText.inputText;
-		const currentMediaFiles = inputMedia.map(m => ({ url: m.src, mimeType: m.mimeType }));
+		const currentMedia = inputMedia.map(m => ({ url: m.src, mimeType: m.mimeType }));
 
-		// ID生成
-		const targetModelMessageId = uuidv7();
-		const turnId = uuidv7();
-
-		// ユーザー側のブロック作成
-		const userBlocks: any[] = [];
-		if (currentText) {
-			userBlocks.push({ type: "text", content: currentText });
-		}
-		for (const media of inputMedia) {
-			userBlocks.push({
-				type: "media",
-				url: media.src,
-				mimeType: media.mimeType,
-				fileName: media.fileName,
-			});
-		}
-
-		// --- 型エラー修正ポイント ---
-		// states.sliderState は Record<string, number> ですが、
-		// モデルのスキーマ (SliderStateSchema) は { isEnabled: boolean; politeness: number } を期待しています。
-		// 現在のタブに応じた値を politeness に割り当てて保存用オブジェクトを作成します。
-		const persistentSliderState = {
-			isEnabled: true,
-			politeness: sliderState[activeSettingsTab] ?? 0.5
+		const initialUserMessage = {
+			...UserMessageSchema.createDefault(),
+			blocks: [{ type: "text" as const, content: currentText }],
+			media: inputMedia,
+			status: "completed" as const,
+			timestampAt: Date.now()
 		};
 
-		// メッセージ構造の構築
-		const userMessage = { ...UserMessageSchema.createDefault(), blocks: userBlocks };
-
-		const modelMessage = {
-			...ModelMessageSchema.createDefault(),
-			modelMessageId: targetModelMessageId,
-			// スキーマに合わせて変換して渡すことで TypeScript エラーを回避
-			sliderState: persistentSliderState as any,
-			switchState,
-			questionState,
-			status: "thinking" as const,
-			blocks: []
+		const newTurn = {
+			...TurnSchema.createDefault(),
+			title: currentText.slice(0, 20) || "新しい会話",
+			pages: [{
+				...PageSchema.createDefault(),
+				pageIndex: 0,
+				messages: {
+					user: initialUserMessage,
+					model: []
+				},
+				timestampAt: Date.now()
+			}]
 		};
 
-		const question = { ...QuestionSchema.createDefault(), messages: { user: userMessage, model: [modelMessage] } };
-		const page = { ...PageSchema.createDefault(), questions: [question] };
-		const turn = { ...TurnSchema.createDefault(), turnId: turnId, pages: [page] };
+		setChatFlow((prev) => ({
+			...prev,
+			turns: [...prev.turns, newTurn],
+			activeTurnId: newTurn.turnId,
+			modifiedAt: Date.now(),
+		}));
 
-		// 履歴に追加し、入力をクリア
-		setTurns((prev) => [...prev, turn]);
 		setInputText(InputTextSchema.createDefault());
 		setInputMedia(MediumListSchema.createDefault());
 
 		try {
-			// APIリクエスト
 			const response = await fetch("/api/chat", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					text: currentText,
-					mediaFiles: currentMediaFiles,
 					mode: thinkMode,
-					activeSettingsTab,
-					sliderState, // API側には Record<string, number> をそのまま送り、route.ts 側で処理させる
-					switchState,
-					teachingMode,
-					listFormatText,
-					isAutoList
+					text: currentText,
+					media: currentMedia,
+					turnId: newTurn.turnId
 				}),
 			});
 
 			if (!response.body) throw new Error("No response body");
-			setModelStatus("streaming");
 
 			const reader = response.body.getReader();
-			const decoder = new TextDecoder("utf-8");
+			const decoder = new TextDecoder();
 			let accumulatedText = "";
+			let lastCompletedCount = 0;
 
-			// ストリーミング処理
 			while (true) {
 				const { done, value } = await reader.read();
-				if (done) break;
-				accumulatedText += decoder.decode(value, { stream: true });
 
-				// 状態更新：逐次テキストを表示
-				setTurns((prevTurns) => prevTurns.map(t => {
-					if (t.turnId !== turnId) return t;
-					return {
-						...t, pages: t.pages.map(p => ({
-							...p, questions: p.questions.map(q => ({
-								...q, messages: {
-									...q.messages, model: q.messages.model.map(m => {
-										if (m.modelMessageId !== targetModelMessageId) return m;
-										return { ...m, status: "streaming", blocks: [{ type: "text" as const, content: accumulatedText }] };
-									})
-								}
-							}))
-						}))
-					};
-				}));
+				if (value) {
+					accumulatedText += decoder.decode(value, { stream: true });
+				}
+
+				const splitTexts = accumulatedText.split(/(?=# 問題)/g);
+
+				const validTexts = splitTexts.filter(t => t.trim().startsWith("# 問題"));
+
+				const completedTexts = done
+					? validTexts
+					: validTexts.slice(0, Math.max(0, validTexts.length - 1));
+
+				if (completedTexts.length > lastCompletedCount || done) {
+					lastCompletedCount = completedTexts.length;
+
+					const newPages = completedTexts.length === 0
+						? [{
+							...PageSchema.createDefault(),
+							pageIndex: 0,
+							messages: {
+								user: initialUserMessage,
+								model: []
+							},
+							timestampAt: Date.now()
+						}]
+						: completedTexts.map((text, index) => {
+							return {
+								...PageSchema.createDefault(),
+								pageIndex: index,
+								messages: {
+									user: initialUserMessage,
+									model: [
+										{
+											...ModelMessageSchema.createDefault(),
+											blocks: [{ type: "text" as const, content: text.trim() }],
+											status: "completed" as const,
+											timestampAt: Date.now()
+										}
+									]
+								},
+								timestampAt: Date.now()
+							};
+						});
+
+					setChatFlow((prev) => {
+						const updatedTurns = prev.turns.map((turn) => {
+							if (turn.turnId === newTurn.turnId) {
+								return {
+									...turn,
+									pages: newPages,
+									activePageIndex: 0,
+									modifiedAt: Date.now()
+								};
+							}
+							return turn;
+						});
+
+						return {
+							...prev,
+							turns: updatedTurns,
+							modifiedAt: Date.now()
+						};
+					});
+				}
+
+				if (done) break;
 			}
 
-			// 完了ステータスへ
 			setModelStatus("completed");
 			setUserStatus("completed");
 
-			setTurns((prevTurns) => prevTurns.map((t) => {
-				if (t.turnId !== turnId) return t;
-				return {
-					...t, pages: t.pages.map((p) => ({
-						...p, questions: p.questions.map((q) => ({
-							...q, messages: {
-								...q.messages, model: q.messages.model.map((m) => {
-									if (m.modelMessageId !== targetModelMessageId) return m;
-									return { ...m, status: "completed", blocks: [{ type: "text" as const, content: accumulatedText }] };
-								})
-							}
-						}))
-					}))
-				};
-			}));
 		} catch (error) {
 			console.error("Chat error:", error);
 			setModelStatus("failed");
+			setUserStatus("failed");
 		}
+
 	}, [
 		inputText,
 		inputMedia,
-		sliderState,
-		switchState,
-		questionState,
 		isUploading,
 		thinkMode,
-		activeSettingsTab,
-		teachingMode,
-		listFormatText,
-		isAutoList,
 		setActiveContent
 	]);
 
 	const actions = useMemo(() => ({
-		setUserStatus, setModelStatus, setInputText, setInputMedia, setSliderState, setSwitchState, setQuestionState, setTurns, setActiveSettingsTab, handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateSlider, updateSwitch, updateTeachingMode, updateIsAutoList, updateListFormatText, insertShape, clearListFormat, updateThinkMode,
-	}), [handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateSlider, updateSwitch, updateTeachingMode, updateIsAutoList, updateListFormatText, insertShape, clearListFormat, updateThinkMode]);
+		setUserStatus, setModelStatus, setInputText, setInputMedia, setChatFlow,
+		handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateThinkMode,
+	}), [handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateThinkMode]);
 
 	return {
-		states: { userStatus, modelStatus, inputText, inputMedia, sliderState, switchState, turns, uploadProgress, isUploading, isSent, teachingMode, isAutoList, listFormatText, thinkMode, activeSettingsTab },
+		states: { userStatus, modelStatus, inputText, inputMedia, chatFlow, uploadProgress, isUploading, thinkMode },
 		actions,
 	};
 };

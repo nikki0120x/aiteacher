@@ -1,22 +1,18 @@
 "use client";
 import {
 	AudioLines,
-	ListOrdered,
 	Maximize2,
 	Mic,
 	Minimize2,
 	Paperclip,
 	Plus,
 	SendHorizontal,
-	Settings2,
 	Square,
 	Trash2,
 	Zap,
 	Sparkles,
-	ChevronDown,
 	Brain,
 } from "lucide-react";
-import type { Components } from 'react-markdown';
 import rehypeRaw from "rehype-raw";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -26,82 +22,8 @@ import { useState } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
-import { Button, Input, Label, Slider, Switch } from "@/components/ui";
-
-const MARKDOWN_COMPONENTS: Components = {
-	// 型定義を合わせることでエラーを解消
-	p: ({ children }) => <div className="mb-4 last:mb-0">{children}</div>,
-
-	// カスタムタグの型エラーも React.ReactNode を使うことで回避
-	//@ts-ignore - カスタム要素のため
-	'ai-summary': ({ children }) => <AiAccordion label="要約">{children}</AiAccordion>,
-	//@ts-ignore
-	'ai-guidance': ({ children }) => <AiAccordion label="指針">{children}</AiAccordion>,
-	//@ts-ignore
-	'ai-explanation': ({ children }) => <AiAccordion label="解説">{children}</AiAccordion>,
-	//@ts-ignore
-	'ai-answer': ({ children }) => <AiAccordion label="解答">{children}</AiAccordion>,
-
-	//@ts-ignore
-	'ai-question': ({ qnum, children }) => (
-		<div className="my-6 border-l-4 border-blue pl-4 bg-blue/5 py-2 rounded-r-xl">
-			<div className="font-black text-lg text-blue mb-1">{qnum}</div>
-			<div>{children}</div>
-		</div>
-	)
-};
-
-const AiAccordion = ({ label, children }: { label: string; children: React.ReactNode }) => {
-	const [isOpen, setIsOpen] = useState(false);
-
-	return (
-		<div className="my-4 bg-l1 dark:bg-d1 rounded-2xl border border-l5 dark:border-d5 overflow-hidden shadow-sm">
-			<button
-				type="button"
-				onClick={() => setIsOpen(!isOpen)}
-				className="w-full cursor-pointer font-bold bg-l2 dark:bg-d2 px-5 py-3 select-none hover:bg-l3 dark:hover:bg-d3 transition-all flex items-center justify-between border-none outline-none"
-			>
-				<span className="flex items-center gap-2 text-d1 dark:text-l1">
-					<span className="w-2 h-2 rounded-full bg-blue" />
-					{label}
-				</span>
-				<ChevronDown
-					size={18}
-					className={`text-l5 dark:text-d5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-				/>
-			</button>
-			<AnimatePresence initial={false}>
-				{isOpen && (
-					<motion.div
-						initial={{ height: 0, opacity: 0 }}
-						animate={{ height: "auto", opacity: 1 }}
-						exit={{ height: 0, opacity: 0 }}
-						transition={{ duration: 0.5, ease: "backOut" }}
-						className="overflow-hidden border-t border-l5 dark:border-d5"
-					>
-						<div className="p-5 text-d1 dark:text-l1 leading-relaxed">
-							{children}
-						</div>
-					</motion.div>
-				)}
-			</AnimatePresence>
-		</div>
-	);
-};
-
-const MarkdownRenderer = ({ content }: { content: string }) => {
-	return (
-		<div className="markdown-content break-words leading-relaxed text-base">
-			<ReactMarkdown
-				remarkPlugins={[remarkMath]}
-				rehypePlugins={[rehypeKatex, rehypeRaw]}
-				components={MARKDOWN_COMPONENTS} // 固定したオブジェクトを使用
-			>
-				{content}
-			</ReactMarkdown>
-		</div>
-	);
-};
+import { Button, Input, Label} from "@/components/ui";
+import { Medium } from "@/models/modelChat";
 
 const MediaPreviewItem = ({
 	media,
@@ -180,7 +102,6 @@ const MediaPreviewItem = ({
 			<div className="relative size-full">
 				<CircularProgress />
 
-				{/* biome-ignore lint/performance/noImgElement: ローカルのBlob URLプレビューのため最適化不要 */}
 				<img src={media.src} alt={media.fileName} className="size-full object-cover" />
 			</div>
 		);
@@ -190,7 +111,6 @@ const MediaPreviewItem = ({
 		return (
 			<div className="relative size-full">
 				<CircularProgress />
-				{/* biome-ignore lint/a11y/useMediaCaption: ローカル動画のプレビューのため字幕トラックは不要 */}
 				<video
 					src={media.src}
 					className="size-full object-cover"
@@ -246,135 +166,10 @@ const MediaPreviewItem = ({
 	);
 };
 
-const createBlockKey = (turnId: string, role: string, index: number) => `${turnId}-${role}-${index}`;
-
-const processCustomTags = (text: string) => {
-	if (!text) return "";
-
-	// タグの開始と終了を検知
-	const tagPattern = /\[\[(\/?)(SUMMARY|GUIDANCE|EXPLANATION|ANSWER|QUESTION:[^\]]+)\]\]/g;
-	const parts = text.split(tagPattern);
-
-	let result = "";
-	let currentTag = "";
-
-	for (let i = 0; i < parts.length; i++) {
-		const part = parts[i];
-		if (part === undefined || part === "") continue;
-
-		// 閉じ記号 "/" 自体はスキップ
-		if (part === "/") continue;
-
-		// タグ名の判定
-		const isTagName = ["SUMMARY", "GUIDANCE", "EXPLANATION", "ANSWER"].includes(part) || part.startsWith("QUESTION:");
-		const isClosing = i > 0 && parts[i - 1] === "/";
-
-		if (isTagName) {
-			if (isClosing) {
-				currentTag = ""; // タグを閉じる
-			} else {
-				currentTag = part; // 新しいタグを開始
-			}
-			continue;
-		}
-
-		// コンテンツ部分の処理
-		const content = part.trim();
-		if (!content) continue;
-
-		if (currentTag === "SUMMARY") result += `\n<ai-summary>\n${content}\n</ai-summary>\n`;
-		else if (currentTag === "GUIDANCE") result += `\n<ai-guidance>\n${content}\n</ai-guidance>\n`;
-		else if (currentTag === "EXPLANATION") result += `\n<ai-explanation>\n${content}\n</ai-explanation>\n`;
-		else if (currentTag === "ANSWER") result += `\n<ai-answer>\n${content}\n</ai-answer>\n`;
-		else if (currentTag.startsWith("QUESTION:")) {
-			const qNum = currentTag.split(":")[1];
-			result += `\n<ai-question qnum="${qNum}">\n${content}\n</ai-question>\n`;
-		} else {
-			result += `\n${content}\n`;
-		}
-
-		// 重要：コンテンツを書き出したら一度 currentTag をクリアする。
-		// これにより、AIが閉じタグを忘れたり入れ子にしたりしても、
-		// 次のループで新しいタグとして独立して処理されるようになります。
-		currentTag = "";
-	}
-
-	return result;
-};
-
 export default function Chat() {
 	const { refs, states, actions } = useChatView();
 
 	const [isThinkModeMenuOpen, setIsThinkModeMenuOpen] = useState(false);
-
-	const renderTurn = (index: number, turn: typeof states.turns[number]) => {
-		const question = turn.pages[0]?.questions[0];
-		if (!question) return null;
-
-		const userBlocks = question.messages.user.blocks as { type?: string; content?: string; url?: string; mimeType?: string; fileName?: string }[];
-		const modelBlocks = question.messages.model[0]?.blocks as { type?: string; content?: string }[];
-
-		return (
-			<div data-index={index} className="flex flex-col size-full gap-4">
-				<div className="flex flex-col justify-center items-end gap-2 w-full overflow-x-auto">
-					{userBlocks.filter(b => b.type === "media").map((b, i) => {
-						const isImage = b.mimeType?.startsWith("image/");
-						const isVideo = b.mimeType?.startsWith("video/");
-
-						return (
-							<div key={createBlockKey(turn.turnId, "user-media", i)} className="flex-shrink-0">
-								{isImage ? (
-									<img
-										src={b.url}
-										alt={b.fileName}
-										className="object-cover rounded-2xl size-32 border border-l5 dark:border-d5"
-									/>
-								) : isVideo ? (
-									<video
-										src={b.url}
-										controls
-										className="object-cover size-32 rounded-2xl border border-l5 dark:border-d5"
-									>
-										<track kind="captions" srcLang="ja" label="日本語 (自動生成)" default />
-									</video>
-								) : (
-									<div className="p-4 flex items-center gap-2 bg-l2 dark:bg-d2 rounded-2xl h-32">
-										<Paperclip size={20} className="text-blue" />
-										<span className="text-sm font-medium truncate text-d1 dark:text-l1">{b.fileName}</span>
-									</div>
-								)}
-							</div>
-						);
-					})}
-
-					{userBlocks.filter(b => b.type === "text").map((b, i) => (
-						<div key={createBlockKey(turn.turnId, "user-text", i)} className="bg-l2 dark:bg-d2 px-4 py-2 rounded-4xl max-w-[80%]">
-							<motion.div
-								layout
-								transition={{ duration: 0.5, ease: "backOut" }}
-								className="text-d1 dark:text-l1 font-medium text-base colors"
-							>
-								<MarkdownRenderer content={b.content || ""} />
-							</motion.div>
-						</div>
-					))}
-				</div>
-
-				<div className="flex flex-col items-start w-full">
-					<div className="bg-l2 dark:bg-d2 px-6 py-4 rounded-4xl w-full">
-						{modelBlocks?.length > 0
-							? modelBlocks.map((b, i) => (
-								<div key={createBlockKey(turn.turnId, "model", i)} className="w-full">
-									<MarkdownRenderer content={processCustomTags(b.content || "")} />
-								</div>
-							))
-							: <span className="animate-pulse">考え中...</span>
-						}
-					</div>
-				</div>
-			</div>
-		);
-	};
 
 	return (
 		<div
@@ -388,9 +183,9 @@ export default function Chat() {
 				{states.dragInfo && (
 					<motion.div
 						layout
-						initial={{ opacity: 0, filter: "blur(16px)", pointerEvents: "none" }}
-						animate={{ opacity: 1, filter: "blur(0px)", pointerEvents: "auto" }}
-						exit={{ opacity: 0, filter: "blur(16px)", pointerEvents: "none" }}
+						initial={{ opacity: 0, filter: "blur(1rem)", pointerEvents: "none" }}
+						animate={{ opacity: 1, filter: "blur(0)", pointerEvents: "auto" }}
+						exit={{ opacity: 0, filter: "blur(1rem)", pointerEvents: "none" }}
 						transition={{ duration: 0.5, ease: "backOut" }}
 						className="colors absolute inset-0 z-100 flex size-full cursor-pointer items-center justify-center bg-l1/50 backdrop-blur-lg dark:bg-d1/50 p-4"
 					>
@@ -414,45 +209,164 @@ export default function Chat() {
 			</AnimatePresence>
 
 			<div className="colors flex size-full max-w-4xl flex-col items-center justify-center">
-				<AnimatePresence>
-					{states.isSent && (
-						<motion.div
-							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
-							className="w-full flex-1 overflow-hidden mb-4"
-						>
-							<Virtuoso
-								data={states.turns}
-								itemContent={renderTurn}
-								followOutput="smooth"
-								className="h-full scrollbar-hide"
-							/>
-						</motion.div>
-					)}
-				</AnimatePresence>
-
 				<motion.div
 					layout
-					initial={{ flex: 1, opacity: 0 }}
-					animate={{
-						flex: states.isSent ? 0 : 1,
-						opacity: 1,
-					}}
-					exit={{ flex: 1, opacity: 1 }}
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					exit={{ opacity: 0 }}
 					transition={{ duration: 0.5, ease: "backOut" }}
 					className="flex size-full flex-col items-center justify-center"
 				>
-					<AnimatePresence>
-						{!states.isSent && !states.isFullTextarea && (
+					<AnimatePresence mode="popLayout">
+						{states.chatFlow.turns.length > 0 && !states.isFullTextarea ? (
 							<motion.div
+								key="chat-flow"
 								layout
-								initial={{ height: 0, opacity: 0, filter: "blur(16px)" }}
+								initial={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
+								animate={{
+									height: "100%",
+									opacity: 1,
+									filter: "blur(0)",
+								}}
+								exit={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
+								transition={{ duration: 0.5, ease: "backOut" }}
+								className="w-full mask-y-from-95% mask-y-to-transparent p-2"
+							>
+								<Virtuoso
+									className="size-full"
+									data={states.chatFlow.turns.flatMap((turn) => {
+										type ChatItem =
+											| { id: string; type: "user_input"; text: string; media: Medium[]; content?: never; index?: never }
+											| { id: string; type: "problem"; text?: never; media?: never; content: string; index: number };
+
+										const items: ChatItem[] = [];
+
+										const firstPage = turn.pages[0];
+										if (firstPage?.messages?.user) {
+											const userContent = firstPage.messages.user.blocks[0]?.content;
+											const text = typeof userContent === "string" ? userContent : "";
+
+											items.push({
+												id: `user-${turn.turnId}`,
+												type: "user_input",
+												text: text,
+												media: [...firstPage.messages.user.media]
+											});
+										}
+
+										const problemItems = turn.pages
+											.filter(page => page.messages.model && page.messages.model.length > 0)
+											.map((page): ChatItem => {
+												const rawContent = page.messages.model?.[0]?.blocks[0]?.content;
+												const stringContent = typeof rawContent === "string" ? rawContent : String(rawContent || "");
+
+												return {
+													id: page.messages.model?.[0]?.modelMessageId || `prob-${page.pageIndex}`,
+													type: "problem",
+													content: stringContent,
+													index: page.pageIndex,
+												};
+											});
+
+										return [...items, ...problemItems];
+									})}
+
+									itemContent={(_index, item) => {
+										if (item.type === "user_input") {
+											if (!item.text?.trim() && (!item.media || item.media.length === 0)) {
+												return null;
+											}
+
+											return (
+												<motion.div
+													layout
+													initial={{ y: 16, opacity: 0, filter: "blur(1rem)" }}
+													animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+													exit={{ y: 16, opacity: 0, filter: "blur(1rem)" }}
+													className="flex w-full flex-col items-end justify-center p-2 mb-4 gap-4"
+													transition={{ duration: 0.5, ease: "backOut" }}
+												>
+													{item.media && item.media.length > 0 && (
+														<div className="flex w-full flex-row flex-wrap justify-end items-center gap-4">
+															{item.media.map((m: Medium) => {
+																const isImage = m.mimeType.startsWith("image/");
+																const isVideo = m.mimeType.startsWith("video/");
+																return (
+																	<div key={m.mediumId} className="w-32 h-32 rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
+																		{isImage ? (
+																			<img src={m.src} alt={m.fileName} className="size-full object-cover" />
+																		) : isVideo ? (
+																			<video src={m.src} className="size-full object-cover" />
+																		) : (
+																			<div className="flex size-full items-center justify-center p-2">
+																				<span className="text-base font-medium text-right text-d1 dark:text-l1 break-all">{m.fileName}</span>
+																			</div>
+																		)}
+																	</div>
+																);
+															})}
+														</div>
+													)}
+
+													{item.text && item.text.trim() !== "" && (
+														<div className="flex w-full justify-end items-center">
+															<div className="bg-l2 dark:bg-d2 px-8 py-4 rounded-3xl shadow-lg colors">
+																<p className="text-d1 dark:text-l1 font-medium text-base text-right colors">
+																	{item.text}
+																</p>
+															</div>
+														</div>
+													)}
+												</motion.div>
+											);
+										}
+
+										return (
+											<motion.div
+												layout
+												initial={{ y: 16, opacity: 0, filter: "blur(1rem)" }}
+												animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+												exit={{ y: 16, opacity: 0, filter: "blur(1rem)" }}
+												className="flex w-full justify-center items-center p-2"
+												transition={{ duration: 0.5, ease: "backOut" }}
+											>
+												<Button className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg">
+													<ReactMarkdown
+														remarkPlugins={[remarkMath]}
+														rehypePlugins={[rehypeKatex, rehypeRaw]}
+														components={{
+															h1: () => (
+																<h1 className="colors scale-100! origin-left bg-blue text-l1 rounded-br-3xl px-4 py-2 font-bold text-lg text-left">
+																	問題 {item.index + 1}
+																</h1>
+															),
+
+															p: ({ children }) => (
+																<p className="origin-top-left all px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1">
+																	{children}
+																</p>
+															),
+														}}
+													>
+														{item.content}
+													</ReactMarkdown>
+												</Button>
+											</motion.div>
+										);
+									}}
+								/>
+							</motion.div>
+						) : !states.isFullTextarea ? (
+							<motion.div
+								key="question-title"
+								layout
+								initial={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
 								animate={{
 									height: "auto",
 									opacity: 1,
-									filter: "blur(0px)",
+									filter: "blur(0)",
 								}}
-								exit={{ height: 0, opacity: 0, filter: "blur(16px)" }}
+								exit={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
 								transition={{ duration: 0.5, ease: "backOut" }}
 								className="colors flex size-full flex-col items-center justify-center gap-4"
 							>
@@ -481,7 +395,7 @@ export default function Chat() {
 									</motion.span>
 								</div>
 							</motion.div>
-						)}
+						) : null}
 					</AnimatePresence>
 
 					<motion.div
@@ -626,46 +540,6 @@ export default function Chat() {
 																}`}
 														>
 															<Plus className="text-d1 dark:text-l1 all" />
-														</Button>
-													</motion.div>
-												</AnimatePresence>
-
-												<AnimatePresence mode="popLayout">
-													<motion.div
-														layout
-														initial={{ scale: 0, opacity: 0 }}
-														animate={{ scale: 1, opacity: 1 }}
-														exit={{ scale: 0, opacity: 0 }}
-														transition={{ duration: 0.5, ease: "backOut" }}
-													>
-														<Button
-															onClick={() => actions.toggleContent("config")}
-															className={`colors flex size-10 items-center justify-center rounded-full
-																${states.activeContent === "config" ?
-																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-																}`}
-														>
-															<Settings2 className="text-d1 dark:text-l1 all" />
-														</Button>
-													</motion.div>
-												</AnimatePresence>
-
-												<AnimatePresence mode="popLayout">
-													<motion.div
-														layout
-														initial={{ scale: 0, opacity: 0 }}
-														animate={{ scale: 1, opacity: 1 }}
-														exit={{ scale: 0, opacity: 0 }}
-														transition={{ duration: 0.5, ease: "backOut" }}
-													>
-														<Button
-															onClick={() => actions.toggleContent("list")}
-															className={`colors flex size-10 items-center justify-center rounded-full
-																${states.activeContent === "list" ?
-																	"bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3" : "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-																}`}
-														>
-															<ListOrdered className="text-d1 dark:text-l1 all" />
 														</Button>
 													</motion.div>
 												</AnimatePresence>
@@ -954,232 +828,6 @@ export default function Chat() {
 													</AnimatePresence>
 												</motion.div>
 											}
-
-											{states.activeContent === "config" &&
-												<motion.div
-													key="config"
-													layout
-													initial={{ x: states.contentDirection === 0 ? 0 : states.contentDirection > 0 ? 64 : -64, opacity: 0, filter: "blur(1rem)" }}
-													animate={{ x: 0, opacity: 1, filter: "blur(0)" }}
-													exit={{ x: states.contentDirection === 0 ? 0 : states.contentDirection > 0 ? -64 : 64, opacity: 0, filter: "blur(1rem)" }}
-													transition={{ duration: 0.5, ease: "backOut" }}
-													className="p-2 flex flex-col justify-start items-center w-full h-auto overflow-hidden"
-												>
-													<div className="colors relative flex w-full flex-none items-center justify-center gap-1 overflow-hidden rounded-full bg-l2 p-1 dark:bg-d2">
-														{[
-															{ id: "standard", label: "標準" },
-															{ id: "learning", label: "学習" },
-															{ id: "teaching", label: "指導" },
-														].map((tab) => (
-															<Label
-																key={tab.id}
-																className="overflow-visible colors group relative flex size-full flex-1 items-center justify-center rounded-full py-2 hover:bg-l3 hover:dark:bg-d3"
-															>
-																<Input
-																	type="radio"
-																	name="settings_tab"
-																	value={tab.id}
-																	visibility={false}
-																	checked={states.activeSettingsTab === tab.id}
-																	onChange={() => actions.setActiveSettingsTab(tab.id as "standard" | "learning" | "teaching")}
-																/>
-
-																{states.activeSettingsTab === tab.id && (
-																	<motion.div
-																		layoutId="activeSettingsTab"
-																		transition={{
-																			duration: 0.5,
-																			ease: "backOut",
-																		}}
-																		className="colors absolute inset-0 z-10 size-full rounded-full bg-blue"
-																	/>
-																)}
-
-																<AnimatePresence mode="popLayout">
-																	<motion.span
-																		layout
-																		transition={{ duration: 0.5, ease: "backOut" }}
-																		className={`colors relative z-10 whitespace-nowrap text-center font-medium text-base ${states.activeSettingsTab === tab.id
-																			? "text-l1"
-																			: "text-l5 group-hover:text-d1 dark:text-d5 dark:group-hover:text-l1"
-																			}`}
-																	>
-																		{tab.label}
-																	</motion.span>
-																</AnimatePresence>
-															</Label>
-														))}
-													</div>
-
-													<div className="relative size-full">
-														<AnimatePresence mode="popLayout">
-															<motion.div
-																key={states.activeSettingsTab}
-																layout
-																initial={{ y: 8, opacity: 0 }}
-																animate={{ y: 0, opacity: 1 }}
-																exit={{ y: 8, opacity: 0 }}
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="flex gap-2 flex-col p-2 size-full"
-															>
-																<div className="w-full">
-																	<div className="w-full">
-																		<Slider
-																			label={
-																				states.activeSettingsTab === "standard" ? "丁寧度" :
-																					states.activeSettingsTab === "learning" ? "難易度" : "指導の細かさ"
-																			}
-																			min={0}
-																			max={1}
-																			step={0.25}
-																			value={states.sliderState[states.activeSettingsTab]}
-																			onChange={(e) => actions.updateSlider(states.activeSettingsTab, Number(e.target.value))}
-																			marks={[
-																				{ value: 0 },
-																				{ value: 0.25, label: states.activeSettingsTab === "standard" ? "専門的" : "難しい" },
-																				{ value: 0.50, label: "普通" },
-																				{ value: 0.75, label: states.activeSettingsTab === "standard" ? "易しい" : "易しい" },
-																				{ value: 1 }
-																			]}
-																		/>
-																	</div>
-																</div>
-
-																{states.activeSettingsTab === "learning" && (
-																	<div className="grid w-full gap-2 grid-cols-2">
-																		<Switch
-																			label="要約"
-																			checked={states.switchState?.summary}
-																			onChange={(e) => actions.updateSwitch("summary", e.target.checked)}
-																		/>
-
-																		<Switch
-																			label="指針"
-																			checked={states.switchState?.guidance}
-																			onChange={(e) => actions.updateSwitch("guidance", e.target.checked)}
-																		/>
-
-																		<Switch
-																			label="解説"
-																			checked={states.switchState?.explanation}
-																			onChange={(e) => actions.updateSwitch("explanation", e.target.checked)}
-																		/>
-
-																		<Switch
-																			label="解答"
-																			checked={states.switchState?.answer}
-																			onChange={(e) => actions.updateSwitch("answer", e.target.checked)}
-																		/>
-																	</div>
-																)}
-
-																{states.activeSettingsTab === "teaching" && (
-																	<div className="flex w-full gap-2 items-center justify-between rounded-2xl">
-																		<Label className={`flex w-full items-center justify-center gap-2 rounded-2xl p-2 hover:bg-l2 dark:hover:bg-d2 colors ${states.teachingMode === "choices" && "bg-l2 dark:bg-d2"}`}>
-																			<Input
-																				type="radio"
-																				name="teaching_mode"
-																				value="choices"
-																				checked={states.teachingMode === "choices"}
-																				onChange={() => actions.updateTeachingMode?.("choices")}
-																				className="colors flex size-5 items-center justify-center rounded-full border-l5 dark:border-d5"
-																			/>
-
-																			<motion.span
-																				layout
-																				transition={{ duration: 0.5, ease: "backOut" }}
-																				className="font-medium text-base text-d1 dark:text-l1 colors"
-																			>
-																				選択式
-																			</motion.span>
-																		</Label>
-
-																		<Label className={`flex w-full items-center justify-center gap-2 rounded-2xl p-2 hover:bg-l2 dark:hover:bg-d2 colors ${states.teachingMode === "description" && "bg-l2 dark:bg-d2"}`}>
-																			<Input
-																				type="radio"
-																				name="teaching_mode"
-																				value="description"
-																				checked={states.teachingMode === "description"}
-																				onChange={() => actions.updateTeachingMode?.("description")}
-																				className="colors flex size-5 items-center justify-center rounded-full border-l5 dark:border-d5"
-																			/>
-																			<motion.span
-																				layout
-																				transition={{ duration: 0.5, ease: "backOut" }}
-																				className="font-medium text-base text-d1 dark:text-l1 colors"
-																			>
-																				記述式
-																			</motion.span>
-																		</Label>
-																	</div>
-																)}
-															</motion.div>
-														</AnimatePresence>
-													</div>
-												</motion.div>
-											}
-
-											{states.activeContent === "list" && (
-												<motion.div
-													key="list"
-													layout
-													initial={{ x: states.contentDirection === 0 ? 0 : states.contentDirection > 0 ? 64 : -64, opacity: 0, filter: "blur(1rem)" }}
-													animate={{ x: 0, opacity: 1, filter: "blur(0)" }}
-													exit={{ x: states.contentDirection === 0 ? 0 : states.contentDirection > 0 ? -64 : 64, opacity: 0, filter: "blur(1rem)" }}
-													transition={{ duration: 0.5, ease: "backOut" }}
-													className="p-2 flex flex-col justify-start items-center size-full gap-2 colors"
-												>
-													<div className="flex w-full items-center gap-2 transition-opacity">
-														<Input
-															ref={refs.listInputRef}
-															type="text"
-															value={states.listFormatText}
-															onChange={(e) => actions.updateListFormatText(e.target.value)}
-															placeholder="問題番号を入力"
-															disabled={states.isAutoList}
-															leftContent={
-																<Switch
-																	label="自動"
-																	checked={states.isAutoList}
-																	onChange={(e) => actions.updateIsAutoList(e.target.checked)}
-																/>
-															}
-															className="colors border-l5 dark:border-d5"
-														/>
-													</div>
-
-													<div className={`w-full grid grid-cols-6 gap-2 all ${states.isAutoList ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
-														{[
-															{ label: "( )", open: "(", close: ")", shape: "paren" },
-															{ label: "{ }", open: "{", close: "}", shape: "brace" },
-															{ label: "[ ]", open: "[", close: "]", shape: "bracket" },
-															{ label: "□", open: "□", close: "□", shape: "square" },
-															{ label: "○", open: "○", close: "○", shape: "circle" },
-															{ label: "◎", open: "◎", close: "◎", shape: "double_circle" },
-															{ label: "◇", open: "◇", close: "◇", shape: "diamond" },
-															{ label: "△", open: "△", close: "△", shape: "up_triangle" },
-															{ label: "▽", open: "▽", close: "▽", shape: "down_triangle" },
-															{ label: "◁", open: "◁", close: "◁", shape: "left_triangle" },
-															{ label: "▷", open: "▷", close: "▷", shape: "right_triangle" },
-															{ label: "☆", open: "☆", close: "☆", shape: "star" },
-														].map((btn) => (
-															<Button
-																key={btn.shape}
-																onClick={() => actions.insertShape(btn.open, btn.close, btn.shape, refs.listInputRef)}
-																className="flex h-10 items-center justify-center rounded-full bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 colors"
-															>
-																<motion.span
-																	layout
-																	transition={{ duration: 0.5, ease: "backOut" }}
-																	className="font-bold text-lg text-d1 dark:text-l1 all"
-																>
-																	{btn.label}
-																</motion.span>
-															</Button>
-														))}
-													</div>
-												</motion.div>
-											)}
 										</div>
 									</motion.div>
 								)}

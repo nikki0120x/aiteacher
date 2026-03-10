@@ -11,53 +11,11 @@ export const ROLE_MAP = {
 	model: "role.model",
 } as const;
 
-//  モード
-export const MODE_MAP = {
-	fast: "think_mode.fast",
-	standard: "think_mode.standard",
-	think: "think_mode.think",
-} as const;
-
-//  設定タブ
-export const SETTINGS_TAB_MAP = {
-	standard: "settings_tab.standard",
-	learning: "settings_tab.learning",
-	teaching: "settings_tab.teaching",
-} as const;
-
-//  指導モード（ラジオ）
-export const TEACHING_MODE_MAP = {
-	choices: "teaching_mode.choices",
-	description: "teaching_mode.description",
-} as const;
-
-//  スライダー
-export const SLIDER_MAP = {
-	0: "slider.0",
-	0.25: "slider.25",
-	0.5: "slider.50",
-	0.75: "slider.75",
-	1: "slider.100",
-} as const;
-
-//  スイッチ
-export const SWITCH_MAP = {
-	summary: "switch.summary",
-	guidance: "switch.guidance",
-	explanation: "switch.explanation",
-	answer: "switch.answer",
-} as const;
-
-//  並べ替え
-export const SORT_MAP = {
-	name: "sort.name",
-	pinned: "sort.pinned",
-	token: "sort.token",
-	size: "sort.size",
-	count: "sort.count",
-	created: "sort.created",
-	modified: "sort.modified",
-	accessed: "sort.accessed",
+//  モデル
+export const MODEL_MAP = {
+	fast: "model.fast",
+	standard: "model.standard",
+	think: "model.think",
 } as const;
 
 //  ユーザー状態
@@ -87,90 +45,6 @@ export const MODEL_STATUS_MAP = {
 export const EVALUATION_MAP = {
 	positive: "evaluation.positive",
 	negative: "evaluation.negative",
-} as const;
-
-//	区分
-export const CATEGORY_MAP = {
-	default: "category.default",
-} as const;
-
-//  教科
-export const SUBJECT_MAP = {
-	others: "other",
-	japanese_language: "subject.japanese_language",
-	geography_and_history: "subject.geography_and_history",
-	civics: "subject.civics",
-	mathematics: "subject.mathematics",
-	science: "subject.science",
-	foreign_languages: "subject.foreign_languages",
-	informatics: "subject.informatics",
-} as const;
-
-//	その他
-export const OTHER_MAP = {
-	other: "course.others.other",
-} as const;
-
-//  国語
-export const JAPANESE_LANGUAGE_MAP = {
-	modern_japanese: "course.japanese_language.modern_japanese",
-	classical_japanese: "course.japanese_language.classical_japanese",
-	classical_Chinese: "course.japanese_language.classical_Chinese",
-} as const;
-
-//	地理歴史
-export const GEOGRAPHY_AND_HISTORY_MAP = {
-	geography: "course.geography_and_history.geography",
-	advanced_geography: "course.geography_and_history.advanced_geography",
-	modern_and_contemporary_history:
-		"course.geography_and_history.modern_and_contemporary_history",
-	advanced_japanese_history:
-		"course.geography_and_history.advanced_japanese_history",
-	advanced_world_history: "course.geography_and_history.advanced_world_history",
-} as const;
-
-//  公民
-export const CIVICS_MAP = {
-	public: "course.civics.public",
-	ethics: "course.civics.ethics",
-	politics_and_economy: "course.civics.politics_and_economy",
-} as const;
-
-//	数学
-export const MATHEMATICS_MAP = {
-	mathematics_1: "course.mathematics.mathematics_1",
-	mathematics_A: "course.mathematics.mathematics_A",
-	mathematics_2: "course.mathematics.mathematics_2",
-	mathematics_B: "course.mathematics.mathematics_B",
-	mathematics_3: "course.mathematics.mathematics_3",
-	mathematics_C: "course.mathematics.mathematics_C",
-} as const;
-
-//  理科
-export const SCIENCE_MAP = {
-	basic_physics: "course.science.basic_physics",
-	advanced_physics: "course.science.advanced_physics",
-	basic_chemistry: "course.science.basic_chemistry",
-	advanced_chemistry: "course.science.advanced_chemistry",
-	basic_biology: "course.science.basic_biology",
-	advanced_biology: "course.science.advanced_biology",
-	basic_earth_science: "course.science.basic_earth_science",
-	advanced_earth_science: "course.science.advanced_earth_science",
-} as const;
-
-//	外国語
-export const FOREIGN_LANGUAGES_MAP = {
-	english: "course.foreign_languages.english",
-	german: "course.foreign_languages.german",
-	french: "course.foreign_languages.french",
-	chinese: "course.foreign_languages.chinese",
-	korean: "course.foreign_languages.korean",
-} as const;
-
-//	情報
-export const INFORMATICS_MAP = {
-	informatics_1: "course.informatics.informatics_1",
-	informatics_2: "course.informatics.informatics_2",
 } as const;
 
 //  ================================================================
@@ -217,187 +91,35 @@ export type Part = z.infer<typeof PartSchema>;
 export const PostPayloadSchema = withDefault(
 	z
 		.object({
+			model: z.enum(asZodEnum(MODEL_MAP)).readonly(),
 			prompt: ContentSchema.readonly(),
 			mediaUrls: z.array(z.string()).optional().readonly(),
 			history: z.array(ContentSchema).optional().readonly(),
-			mode: z.enum(asZodEnum(MODE_MAP)).readonly(),
-			activeSettingsTab: z.enum(asZodEnum(SETTINGS_TAB_MAP)).readonly(),
-			sliderState: z.lazy(() => SliderStateSchema).readonly(),
-			switchState: z.lazy(() => SwitchStateSchema).readonly(),
-			teachingMode: z.enum(asZodEnum(TEACHING_MODE_MAP)).readonly(),
-			listFormatState: z.lazy(() => ListFormatStateSchema).readonly(),
-			questionState: z.lazy(() => QuestionStateSchema).readonly(),
 		})
 		.readonly(),
 	() => ({
+		model: "fast" as const,
 		prompt: ContentSchema.createDefault(),
 		mediaUrls: [],
-		mode: "fast" as const,
-		activeSettingsTab: "learning" as const,
-		sliderState: SliderStateSchema.createDefault(),
-		switchState: SwitchStateSchema.createDefault(),
-		teachingMode: "choices" as const,
-		listFormatState: ListFormatStateSchema.createDefault(),
-		questionState: QuestionStateSchema.createDefault(),
 	}),
 );
 export type PostPayload = z.infer<typeof PostPayloadSchema>;
 
 //  ================================================================
-//      設定構成
-//  ================================================================
-
-//  ================================ 返答構成 ================================
-
-//  スライダー状態
-export const SliderStateSchema = withDefault(
-	z
-		.object({
-			isEnabled: z.boolean(),
-			politeness: z
-				.enum(Object.keys(SLIDER_MAP) as [string, ...string[]])
-				.transform((val) => Number(val)),
-		})
-		.readonly(),
-	() => ({
-		isEnabled: true,
-		politeness: 0.5,
-	}),
-);
-export type SliderState = z.infer<typeof SliderStateSchema>;
-
-//  スイッチ状態
-export const SwitchStateSchema = withDefault(
-	z
-		.object({
-			isEnabled: z.boolean(),
-		})
-		.and(
-			z.record(
-				z.enum(Object.keys(SWITCH_MAP) as [string, ...string[]]),
-				z.boolean(),
-			),
-		)
-		.readonly(),
-	() => ({
-		isEnabled: true,
-		summary: true,
-		guidance: true,
-		explanation: true,
-		answer: true,
-	}),
-);
-export type SwitchState = z.infer<typeof SwitchStateSchema>;
-
-//  設問状態（旧）
-export const QuestionStateSchema = withDefault(
-	z
-		.object({
-			isEnabled: z.boolean(),
-			range: z.union([z.literal("auto"), z.array(z.string()).readonly()]),
-		})
-		.readonly(),
-	() => ({
-		isEnabled: true,
-		range: "auto" as const,
-	}),
-);
-export type QuestionState = z.infer<typeof QuestionStateSchema>;
-
-//  リスト形式（設問・問題番号）状態
-export const ListFormatStateSchema = withDefault(
-	z
-		.object({
-			isAutoList: z.boolean(),
-			listFormatText: z.string(),
-		})
-		.readonly(),
-	() => ({
-		isAutoList: true,
-		listFormatText: "",
-	}),
-);
-export type ListFormatState = z.infer<typeof ListFormatStateSchema>;
-
-//  ================================================================
 //      チャット構成
 //  ================================================================
 
-//  ================================ フォルダ構成 ================================
+//  ================================ 流動構成 ================================
 
-//  フォルダリスト
-export const ChatFolderListSchema = withDefault(
-	z
-		.object({
-			items: z.array(z.lazy(() => ChatFolderSchema)).readonly(),
-			sort: z.enum(asZodEnum(SORT_MAP)).nullable(),
-			isAscending: z.boolean(),
-		})
-		.readonly(),
-	() => ({
-		items: [],
-		sort: null,
-		isAscending: false,
-	}),
+//  流動リスト
+export const ChatFlowListSchema = withDefault(
+	z.array(z.lazy(() => ChatFlowSchema).readonly()).readonly(),
+	() => [],
 );
-export type ChatFolderList = z.infer<typeof ChatFolderListSchema>;
+export type ChatFlowList = z.infer<typeof ChatFlowListSchema>;
 
-//  フォルダ
-export const ChatFolderSchema = withDefault(
-	z
-		.object({
-			files: z.lazy(() => ChatFileListSchema).readonly(),
-			folderId: z.uuid(),
-			icon: z.union([z.string()]),
-			title: z.string(),
-			description: z.string(),
-			isPinned: z.boolean(),
-			token: z.number(),
-			size: z.number(),
-			count: z.number(),
-			createdAt: z.number(),
-			modifiedAt: z.number(),
-			accessedAt: z.number(),
-		})
-		.readonly(),
-	() => ({
-		files: ChatFileListSchema.createDefault(),
-		folderId: gen.id(),
-		icon: "",
-		title: "",
-		description: "",
-		isPinned: false,
-		token: 0,
-		size: 0,
-		count: 0,
-		createdAt: gen.now(),
-		modifiedAt: gen.now(),
-		accessedAt: gen.now(),
-	}),
-);
-export type ChatFolder = z.infer<typeof ChatFolderSchema>;
-
-//  ================================ ファイル構成 ================================
-
-//  ファイルリスト
-export const ChatFileListSchema = withDefault(
-	z
-		.object({
-			items: z.array(z.lazy(() => ChatFileSchema)).readonly(),
-			sort: z.enum(asZodEnum(SORT_MAP)).nullable(),
-			isAscending: z.boolean(),
-		})
-		.readonly(),
-	() => ({
-		items: [],
-		sort: null,
-		isAscending: false,
-	}),
-);
-export type ChatFileList = z.infer<typeof ChatFileListSchema>;
-
-//  ファイル
-export const ChatFileSchema = withDefault(
+//  流動
+export const ChatFlowSchema = withDefault(
 	z
 		.object({
 			turns: z.lazy(() => TurnListSchema).readonly(),
@@ -431,18 +153,18 @@ export const ChatFileSchema = withDefault(
 		accessedAt: gen.now(),
 	}),
 );
-export type ChatFile = z.infer<typeof ChatFileSchema>;
+export type ChatFlow = z.infer<typeof ChatFlowSchema>;
 
-//  ================================ ターン構成 ================================
+//  ================================ 会話構成 ================================
 
-//  ターンリスト
+//  会話リスト
 export const TurnListSchema = withDefault(
 	z.array(z.lazy(() => TurnSchema).readonly()).readonly(),
 	() => [],
 );
 export type TurnList = z.infer<typeof TurnListSchema>;
 
-//  ターン
+//  会話
 export const TurnSchema = withDefault(
 	z
 		.object({
@@ -479,55 +201,20 @@ export const TurnSchema = withDefault(
 );
 export type Turn = z.infer<typeof TurnSchema>;
 
-//  ================================ ページ構成 ================================
+//  ================================ 頁構成 ================================
 
-//	ページリスト
+//	頁リスト
 export const PageListSchema = withDefault(
 	z.array(z.lazy(() => PageSchema).readonly()).readonly(),
 	() => [],
 );
 export type PageList = z.infer<typeof PageListSchema>;
 
-//	ページ
+//	頁
 export const PageSchema = withDefault(
 	z
 		.object({
 			pageIndex: z.number(),
-			activeQuestionIndex: z.number(),
-			questions: z.lazy(() => QuestionListSchema).readonly(),
-			count: z.number(),
-			size: z.number(),
-			token: z.number(),
-			timestampAt: z.number(),
-		})
-		.readonly(),
-	() => ({
-		pageIndex: 0,
-		activeQuestionIndex: 0,
-		questions: QuestionListSchema.createDefault(),
-		count: 0,
-		size: 0,
-		token: 0,
-		timestampAt: gen.now(),
-	}),
-);
-export type Page = z.infer<typeof PageSchema>;
-
-//  ================================ 設問構成 ================================
-
-//	設問リスト
-export const QuestionListSchema = withDefault(
-	z.array(z.lazy(() => QuestionSchema).readonly()).readonly(),
-	() => [],
-);
-export type QuestionList = z.infer<typeof QuestionListSchema>;
-
-//	設問
-export const QuestionSchema = withDefault(
-	z
-		.object({
-			questionIndex: z.number(),
-			questionDisplay: z.string(),
 			messages: z.lazy(() => MessageListSchema).readonly(),
 			count: z.number(),
 			size: z.number(),
@@ -536,8 +223,7 @@ export const QuestionSchema = withDefault(
 		})
 		.readonly(),
 	() => ({
-		questionIndex: 0,
-		questionDisplay: "",
+		pageIndex: 0,
 		messages: MessageListSchema.createDefault(),
 		count: 0,
 		size: 0,
@@ -545,7 +231,7 @@ export const QuestionSchema = withDefault(
 		timestampAt: gen.now(),
 	}),
 );
-export type Question = z.infer<typeof QuestionSchema>;
+export type Page = z.infer<typeof PageSchema>;
 
 //  ================================ メッセージ構成 ================================
 
@@ -597,13 +283,7 @@ export const ModelMessageSchema = withDefault(
 		.object({
 			modelMessageId: z.uuid(),
 			blocks: z.lazy(() => BlockListSchema).readonly(),
-			mode: z.enum(asZodEnum(MODE_MAP)),
-			activeSettingsTab: z.enum(asZodEnum(SETTINGS_TAB_MAP)),
-			sliderState: SliderStateSchema.readonly(),
-			switchState: SwitchStateSchema.readonly(),
-			teachingMode: z.enum(asZodEnum(TEACHING_MODE_MAP)),
-			listFormatState: z.lazy(() => ListFormatStateSchema).readonly(),
-			questionState: QuestionStateSchema.readonly(),
+			model: z.enum(asZodEnum(MODEL_MAP)),
 			role: z.enum(asZodEnum(ROLE_MAP)),
 			status: z.enum(asZodEnum(MODEL_STATUS_MAP)),
 			size: z.number(),
@@ -614,13 +294,7 @@ export const ModelMessageSchema = withDefault(
 	() => ({
 		modelMessageId: gen.id(),
 		blocks: BlockListSchema.createDefault(),
-		mode: "fast" as const,
-		activeSettingsTab: "learning" as const,
-		sliderState: SliderStateSchema.createDefault(),
-		switchState: SwitchStateSchema.createDefault(),
-		teachingMode: "choices" as const,
-		listFormatState: ListFormatStateSchema.createDefault(),
-		questionState: QuestionStateSchema.createDefault(),
+		model: "fast" as const,
 		role: "model" as const,
 		status: "pending" as const,
 		size: 0,

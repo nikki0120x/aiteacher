@@ -20,6 +20,7 @@
 				"noDangerouslySetInnerHtml": "off"
 			},
 			"a11y": {
+				"useMediaCaption": "off",
 				"useSemanticElements": "off",
 				"noStaticElementInteractions": "off",
 				"noLabelWithoutControl": "off"
@@ -28,6 +29,9 @@
 				"noUnusedImports": "warn",
 				"noUnusedVariables": "warn",
 				"useExhaustiveDependencies": "off"
+			},
+			"performance": {
+				"noImgElement": "off"
 			}
 		}
 	},

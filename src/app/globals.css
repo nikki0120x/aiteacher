@@ -53,26 +53,6 @@ html[data-scroll-behavior="smooth"] {
   scroll-behavior: smooth;
 }
 
-h1 {
-  @apply text-left text-3xl font-black text-d1 dark:text-l1 colors;
-}
-
-h2 {
-  @apply text-left text-xl font-bold text-d1 dark:text-l1 colors;
-}
-
-p {
-  @apply text-left text-base font-medium text-d1 dark:text-l1 colors;
-}
-
-ul {
-  @apply list-disc pl-8;
-}
-
-hr {
-  @apply my-4 w-full h-1 rounded-full text-d1 dark:text-l1 colors;
-}
-
 *::selection {
   color: var(--color-l1);
   background-color: var(--color-blue);
