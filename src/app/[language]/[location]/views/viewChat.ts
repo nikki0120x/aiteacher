@@ -9,6 +9,7 @@ import {
 	useTextarea,
 	useVoiceInput,
 	useExtensionContent,
+	useChatAreaHeight,
 } from "@/app/[language]/[location]/hooks/hookChat";
 
 export const useChatView = () => {
@@ -113,6 +114,12 @@ export const useChatView = () => {
 		setIsFullTextarea,
 	);
 
+	const {
+		mainContainerRef,
+		inputContainerRef,
+		chatAreaHeight,
+	} = useChatAreaHeight();
+
 	return {
 		refs: {
 			extensionRefCallback,
@@ -121,6 +128,8 @@ export const useChatView = () => {
 			textareaRef,
 			stopListeningButtonRef,
 			listInputRef,
+			mainContainerRef,
+			inputContainerRef,
 		},
 		states: {
 			userStatus,
@@ -143,6 +152,7 @@ export const useChatView = () => {
 			containerHeight,
 			thinkMode,
 			chatFlow,
+			chatAreaHeight,
 		},
 		actions: {
 			setUserStatus,

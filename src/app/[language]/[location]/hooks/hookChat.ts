@@ -517,6 +517,49 @@ export const useInputTextClear = (
 	};
 };
 
+// hookChat.ts
+
+export const useChatAreaHeight = () => {
+	const mainContainerRef = useRef<HTMLDivElement>(null);
+	const inputContainerRef = useRef<HTMLDivElement>(null);
+	const [chatAreaHeight, setChatAreaHeight] = useState<number>(0);
+	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const lastHeightRef = useRef<number>(0);
+
+	useLayoutEffect(() => {
+		const mainEl = mainContainerRef.current;
+		const inputEl = inputContainerRef.current;
+		if (!mainEl || !inputEl) return;
+
+		const observer = new ResizeObserver(() => {
+			if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+			timeoutRef.current = setTimeout(() => {
+				const mainHeight = mainEl.getBoundingClientRect().height;
+				const inputHeight = inputEl.getBoundingClientRect().height;
+
+				const calculatedHeight = mainHeight - inputHeight - 16;
+				const finalHeight = calculatedHeight > 0 ? calculatedHeight : 0;
+
+				if (Math.abs(lastHeightRef.current - finalHeight) < 5) return;
+
+				lastHeightRef.current = finalHeight;
+				setChatAreaHeight(finalHeight);
+			}, 250);
+		});
+
+		observer.observe(mainEl);
+		observer.observe(inputEl);
+
+		return () => {
+			observer.disconnect();
+			if (timeoutRef.current) clearTimeout(timeoutRef.current);
+		};
+	}, []);
+
+	return { mainContainerRef, inputContainerRef, chatAreaHeight };
+};
+
 //  ================================================================
 //      チャット
 //  ================================================================

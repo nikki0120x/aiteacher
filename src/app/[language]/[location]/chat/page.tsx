@@ -18,12 +18,12 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
-import { Button, Input, Label} from "@/components/ui";
-import { Medium } from "@/models/modelChat";
+import { Button, Input, Label } from "@/components/ui";
+import { VirtuosoHandle } from "react-virtuoso";
 
 const MediaPreviewItem = ({
 	media,
@@ -171,6 +171,22 @@ export default function Chat() {
 
 	const [isThinkModeMenuOpen, setIsThinkModeMenuOpen] = useState(false);
 
+	const virtuosoRef = useRef<VirtuosoHandle>(null);
+
+	useEffect(() => {
+		if (states.chatFlow.turns.length > 0) {
+			const timer = setTimeout(() => {
+				virtuosoRef.current?.scrollToIndex({
+					index: states.chatFlow.turns.length - 1,
+					align: "end",
+					behavior: "smooth",
+				});
+			}, 250);
+
+			return () => clearTimeout(timer);
+		}
+	}, [states.chatFlow.turns.length]);
+
 	return (
 		<div
 			onDragOver={actions.handleDragOver}
@@ -210,6 +226,7 @@ export default function Chat() {
 
 			<div className="colors flex size-full max-w-4xl flex-col items-center justify-center">
 				<motion.div
+					ref={refs.mainContainerRef}
 					layout
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
@@ -233,69 +250,47 @@ export default function Chat() {
 								className="w-full mask-y-from-95% mask-y-to-transparent p-2"
 							>
 								<Virtuoso
+									ref={virtuosoRef}
 									className="size-full"
-									data={states.chatFlow.turns.flatMap((turn) => {
-										type ChatItem =
-											| { id: string; type: "user_input"; text: string; media: Medium[]; content?: never; index?: never }
-											| { id: string; type: "problem"; text?: never; media?: never; content: string; index: number };
-
-										const items: ChatItem[] = [];
+									data={states.chatFlow.turns}
+									itemContent={(index, turn) => {
+										const isLatestTurn = index === states.chatFlow.turns.length - 1;
 
 										const firstPage = turn.pages[0];
-										if (firstPage?.messages?.user) {
-											const userContent = firstPage.messages.user.blocks[0]?.content;
-											const text = typeof userContent === "string" ? userContent : "";
-
-											items.push({
-												id: `user-${turn.turnId}`,
-												type: "user_input",
-												text: text,
-												media: [...firstPage.messages.user.media]
-											});
-										}
+										const userText = typeof firstPage?.messages?.user?.blocks[0]?.content === "string"
+											? firstPage.messages.user.blocks[0].content
+											: "";
+										const userMedia = firstPage?.messages?.user?.media || [];
+										const hasUserInput = userText.trim() !== "" || userMedia.length > 0;
 
 										const problemItems = turn.pages
 											.filter(page => page.messages.model && page.messages.model.length > 0)
-											.map((page): ChatItem => {
-												const rawContent = page.messages.model?.[0]?.blocks[0]?.content;
-												const stringContent = typeof rawContent === "string" ? rawContent : String(rawContent || "");
+											.map(page => ({
+												id: page.messages.model?.[0]?.modelMessageId || `prob-${page.pageIndex}`,
+												content: page.messages.model?.[0]?.blocks[0]?.content as string,
+												index: page.pageIndex,
+											}));
 
-												return {
-													id: page.messages.model?.[0]?.modelMessageId || `prob-${page.pageIndex}`,
-													type: "problem",
-													content: stringContent,
-													index: page.pageIndex,
-												};
-											});
-
-										return [...items, ...problemItems];
-									})}
-
-									itemContent={(_index, item) => {
-										if (item.type === "user_input") {
-											if (!item.text?.trim() && (!item.media || item.media.length === 0)) {
-												return null;
-											}
-
-											return (
-												<motion.div
-													layout
-													initial={{ y: 16, opacity: 0, filter: "blur(1rem)" }}
-													animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
-													exit={{ y: 16, opacity: 0, filter: "blur(1rem)" }}
-													className="flex w-full flex-col items-end justify-center p-2 mb-4 gap-4"
-													transition={{ duration: 0.5, ease: "backOut" }}
-												>
-													{item.media && item.media.length > 0 && (
-														<div className="flex w-full flex-row flex-wrap justify-end items-center gap-4">
-															{item.media.map((m: Medium) => {
-																const isImage = m.mimeType.startsWith("image/");
-																const isVideo = m.mimeType.startsWith("video/");
-																return (
+										return (
+											<div
+												key={turn.turnId}
+												style={{ minHeight: isLatestTurn ? states.chatAreaHeight : 0 }}
+												className="flex w-full flex-col justify-start"
+											>
+												{hasUserInput && (
+													<motion.div
+														initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+														animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+														transition={{ duration: 0.5, ease: "backOut" }}
+														className="flex w-full flex-col items-end justify-start p-2 mb-4 gap-4"
+													>
+														{userMedia.length > 0 && (
+															<div className="flex w-full flex-row flex-wrap justify-end items-center gap-4">
+																{userMedia.map((m) => (
 																	<div key={m.mediumId} className="w-32 h-32 rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
-																		{isImage ? (
+																		{m.mimeType.startsWith("image/") ? (
 																			<img src={m.src} alt={m.fileName} className="size-full object-cover" />
-																		) : isVideo ? (
+																		) : m.mimeType.startsWith("video/") ? (
 																			<video src={m.src} className="size-full object-cover" />
 																		) : (
 																			<div className="flex size-full items-center justify-center p-2">
@@ -303,55 +298,55 @@ export default function Chat() {
 																			</div>
 																		)}
 																	</div>
-																);
-															})}
-														</div>
-													)}
-
-													{item.text && item.text.trim() !== "" && (
-														<div className="flex w-full justify-end items-center">
-															<div className="bg-l2 dark:bg-d2 px-8 py-4 rounded-3xl shadow-lg colors">
-																<p className="text-d1 dark:text-l1 font-medium text-base text-right colors">
-																	{item.text}
-																</p>
+																))}
 															</div>
-														</div>
-													)}
-												</motion.div>
-											);
-										}
+														)}
+														{userText.trim() !== "" && (
+															<div className="flex w-full justify-end items-center">
+																<div className="bg-l2 dark:bg-d2 px-4 py-2 rounded-3xl shadow-lg colors">
+																	<p className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text">{userText}</p>
+																</div>
+															</div>
+														)}
+													</motion.div>
+												)}
 
-										return (
-											<motion.div
-												layout
-												initial={{ y: 16, opacity: 0, filter: "blur(1rem)" }}
-												animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
-												exit={{ y: 16, opacity: 0, filter: "blur(1rem)" }}
-												className="flex w-full justify-center items-center p-2"
-												transition={{ duration: 0.5, ease: "backOut" }}
-											>
-												<Button className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg">
-													<ReactMarkdown
-														remarkPlugins={[remarkMath]}
-														rehypePlugins={[rehypeKatex, rehypeRaw]}
-														components={{
-															h1: () => (
-																<h1 className="colors scale-100! origin-left bg-blue text-l1 rounded-br-3xl px-4 py-2 font-bold text-lg text-left">
-																	問題 {item.index + 1}
-																</h1>
-															),
+												{problemItems.map((item, pIndex) => {
+													const isNewElement = isLatestTurn && pIndex === problemItems.length - 1;
 
-															p: ({ children }) => (
-																<p className="origin-top-left all px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1">
-																	{children}
-																</p>
-															),
-														}}
-													>
-														{item.content}
-													</ReactMarkdown>
-												</Button>
-											</motion.div>
+													return (
+														<motion.div
+															key={item.id}
+															layout
+															initial={isNewElement ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+															transition={{ duration: 0.5, ease: "backOut" }}
+															className="flex w-full justify-center items-center p-2 mb-4"
+														>
+															<Button className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full">
+																<ReactMarkdown
+																	remarkPlugins={[remarkMath]}
+																	rehypePlugins={[rehypeKatex, rehypeRaw]}
+																	components={{
+																		h1: () => (
+																			<h1 className="colors scale-100! origin-left bg-blue text-l1 rounded-br-3xl px-4 py-2 font-bold text-lg text-left">
+																				問題 {item.index + 1}
+																			</h1>
+																		),
+																		p: ({ children }) => (
+																			<p className="all px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1">
+																				{children}
+																			</p>
+																		),
+																	}}
+																>
+																	{item.content}
+																</ReactMarkdown>
+															</Button>
+														</motion.div>
+													);
+												})}
+											</div>
 										);
 									}}
 								/>
@@ -399,6 +394,7 @@ export default function Chat() {
 					</AnimatePresence>
 
 					<motion.div
+						ref={refs.inputContainerRef}
 						layout
 						initial={{ height: 0, opacity: 0 }}
 						animate={{
@@ -407,7 +403,7 @@ export default function Chat() {
 						}}
 						exit={{ height: 0, opacity: 1 }}
 						transition={{ duration: 0.5, ease: "backOut" }}
-						className="colors flex size-full flex-col items-center justify-center rounded-4xl border border-l5 dark:border-d5"
+						className="colors flex shadow-lg size-full flex-col items-center justify-center rounded-4xl border border-l5 dark:border-d5"
 					>
 						<div className="colors flex size-full flex-col items-center justify-center p-4">
 							<div className="colors flex size-full min-h-10 flex-row items-start justify-center gap-1 mb-2">
@@ -424,6 +420,18 @@ export default function Chat() {
 									value={states.displayText}
 									ref={refs.textareaRef}
 									readOnly={states.isListening}
+									onKeyDown={(e) => {
+										if (e.nativeEvent.isComposing) return;
+
+										const isTouchDevice = window.matchMedia("(any-pointer: coarse)").matches;
+										if (isTouchDevice) return;
+
+										if (e.key === "Enter" && !e.shiftKey) {
+											e.preventDefault();
+											actions.handleSend();
+											refs.textareaRef.current?.focus();
+										}
+									}}
 									onChange={(e) => {
 										actions.setInterimText("");
 										actions.setInputText((prev) => ({
