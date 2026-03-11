@@ -421,7 +421,7 @@ export default function Chat() {
 									ref={refs.textareaRef}
 									readOnly={states.isListening}
 									onKeyDown={(e) => {
-										if (e.nativeEvent.isComposing) return;
+										if (e.nativeEvent.isComposing || e.keyCode === 229) return;
 
 										const isTouchDevice = window.matchMedia("(any-pointer: coarse)").matches;
 										if (isTouchDevice) return;
