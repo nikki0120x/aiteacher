@@ -181,7 +181,7 @@ export default function Chat() {
 					align: "end",
 					behavior: "smooth",
 				});
-			}, 250);
+			}, 500);
 
 			return () => clearTimeout(timer);
 		}
@@ -263,7 +263,6 @@ export default function Chat() {
 										const userMedia = firstPage?.messages?.user?.media || [];
 										const hasUserInput = userText.trim() !== "" || userMedia.length > 0;
 
-										// ===== 解答ターンの場合のUI =====
 										if (turn.title === "solve_request") {
 											const modelContent = firstPage?.messages?.model?.[0]?.blocks[0]?.content as string || "";
 											return (
@@ -275,7 +274,6 @@ export default function Chat() {
 															transition={{ duration: 0.5, ease: "backOut" }}
 															className="flex w-full flex-col items-end justify-start p-2 mb-4 gap-4"
 														>
-															{/* 選択した問題文を表示 */}
 															<div className="flex w-full justify-end items-center">
 																<div className="bg-l2 dark:bg-d2 px-4 py-2 rounded-3xl shadow-lg colors max-w-[80%]">
 																	<p className="text-d1 dark:text-l1 font-medium text-sm text-right colors select-text line-clamp-3">
@@ -286,7 +284,6 @@ export default function Chat() {
 														</motion.div>
 													)}
 
-													{/* AIからの解答をマークダウンで表示 */}
 													{modelContent && (
 														<motion.div
 															layout
@@ -331,9 +328,9 @@ export default function Chat() {
 														className="flex w-full flex-col items-end justify-start p-2 mb-4 gap-4"
 													>
 														{userMedia.length > 0 && (
-															<div className="flex w-full flex-row flex-wrap justify-end items-center gap-4">
+															<div className="flex w-full flex-row justify-start items-center gap-4 overflow-x-auto">
 																{userMedia.map((m) => (
-																	<div key={m.mediumId} className="w-32 h-32 rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
+																	<div key={m.mediumId} className="size-32 flex-none rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
 																		{m.mimeType.startsWith("image/") ? (
 																			<img src={m.src} alt={m.fileName} className="size-full object-cover" />
 																		) : m.mimeType.startsWith("video/") ? (
@@ -347,9 +344,10 @@ export default function Chat() {
 																))}
 															</div>
 														)}
+
 														{userText.trim() !== "" && (
 															<div className="flex w-full justify-end items-center">
-																<div className="bg-l2 dark:bg-d2 px-4 py-2 rounded-3xl shadow-lg colors">
+																<div className="bg-l2 dark:bg-d2 px-4 py-3 rounded-3xl shadow-lg colors">
 																	<p className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text">{userText}</p>
 																</div>
 															</div>
@@ -359,6 +357,27 @@ export default function Chat() {
 
 												{problemItems.map((item, pIndex) => {
 													const isNewElement = isLatestTurn && pIndex === problemItems.length - 1;
+
+													const isError = item.content.trim().startsWith("# Error");
+
+													if (isError) {
+														return (
+															<motion.div
+																key={item.id}
+																layout
+																initial={isNewElement ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+																animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+																transition={{ duration: 0.5, ease: "backOut" }}
+																className="flex w-full justify-center items-center p-2 mb-4"
+															>
+																<div className="colors flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg p-6 items-center justify-center border-2 border-red border-dashed">
+																	<span className="text-red font-medium text-base text-center">
+																		{item.content.replace(/^#\s*エラー\n?/, "")}
+																	</span>
+																</div>
+															</motion.div>
+														);
+													}
 
 													return (
 														<motion.div
@@ -479,6 +498,15 @@ export default function Chat() {
 											e.preventDefault();
 											actions.handleSend();
 											refs.textareaRef.current?.focus();
+										}
+									}}
+									onPaste={(e) => {
+										if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+											e.preventDefault();
+											actions.handleUploadAndConvert(e.clipboardData.files);
+											if (states.activeContent !== "upload") {
+												actions.toggleContent("upload");
+											}
 										}
 									}}
 									onChange={(e) => {

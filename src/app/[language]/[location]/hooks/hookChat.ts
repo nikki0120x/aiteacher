@@ -773,9 +773,13 @@ export const useChat = (
 					accumulatedText += decoder.decode(value, { stream: true });
 				}
 
-				const splitTexts = accumulatedText.split(/(?=# 問題)/g);
+				const splitTexts = accumulatedText.split(/(?=# Problem|# Error)/g);
 
-				const validTexts = splitTexts.filter(t => t.trim().startsWith("# 問題"));
+				let validTexts = splitTexts.filter(t => t.trim().startsWith("# Problem") || t.trim().startsWith("# Error"));
+
+				if (done && validTexts.length === 0 && accumulatedText.trim() !== "") {
+					validTexts = [`# Error\n${accumulatedText.trim()}`];
+				}
 
 				const completedTexts = done
 					? validTexts
