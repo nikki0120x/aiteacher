@@ -263,6 +263,52 @@ export default function Chat() {
 										const userMedia = firstPage?.messages?.user?.media || [];
 										const hasUserInput = userText.trim() !== "" || userMedia.length > 0;
 
+										// ===== 解答ターンの場合のUI =====
+										if (turn.title === "solve_request") {
+											const modelContent = firstPage?.messages?.model?.[0]?.blocks[0]?.content as string || "";
+											return (
+												<div key={turn.turnId} style={{ minHeight: isLatestTurn ? states.chatAreaHeight : 0 }} className="flex w-full flex-col justify-start">
+													{hasUserInput && (
+														<motion.div
+															initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+															transition={{ duration: 0.5, ease: "backOut" }}
+															className="flex w-full flex-col items-end justify-start p-2 mb-4 gap-4"
+														>
+															{/* 選択した問題文を表示 */}
+															<div className="flex w-full justify-end items-center">
+																<div className="bg-l2 dark:bg-d2 px-4 py-2 rounded-3xl shadow-lg colors max-w-[80%]">
+																	<p className="text-d1 dark:text-l1 font-medium text-sm text-right colors select-text line-clamp-3">
+																		{userText}
+																	</p>
+																</div>
+															</div>
+														</motion.div>
+													)}
+
+													{/* AIからの解答をマークダウンで表示 */}
+													{modelContent && (
+														<motion.div
+															layout
+															initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+															transition={{ duration: 0.5, ease: "backOut" }}
+															className="flex w-full justify-center items-center p-2 mb-4"
+														>
+															<div className="colors flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full p-6 cursor-text select-text">
+																<ReactMarkdown
+																	remarkPlugins={[remarkMath]}
+																	rehypePlugins={[rehypeKatex, rehypeRaw]}
+																>
+																	{modelContent}
+																</ReactMarkdown>
+															</div>
+														</motion.div>
+													)}
+												</div>
+											);
+										}
+
 										const problemItems = turn.pages
 											.filter(page => page.messages.model && page.messages.model.length > 0)
 											.map(page => ({
@@ -323,7 +369,10 @@ export default function Chat() {
 															transition={{ duration: 0.5, ease: "backOut" }}
 															className="flex w-full justify-center items-center p-2 mb-4"
 														>
-															<Button className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full">
+															<Button
+																onClick={() => actions.handleSolve(item.content, turn.turnId)}
+																className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full"
+															>
 																<ReactMarkdown
 																	remarkPlugins={[remarkMath]}
 																	rehypePlugins={[rehypeKatex, rehypeRaw]}

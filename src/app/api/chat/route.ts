@@ -30,9 +30,14 @@ const ai = new GoogleGenAI({
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { text, media, mode, turnId } = body;
-        const mediaParts = [];
+        const { text, media, mode, turnId, action } = body;
 
+        let targetModel = "gemini-3.1-flash-lite-preview";
+        let promptParts = [];
+        let temperature = 0;
+
+        // メディア（画像）のパース処理（共通で使用するため外に出す）
+        const mediaParts = [];
         if (media?.length > 0) {
             const urlPattern = new RegExp(`https://storage.googleapis.com/${bucketName}/(.+)`);
             for (const m of media) {
@@ -49,23 +54,52 @@ export async function POST(request: Request) {
             }
         }
 
-        const promptParts = [
-            ...mediaParts,
-            { text: `ユーザーのテキスト: ${text || "なし"}` }, {
-                text: `指示:
+        // ==========================================
+        // 1. 解答フェーズ (action === "solve")
+        // ==========================================
+        if (action === "solve") {
+            if (mode === "think") {
+                targetModel = "gemini-3.1-pro";
+            } else if (mode === "standard") {
+                targetModel = "gemini-3.1-flash";
+            } else {
+                targetModel = "gemini-3.1-flash-lite-preview";
+            }
+
+            temperature = 0.7;
+
+            // 元の画像と、選択された問題文を一緒に渡す
+            promptParts = [
+                ...mediaParts,
+                { text: `提供された画像を参考に、以下の問題について解答・解説を行ってください。\n\n${text}` }
+            ];
+        }
+        // ==========================================
+        // 2. 問題抽出フェーズ (デフォルト)
+        // ==========================================
+        else {
+            targetModel = "gemini-3.1-flash-lite-preview";
+            temperature = 0;
+
+            promptParts = [
+                ...mediaParts,
+                { text: `ユーザーのテキスト: ${text || "なし"}` }, {
+                    text: `指示:
 1. 提供された画像から問題を正確に抽出してください。
 2. 【重要】(1), (2), (3) などの小問がある場合は、必ず1つずつ独立した項目として分割して抽出してください。
-3. 各項目の冒頭には必ず「# 問題」とだけ記述してください。前置き（例：「抽出いたします」など）や挨拶、説明文は一切出力せず、いきなり「# 問題」から始めてください。
+3. 各項目の冒頭には必ず「# 問題」とだけ記述してください。前置きや挨拶、説明文は一切出力せず、いきなり「# 問題」から始めてください。
 4. すべての数式、変数、数学記号は、例外なく標準的な LaTeX 形式（$...$ または $$...$$）で記述してください。
 5. 問題文は要約せず、画像にある通りに全文を抽出してください。`,
-            }
-        ];
+                }
+            ];
+        }
 
+        // AIへリクエスト送信
         const responseStream = await ai.models.generateContentStream({
-            model: "gemini-3.1-flash-lite-preview",
+            model: targetModel, // 分岐したモデルを適用
             contents: [{ role: "user", parts: promptParts }],
             config: {
-                temperature: 0,
+                temperature: temperature, // 分岐した温度を適用
                 thinkingConfig: {
                     includeThoughts: false,
                 }
@@ -73,6 +107,7 @@ export async function POST(request: Request) {
         });
 
         const stream = new ReadableStream({
+            // ... (stream の処理は変更なし) ...
             async start(controller) {
                 const encoder = new TextEncoder();
                 try {

@@ -854,10 +854,111 @@ export const useChat = (
 		setActiveContent
 	]);
 
+	const handleSolve = useCallback(async (problemText: string, turnId: string) => {
+		setUserStatus("sending");
+		setModelStatus("thinking");
+
+		// 元のターンから画像（media）を取得する
+		const targetTurn = chatFlow.turns.find(t => t.turnId === turnId);
+		const originalMedia = targetTurn?.pages[0]?.messages.user?.media || [];
+		const mediaToSend = originalMedia.map(m => ({ url: m.src, mimeType: m.mimeType }));
+
+		// 新しいターンとしてチャットを追加
+		const initialUserMessage = {
+			...UserMessageSchema.createDefault(),
+			blocks: [{ type: "text" as const, content: problemText }], // ユーザーの入力は選択した問題文
+			media: originalMedia, // UI表示用に画像も引き継ぐ
+			status: "completed" as const,
+			timestampAt: Date.now()
+		};
+
+		const newTurn = {
+			...TurnSchema.createDefault(),
+			title: "solve_request", // 解答ターンの目印
+			pages: [{
+				...PageSchema.createDefault(),
+				pageIndex: 0,
+				messages: { user: initialUserMessage, model: [] },
+				timestampAt: Date.now()
+			}]
+		};
+
+		setChatFlow((prev) => ({
+			...prev,
+			turns: [...prev.turns, newTurn],
+			activeTurnId: newTurn.turnId,
+			modifiedAt: Date.now(),
+		}));
+
+		if (setActiveContent) setActiveContent("none");
+
+		try {
+			const response = await fetch("/api/chat", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					mode: thinkMode,
+					text: problemText,
+					media: mediaToSend, // ここで元の画像をAPIに送る！
+					action: "solve",
+					turnId: newTurn.turnId
+				}),
+			});
+
+			if (!response.body) throw new Error("No response body");
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let accumulatedText = "";
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (value) {
+					accumulatedText += decoder.decode(value, { stream: true });
+
+					// 解答は分割せず、そのまま1つのテキストブロックとしてストリーミング
+					setChatFlow((prev) => {
+						const updatedTurns = prev.turns.map((turn) => {
+							if (turn.turnId === newTurn.turnId) {
+								return {
+									...turn,
+									pages: [{
+										...turn.pages[0],
+										messages: {
+											...turn.pages[0].messages,
+											model: [{
+												...ModelMessageSchema.createDefault(),
+												blocks: [{ type: "text" as const, content: accumulatedText }],
+												status: "completed" as const,
+												timestampAt: Date.now()
+											}]
+										}
+									}],
+									modifiedAt: Date.now()
+								};
+							}
+							return turn;
+						});
+						return { ...prev, turns: updatedTurns, modifiedAt: Date.now() };
+					});
+				}
+				if (done) break;
+			}
+
+			setModelStatus("completed");
+			setUserStatus("completed");
+
+		} catch (error) {
+			console.error("Chat error:", error);
+			setModelStatus("failed");
+			setUserStatus("failed");
+		}
+	}, [chatFlow.turns, thinkMode, setActiveContent]);
+
 	const actions = useMemo(() => ({
 		setUserStatus, setModelStatus, setInputText, setInputMedia, setChatFlow,
-		handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateThinkMode,
-	}), [handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, updateThinkMode]);
+		handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, handleSolve, updateThinkMode,
+	}), [handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, handleSolve, updateThinkMode]);
 
 	return {
 		states: { userStatus, modelStatus, inputText, inputMedia, chatFlow, uploadProgress, isUploading, thinkMode },
