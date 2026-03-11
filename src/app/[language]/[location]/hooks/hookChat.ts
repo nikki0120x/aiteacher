@@ -344,14 +344,6 @@ export const useVoiceInput = (
 		[inputText.inputText, interimText],
 	);
 
-	useLayoutEffect(() => {
-		if (isListening) {
-			stopListeningButtonRef?.current?.focus();
-		} else {
-			textareaRef?.current?.focus();
-		}
-	}, [isListening, stopListeningButtonRef, textareaRef]);
-
 	const actions = useMemo(
 		() => ({
 			setIsListening,

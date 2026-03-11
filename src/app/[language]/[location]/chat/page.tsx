@@ -252,6 +252,7 @@ export default function Chat() {
 								<Virtuoso
 									ref={virtuosoRef}
 									className="size-full"
+									followOutput={false}
 									data={states.chatFlow.turns}
 									itemContent={(index, turn) => {
 										const isLatestTurn = index === states.chatFlow.turns.length - 1;
@@ -328,7 +329,7 @@ export default function Chat() {
 														className="flex w-full flex-col items-end justify-start p-2 mb-4 gap-4"
 													>
 														{userMedia.length > 0 && (
-															<div className="flex w-full flex-row justify-start items-center gap-4 overflow-x-auto">
+															<div className="flex w-full flex-row-reverse justify-start items-center gap-4 overflow-x-auto">
 																{userMedia.map((m) => (
 																	<div key={m.mediumId} className="size-32 flex-none rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
 																		{m.mimeType.startsWith("image/") ? (
@@ -589,9 +590,6 @@ export default function Chat() {
 													transition={{ duration: 0.5, ease: "backOut" }}
 												>
 													<Button
-														ref={(node) => {
-															if (node) node.focus();
-														}}
 														onClick={actions.toggleListening}
 														className="flex size-10 items-center justify-center rounded-full bg-red colors"
 													>
@@ -749,7 +747,6 @@ export default function Chat() {
 															<Button
 																onClick={() => {
 																	actions.handleSend();
-																	refs.textareaRef.current?.focus();
 																}}
 																className="flex size-10 items-center justify-center rounded-full bg-blue colors"
 															>
