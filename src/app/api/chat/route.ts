@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
+import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 
 const project = process.env.GOOGLE_CLOUD_PROJECT || "aiteacher-0120";
 const location = process.env.GOOGLE_CLOUD_LOCATION || "global";
@@ -77,11 +78,15 @@ export async function POST(request: Request) {
                 ...mediaParts,
                 { text: `ユーザーのテキスト: ${text || "なし"}` }, {
                     text: `指示:
-                        1. 提供情報から問題を正確に全文を抽出すること。
-                        2. 全ての小問を各々独立した項目として分割して抽出すること。
-                        3. 各項目の先頭には必ず "# Problem" とだけ記述し，前置きや挨拶，説明文は一切出力しないこと。
-                        4. 全ての数式，変数，記号は，標準的な LaTeX 形式（$...$ または $$...$$）で記述すること。
-                        5. 提供情報に問題が含まれていない，または問題として認識できない場合は，"# Error"とだけ出力すること。`,
+                    1. 提供情報から問題を正確に全文を抽出すること。
+                    2. 全ての小問を各々独立した項目として分割して抽出すること。
+                    3. 各問題について、以下のカリキュラムデータに基づいて"教科/科目/単元"を判定すること。該当するものがない場合は"Unknown"と出力すること。
+                    [カリキュラムデータ]: ${JSON.stringify(curriculumData)}
+                    4. 各項目の先頭には必ず "# Problem: [実際の番号]" と記述し、改行すること。大問と小問のような（問の階層数は無限）階層が存在する場合は必ず "/" で区切ること。どちらか一方しかない場合は "/" を使わずそのまま記述すること。番号が特定できない場合は "# Problem: None" と記述すること。
+                    5. その次の行には問題文を記述し，前置きや挨拶、説明文は一切出力しないこと。
+                    6. その次の行には必ず'### Curriculum: "教科/科目/単元"'と記述し、改行すること。
+                    7. 全ての数式，変数，記号は，標準的な LaTeX 形式（$...$ または $$...$$）で記述すること。
+                    8. 提供情報に問題が含まれていない，または問題として認識できない場合は，"# Error"とだけ出力すること。`,
                 }
             ];
         }

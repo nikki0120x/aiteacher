@@ -19,8 +19,6 @@ import {
 	type MODEL_STATUS_MAP,
 	ModelMessageSchema,
 	PageSchema,
-	type TurnList,
-	TurnListSchema,
 	TurnSchema,
 	type USER_STATUS_MAP,
 	UserMessageSchema,
@@ -199,8 +197,6 @@ export const usePageTitle = (ref: React.RefObject<HTMLElement | null>) => {
 export const useVoiceInput = (
 	inputText: InputText,
 	setInputText: React.Dispatch<React.SetStateAction<InputText>>,
-	textareaRef?: React.RefObject<HTMLTextAreaElement | null>,
-	stopListeningButtonRef?: React.RefObject<HTMLButtonElement | null>,
 ) => {
 	const currentLocale = useLocale();
 	const recognitionRef = useRef<SpeechRecognition | null>(null);

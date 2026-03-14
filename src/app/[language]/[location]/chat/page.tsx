@@ -24,6 +24,7 @@ import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Button, Input, Label } from "@/components/ui";
 import { VirtuosoHandle } from "react-virtuoso";
+import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 
 const MediaPreviewItem = ({
 	media,
@@ -193,7 +194,7 @@ export default function Chat() {
 			onDragEnter={actions.handleDragEnter}
 			onDragLeave={actions.handleDragLeave}
 			onDrop={actions.handleDrop}
-			className="colors relative inset-0 flex w-full h-[calc(100dvh-3.75rem)] select-none items-center justify-center bg-l1 p-4 dark:bg-d1"
+			className="colors relative inset-0 flex w-full h-[calc(100dvh-3.75rem)] select-none items-center justify-center bg-l1 dark:bg-d1"
 		>
 			<AnimatePresence>
 				{states.dragInfo && (
@@ -224,7 +225,7 @@ export default function Chat() {
 				)}
 			</AnimatePresence>
 
-			<div className="colors flex size-full max-w-4xl flex-col items-center justify-center">
+			<div className="colors flex size-full max-w-4xl flex-col items-center justify-center p-4">
 				<motion.div
 					ref={refs.mainContainerRef}
 					layout
@@ -247,7 +248,7 @@ export default function Chat() {
 								}}
 								exit={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
 								transition={{ duration: 0.5, ease: "backOut" }}
-								className="w-full mask-y-from-95% mask-y-to-transparent p-2"
+								className="w-full mask-y-from-95% mask-y-to-transparent"
 							>
 								<Virtuoso
 									ref={virtuosoRef}
@@ -273,7 +274,7 @@ export default function Chat() {
 															initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
 															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
-															className="flex w-full flex-col items-end justify-start p-2 mb-4 gap-4"
+															className="flex w-full flex-col items-end justify-start mb-4 gap-4"
 														>
 															<div className="flex w-full justify-end items-center">
 																<div className="bg-l2 dark:bg-d2 px-4 py-2 rounded-3xl shadow-lg colors max-w-[80%]">
@@ -291,7 +292,7 @@ export default function Chat() {
 															initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
 															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
-															className="flex w-full justify-center items-center p-2 mb-4"
+															className="flex w-full justify-center items-center mb-4"
 														>
 															<div className="colors flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full p-6 cursor-text select-text">
 																<ReactMarkdown
@@ -326,10 +327,10 @@ export default function Chat() {
 														initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
 														animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 														transition={{ duration: 0.5, ease: "backOut" }}
-														className="flex w-full flex-col items-end justify-start p-2 mb-4 gap-4"
+														className="flex w-full flex-col items-end justify-start mb-8"
 													>
 														{userMedia.length > 0 && (
-															<div className="flex w-full flex-row-reverse justify-start items-center gap-4 overflow-x-auto">
+															<div className="flex w-full flex-row-reverse justify-start items-center gap-4 overflow-x-auto p-2">
 																{userMedia.map((m) => (
 																	<div key={m.mediumId} className="size-32 flex-none rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
 																		{m.mimeType.startsWith("image/") ? (
@@ -347,7 +348,7 @@ export default function Chat() {
 														)}
 
 														{userText.trim() !== "" && (
-															<div className="flex w-full justify-end items-center">
+															<div className="flex w-full justify-end items-center p-2">
 																<div className="bg-l2 dark:bg-d2 px-4 py-3 rounded-3xl shadow-lg colors">
 																	<p className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text">{userText}</p>
 																</div>
@@ -358,7 +359,6 @@ export default function Chat() {
 
 												{problemItems.map((item, pIndex) => {
 													const isNewElement = isLatestTurn && pIndex === problemItems.length - 1;
-
 													const isError = item.content.trim().startsWith("# Error");
 
 													if (isError) {
@@ -369,47 +369,140 @@ export default function Chat() {
 																initial={isNewElement ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
 																animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 																transition={{ duration: 0.5, ease: "backOut" }}
-																className="flex w-full justify-center items-center p-2 mb-4"
+																className="flex w-full justify-center items-center p-2"
 															>
 																<div className="colors flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg p-6 items-center justify-center border-2 border-red border-dashed">
-																	<span className="text-red font-medium text-base text-center">
-																		{item.content.replace(/^#\s*エラー\n?/, "")}
-																	</span>
+																	<motion.span
+																		layout
+																		transition={{ duration: 0.5, ease: "backOut" }}
+																		className="text-red font-medium text-base text-center"
+																	>
+																		問題が見つかりませんでした。再試行してください。
+																	</motion.span>
 																</div>
 															</motion.div>
 														);
 													}
 
+													const rawContent = item.content.trim();
+													const displayContent = rawContent;
+
 													return (
 														<motion.div
 															key={item.id}
-															layout
 															initial={isNewElement ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
 															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
-															className="flex w-full justify-center items-center p-2 mb-4"
+															className="flex w-full items-center justify-center p-2"
 														>
 															<Button
-																onClick={() => actions.handleSolve(item.content, turn.turnId)}
-																className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full"
+																onClick={() => actions.handleSolve(displayContent, turn.turnId)}
+																className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3 shadow-lg h-full overflow-hidden group"
 															>
 																<ReactMarkdown
 																	remarkPlugins={[remarkMath]}
 																	rehypePlugins={[rehypeKatex, rehypeRaw]}
 																	components={{
-																		h1: () => (
-																			<h1 className="colors scale-100! origin-left bg-blue text-l1 rounded-br-3xl px-4 py-2 font-bold text-lg text-left">
-																				問題 {item.index + 1}
-																			</h1>
-																		),
+																		h1: ({ children }) => {
+																			const rawText = String(children);
+																			let originalNumParts: string[] = [];
+
+																			if (rawText.includes("Problem:")) {
+																				const numStr = rawText.replace("Problem:", "").trim();
+																				if (numStr && numStr !== "None") {
+																					originalNumParts = numStr.split("/").map(p => p.trim());
+																				}
+																			}
+
+																			return (
+																				<div className="scale-100! flex flex-row justify-between w-full items-center">
+																					<div className="bg-blue px-4 py-2 rounded-br-3xl">
+																						<motion.h1
+																							layout
+																							transition={{ duration: 0.5, ease: "backOut" }}
+																							className="colors text-l1 font-bold text-lg text-left whitespace-nowrap"
+																						>
+																							問題 {item.index + 1}
+																						</motion.h1>
+																					</div>
+
+																					{originalNumParts.length > 0 && (
+																						<div className="px-4 py-2 flex flex-row justify-end items-center gap-2">
+																							{originalNumParts.map((part, idx) => {
+																								const uniqueKey = `num-tag-${part}-${idx}`;
+
+																								return (
+																									<div
+																										key={uniqueKey}
+																										className="colors bg-blue rounded-lg px-2"
+																									>
+																										<motion.span
+																											layout
+																											transition={{ duration: 0.5, ease: "backOut" }}
+																											className="colors text-l1 font-bold text-lg text-right whitespace-nowrap"
+																										>
+																											{part}
+																										</motion.span>
+																									</div>
+																								);
+																							})}
+																						</div>
+																					)}
+																				</div>
+																			);
+																		},
+
 																		p: ({ children }) => (
-																			<p className="all px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1">
+																			<motion.p
+																				layout
+																				transition={{ duration: 0.5, ease: "backOut" }}
+																				className="scale-100! colors px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1"
+																			>
 																				{children}
-																			</p>
+																			</motion.p>
 																		),
+
+																		h3: ({ children }) => {
+																			const rawText = String(children).replace(/["']/g, "").trim();
+																			let parts = ["Unknown"];
+
+																			if (rawText.startsWith("Curriculum:")) {
+																				const cleanText = rawText.replace("Curriculum:", "").trim();
+
+																				const extractedParts = cleanText.split("/").map(p => p.trim());
+
+																				if (extractedParts.length === 3) {
+																					const [subject, course, unit] = extractedParts;
+
+																					type CurriculumStructure = Record<string, Record<string, string[]>>;
+																					const data = curriculumData as CurriculumStructure;
+
+																					const isValid = data[subject]?.[course]?.includes(unit);
+
+																					if (isValid) {
+																						parts = extractedParts;
+																					}
+																				}
+																			}
+																			return (
+																				<div className="scale-100! flex flex-row gap-2 justify-end items-center w-full px-4 py-2">
+																					{parts.map((part) => (
+																						<div key={part} className="bg-l3 dark:bg-d3 group-hover:bg-l4 group-focus-visible:bg-l4 dark:group-focus-visible:bg-d4 dark:group-hover:bg-d4 px-2 py-1 rounded-lg colors shadow-lg">
+																							<motion.span
+																								layout
+																								transition={{ duration: 0.5, ease: "backOut" }}
+																								className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap"
+																							>
+																								{part}
+																							</motion.span>
+																						</div>
+																					))}
+																				</div>
+																			);
+																		},
 																	}}
 																>
-																	{item.content}
+																	{displayContent}
 																</ReactMarkdown>
 															</Button>
 														</motion.div>
