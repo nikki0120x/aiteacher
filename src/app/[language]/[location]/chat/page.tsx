@@ -23,7 +23,7 @@ import { Virtuoso } from "react-virtuoso";
 import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Button, Input, Label } from "@/components/ui";
-import { VirtuosoHandle } from "react-virtuoso";
+import type { VirtuosoHandle } from "react-virtuoso";
 import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 
 const MediaPreviewItem = ({
@@ -338,9 +338,37 @@ export default function Chat() {
 																		) : m.mimeType.startsWith("video/") ? (
 																			<video src={m.src} className="size-full object-cover" />
 																		) : (
-																			<div className="flex size-full items-center justify-center p-2">
-																				<span className="text-base font-medium text-right text-d1 dark:text-l1 break-all">{m.fileName}</span>
-																			</div>
+																			(() => {
+																				const lastDotIndex = m.fileName.lastIndexOf(".");
+																				const hasExtension = lastDotIndex !== -1 && lastDotIndex !== 0 && lastDotIndex !== m.fileName.length - 1;
+
+																				const name = hasExtension ? m.fileName.slice(0, lastDotIndex) : m.fileName;
+																				const extension = hasExtension ? m.fileName.slice(lastDotIndex + 1).toUpperCase() : "";
+
+																				return (
+																					<div className="relative flex size-full flex-col items-center justify-center p-2">
+																						<motion.span
+																							layout
+																							transition={{ duration: 0.5, ease: "backOut" }}
+																							className="colors break-all text-center font-medium text-base text-d1 dark:text-l1 line-clamp-2"
+																						>
+																							{name}
+																						</motion.span>
+
+																						{extension && (
+																							<div className="flex justify-center items-center absolute bottom-1 left-1 rounded-full px-2 py-1 bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
+																								<motion.span
+																									layout
+																									transition={{ duration: 0.5, ease: "backOut" }}
+																									className="text-d1 dark:text-l1 text-left text-sm font-medium colors"
+																								>
+																									{extension}
+																								</motion.span>
+																							</div>
+																						)}
+																					</div>
+																				);
+																			})()
 																		)}
 																	</div>
 																))}
@@ -350,7 +378,13 @@ export default function Chat() {
 														{userText.trim() !== "" && (
 															<div className="flex w-full justify-end items-center p-2">
 																<div className="bg-l2 dark:bg-d2 px-4 py-3 rounded-3xl shadow-lg colors">
-																	<p className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text">{userText}</p>
+																	<motion.p
+																		layout
+																		transition={{ duration: 0.5, ease: "backOut" }}
+																		className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text"
+																	>
+																		{userText}
+																	</motion.p>
 																</div>
 															</div>
 														)}

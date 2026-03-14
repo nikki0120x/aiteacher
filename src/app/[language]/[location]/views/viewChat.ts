@@ -82,7 +82,7 @@ export const useChatView = () => {
 			toggleListening,
 			resetListening,
 		},
-	} = useVoiceInput(inputText, setInputText, textareaRef, stopListeningButtonRef);
+	} = useVoiceInput(inputText, setInputText);
 
 	//  テキストエリア
 	const {
