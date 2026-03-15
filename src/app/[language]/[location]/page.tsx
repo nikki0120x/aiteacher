@@ -1,12 +1,13 @@
 "use client";
+import { useParams, redirect } from "next/navigation";
 
-export default function Chat() {
-	return (
-		<div className="no-scrollbar no-select flex-1 snap-y snap-mandatory overflow-y-auto">
-			<section className="relative flex size-full snap-start items-center justify-center overflow-hidden p-8"></section>
-			<section className="flex size-full snap-start flex-col items-center justify-center p-8">
-				<h2 className="font-bold text-3xl">Next Content</h2>
-			</section>
-		</div>
-	);
+export default function ChatRedirect() {
+	const params = useParams();
+	const { language, location } = params;
+
+	if (language && location) {
+		redirect(`/${language}/${location}/chat`);
+	}
+
+	return null;
 }

@@ -423,18 +423,8 @@ export const BlockSchema = withDefault(
 				.readonly(),
 			z
 				.object({
-					type: z.literal("glossary"),
-					content: z
-						.array(
-							z
-								.object({
-									term: z.string(),
-									description: z.string(),
-									importance: z.number().min(1).max(5),
-								})
-								.readonly(),
-						)
-						.readonly(),
+					type: z.literal("error"),
+					content: z.string(),
 				})
 				.readonly(),
 		])

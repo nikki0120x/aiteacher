@@ -19,6 +19,7 @@ import {
 	BowArrow,
 } from "lucide-react";
 import rehypeRaw from "rehype-raw";
+import type { ExtraProps, Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -29,6 +30,7 @@ import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Button, Input, Label } from "@/components/ui";
 import type { VirtuosoHandle } from "react-virtuoso";
+import type { Turn, Medium } from "@/models/modelChat";
 import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -67,12 +69,9 @@ const CustomAccordion = ({ title, children, defaultOpen }: { title: string, chil
 					<div className="flex flex-row justify-start items-center gap-4">
 						{IconComponent && <IconComponent className={`${colorClass} colors`} />}
 
-						<motion.span
-							transition={{ duration: 0.5, ease: "backOut" }}
-							className={`text-center text-lg font-bold ${colorClass} colors`}
-						>
+						<span className={`text-center text-lg font-bold ${colorClass} colors`}>
 							{title}
-						</motion.span>
+						</span>
 					</div>
 
 					<motion.div
@@ -247,13 +246,9 @@ const MediaPreviewItem = ({
 };
 
 const MarkdownP = React.memo(({ children }: { children: React.ReactNode }) => (
-	<motion.p
-		layout
-		transition={{ duration: 0.5, ease: "backOut" }}
-		className="select-text scale-100! colors px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1"
-	>
+	<p className="select-text scale-100! colors px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1">
 		{children}
-	</motion.p>
+	</p>
 ));
 
 const MarkdownH3 = React.memo(({ children }: { children: React.ReactNode }) => {
@@ -282,13 +277,9 @@ const MarkdownH3 = React.memo(({ children }: { children: React.ReactNode }) => {
 		<div className="scale-100! flex flex-row gap-2 justify-end items-center w-full px-4 py-2">
 			{parts.map((part) => (
 				<div key={part} className="bg-l3 dark:bg-d3 group-hover:bg-l4 group-focus-visible:bg-l4 dark:group-focus-visible:bg-d4 dark:group-hover:bg-d4 px-2 py-1 rounded-lg colors shadow-lg">
-					<motion.span
-						layout
-						transition={{ duration: 0.5, ease: "backOut" }}
-						className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap"
-					>
+					<span className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap">
 						{part}
-					</motion.span>
+					</span>
 				</div>
 			))}
 		</div>
@@ -309,13 +300,9 @@ const MarkdownH1 = React.memo(({ children, problemIndex }: { children: React.Rea
 	return (
 		<div className="scale-100! flex flex-row justify-between w-full items-center">
 			<div className="bg-blue px-4 py-2 rounded-br-3xl">
-				<motion.h1
-					layout
-					transition={{ duration: 0.5, ease: "backOut" }}
-					className="colors text-l1 font-bold text-lg text-left whitespace-nowrap"
-				>
+				<h1 className="colors text-l1 font-bold text-lg text-left whitespace-nowrap">
 					問題 {problemIndex}
-				</motion.h1>
+				</h1>
 			</div>
 
 			{originalNumParts.length > 0 && (
@@ -328,13 +315,9 @@ const MarkdownH1 = React.memo(({ children, problemIndex }: { children: React.Rea
 								key={uniqueKey}
 								className="colors bg-blue rounded-lg px-2"
 							>
-								<motion.span
-									layout
-									transition={{ duration: 0.5, ease: "backOut" }}
-									className="colors text-l1 font-bold text-lg text-right whitespace-nowrap"
-								>
+								<span className="colors text-l1 font-bold text-lg text-right whitespace-nowrap">
 									{part}
-								</motion.span>
+								</span>
 							</div>
 						);
 					})}
@@ -344,7 +327,7 @@ const MarkdownH1 = React.memo(({ children, problemIndex }: { children: React.Rea
 	);
 });
 
-const MarkdownSpan = React.memo(({ node, className, children, ...props }: any) => {
+const MarkdownSpan = React.memo(({ node, className, children, ...props }: React.HTMLAttributes<HTMLSpanElement> & ExtraProps) => {
 	if (className && typeof className === "string" && className.includes("katex-display")) {
 		return (
 			<div className="scale-100! w-full overflow-x-auto my-6 py-4 px-6 bg-l3 dark:bg-d3 rounded-2xl shadow-inner flex justify-center items-center colors">
@@ -359,7 +342,7 @@ const MarkdownSpan = React.memo(({ node, className, children, ...props }: any) =
 });
 
 interface TurnItemProps {
-	turn: any;
+	turn: Turn;
 	isLatestTurn: boolean;
 	chatAreaHeight: number | string;
 	handleSolve: (content: string, turnId: string) => void;
@@ -369,10 +352,10 @@ const TurnItem = React.memo(
 	({ turn, isLatestTurn, chatAreaHeight, handleSolve }: TurnItemProps) => {
 		const problemItems = React.useMemo(() => {
 			return turn.pages
-				.filter((page: any) => page.messages.model && page.messages.model.length > 0)
-				.map((page: any) => ({
+				.filter((page) => page.messages.model && page.messages.model.length > 0)
+				.map((page) => ({
 					id: page.messages.model?.[0]?.modelMessageId || `prob-${page.pageIndex}`,
-					content: page.messages.model?.[0]?.blocks[0]?.content as string,
+					content: page.messages.model?.[0]?.blocks[0]?.content ?? "",
 					index: page.pageIndex,
 				}));
 		}, [turn.pages]);
@@ -384,24 +367,23 @@ const TurnItem = React.memo(
 		const userMedia = firstPage?.messages?.user?.media || [];
 		const hasUserInput = userContent.trim() !== "" || userMedia.length > 0;
 
-		const solveRequestComponents = React.useMemo(() => ({
-			h1: ({ children }: any) => <MarkdownH1 problemIndex={problemItems[0]?.index + 1 || 1}>{children}</MarkdownH1>,
-			p: ({ children }: any) => <MarkdownP>{children}</MarkdownP>,
-			h3: ({ children }: any) => <MarkdownH3>{children}</MarkdownH3>,
+		const solveRequestComponents: Components = React.useMemo(() => ({
+			h1: ({ children }) => <MarkdownH1 problemIndex={problemItems[0]?.index + 1 || 1}>{children}</MarkdownH1>,
+			p: ({ children }) => <MarkdownP>{children}</MarkdownP>,
+			h3: ({ children }) => <MarkdownH3>{children}</MarkdownH3>,
 			span: MarkdownSpan,
 		}), [problemItems]);
 
 		if (turn.title === "solve_request") {
 			const modelContent = firstPage?.messages?.model?.[0]?.blocks[0]?.content as string || "";
 
-			// 受け取ったテキストを [SECTION: xxx] ごとに分割する関数
-			const parseSections = (content: string) => {
-				const sections: { title: string, content: string }[] = [];
+			const parseSections = (content: string): { title: string; content: string }[] => {
+				const sections: { title: string; content: string }[] = [];
 				const regex = /\[SECTION:\s*(.+?)\]\n([\s\S]*?)(?=\n\[SECTION:|$)/g;
-				let match;
 				let hasSections = false;
 
-				while ((match = regex.exec(content)) !== null) {
+				const matches = Array.from(content.matchAll(regex));
+				for (const match of matches) {
 					hasSections = true;
 					sections.push({
 						title: match[1].trim(),
@@ -409,9 +391,8 @@ const TurnItem = React.memo(
 					});
 				}
 
-				// 万が一フォーマット通りに来なかった場合の保険
 				if (!hasSections && content.trim()) {
-					sections.push({ title: "解答・解説", content: content.trim() });
+					sections.push({ title: "内容", content: content.trim() });
 				}
 
 				return sections;
@@ -429,7 +410,7 @@ const TurnItem = React.memo(
 							className="flex w-full flex-col items-end justify-start mt-8"
 						>
 							<div className="flex w-full justify-end items-center">
-								<div className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full overflow-hidden">
+								<div className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg overflow-hidden">
 									<ReactMarkdown
 										remarkPlugins={[remarkMath]}
 										rehypePlugins={[rehypeKatex, rehypeRaw]}
@@ -449,9 +430,9 @@ const TurnItem = React.memo(
 							transition={{ duration: 0.5, ease: "backOut" }}
 							className="flex w-full justify-center items-center my-8"
 						>
-							<div className="colors flex w-full flex-col h-full cursor-text select-text">
-								{sections.map((sec, idx) => (
-									<CustomAccordion key={idx} title={sec.title} defaultOpen={false}>
+							<div className="colors flex w-full flex-col cursor-text select-text">
+								{sections.map((sec) => (
+									<CustomAccordion key={sec.title} title={sec.title} defaultOpen={false}>
 										<ReactMarkdown
 											remarkPlugins={[remarkMath]}
 											rehypePlugins={[rehypeKatex, rehypeRaw]}
@@ -484,7 +465,7 @@ const TurnItem = React.memo(
 					>
 						{userMedia.length > 0 && (
 							<div className="flex w-full flex-row-reverse justify-start items-center gap-4 overflow-x-auto p-2">
-								{userMedia.map((m: any) => (
+								{userMedia.map((m: Medium) => (
 									<div key={m.mediumId} className="size-32 flex-none rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
 										{m.mimeType.startsWith("image/") ? (
 											<img src={m.src} alt={m.fileName} className="size-full object-cover" />
@@ -544,7 +525,7 @@ const TurnItem = React.memo(
 					</motion.div>
 				)}
 
-				{problemItems.map((item: any, pIndex: number) => {
+				{problemItems.map((item, pIndex) => {
 					const isNewElement = isLatestTurn && pIndex === problemItems.length - 1;
 					const isError = item.content.trim().startsWith("# Error");
 
@@ -574,11 +555,11 @@ const TurnItem = React.memo(
 					const rawContent = item.content.trim();
 					const displayContent = rawContent;
 
-					const itemComponents = {
-						h1: ({ children }: any) => <MarkdownH1 problemIndex={item.index + 1}>{children}</MarkdownH1>,
-						p: ({ children }: any) => <MarkdownP>{children}</MarkdownP>,
-						h3: ({ children }: any) => <MarkdownH3>{children}</MarkdownH3>,
-						span: MarkdownSpan, // ← これを追加
+					const itemComponents: Components = {
+						h1: ({ children }) => <MarkdownH1 problemIndex={item.index + 1}>{children}</MarkdownH1>,
+						p: ({ children }) => <MarkdownP>{children}</MarkdownP>,
+						h3: ({ children }) => <MarkdownH3>{children}</MarkdownH3>,
+						span: MarkdownSpan,
 					};
 
 					return (

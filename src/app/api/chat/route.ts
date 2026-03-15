@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { NextResponse } from "next/server";
 import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 
@@ -31,11 +31,12 @@ const ai = new GoogleGenAI({
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { text, media, mode, turnId, action } = body;
+        const { text, media, mode, action } = body;
 
         let targetModel = "gemini-3.1-flash-lite-preview";
         let promptParts = [];
         let temperature = 0;
+        let thinkLevel: ThinkingLevel = ThinkingLevel.LOW;
 
         const mediaParts = [];
         if (media?.length > 0) {
@@ -55,8 +56,16 @@ export async function POST(request: Request) {
         }
 
         if (action === "solve") {
-            targetModel = "gemini-3.1-flash-lite-preview";
+            targetModel = "gemini-3.1-pro-preview";
             temperature = 0;
+
+            if (mode === "fast") {
+                thinkLevel = ThinkingLevel.LOW;
+            } else if (mode === "standard") {
+                thinkLevel = ThinkingLevel.MEDIUM;
+            } else if (mode === "think") {
+                thinkLevel = ThinkingLevel.HIGH;
+            }
 
             promptParts = [
                 ...mediaParts,
@@ -90,6 +99,7 @@ export async function POST(request: Request) {
                 temperature: temperature,
                 thinkingConfig: {
                     includeThoughts: false,
+                    thinkingLevel: thinkLevel
                 }
             }
         });
