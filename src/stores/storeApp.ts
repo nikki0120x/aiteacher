@@ -8,6 +8,9 @@ interface AppState {
 	activeMenu: AppMenu;
 	menuDirection: number;
 	setActiveMenu: (activeMenu: AppMenu, menuDirection: number) => void;
+
+	chatResetSignal: number;
+	triggerChatReset: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -19,4 +22,7 @@ export const useAppStore = create<AppState>((set) => ({
 	menuDirection: 0,
 	setActiveMenu: (activeMenu, menuDirection = 0) =>
 		set({ activeMenu, menuDirection }),
+	
+	chatResetSignal: 0,
+	triggerChatReset: () => set((state) => ({ chatResetSignal: state.chatResetSignal + 1 })), // ★追加
 }));

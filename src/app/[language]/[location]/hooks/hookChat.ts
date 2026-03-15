@@ -23,6 +23,7 @@ import {
 	type USER_STATUS_MAP,
 	UserMessageSchema,
 } from "@/models/modelChat";
+import { useAppStore } from "@/stores/storeApp";
 import { useLocale } from "next-intl";
 
 //  ================================================================
@@ -555,6 +556,22 @@ export const useChatAreaHeight = () => {
 export const useChat = (
 	setActiveContent?: React.Dispatch<React.SetStateAction<"none" | "upload">>
 ) => {
+	const chatResetSignal = useAppStore((state) => state.chatResetSignal);
+
+	useEffect(() => {
+		if (chatResetSignal > 0) {
+			setChatFlow(ChatFlowSchema.createDefault());
+			setInputText(InputTextSchema.createDefault());
+			setInputMedia(MediumListSchema.createDefault());
+			setUploadProgress({});
+			setUserStatus("pending");
+			setModelStatus("pending");
+			if (setActiveContent) {
+				setActiveContent("none");
+			}
+		}
+	}, [chatResetSignal, setActiveContent]);
+	
 	const [userStatus, setUserStatus] = useState<keyof typeof USER_STATUS_MAP>("pending");
 	const [modelStatus, setModelStatus] = useState<keyof typeof MODEL_STATUS_MAP>("pending");
 

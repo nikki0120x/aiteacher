@@ -330,7 +330,7 @@ const MarkdownH1 = React.memo(({ children, problemIndex }: { children: React.Rea
 const MarkdownSpan = React.memo(({ node, className, children, ...props }: React.HTMLAttributes<HTMLSpanElement> & ExtraProps) => {
 	if (className && typeof className === "string" && className.includes("katex-display")) {
 		return (
-			<div className="scale-100! w-full overflow-x-auto my-6 py-4 px-6 bg-l3 dark:bg-d3 rounded-2xl shadow-inner flex justify-center items-center colors">
+			<div className="w-full overflow-x-auto bg-l3 dark:bg-d3 rounded-3xl shadow-inner flex justify-center items-center colors">
 				<span className={className} {...props}>
 					{children}
 				</span>

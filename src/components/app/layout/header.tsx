@@ -1,11 +1,14 @@
 "use client";
-import { Bell, Globe, Languages, Menu, SunMoon, UserRound } from "lucide-react";
+import { Bell, Globe, Languages, Menu, SunMoon, UserRound, SquarePen } from "lucide-react";
 import Image from "next/image";
 import { useAppView } from "@/app/[language]/[location]/views/viewApp";
 import { Button } from "@/components/ui";
+import { usePathname } from "@/i18n/routing";
 
 export default function Header() {
 	const { states, actions } = useAppView();
+	const pathname = usePathname();
+	const isChatPage = pathname.includes("/chat");
 
 	return (
 		<header className="colors relative z-10000 flex h-15 w-full flex-none select-none flex-row items-center justify-between border-l5 border-b bg-l1 p-2 dark:border-d5 dark:bg-d dark:bg-d1">
@@ -30,6 +33,19 @@ export default function Header() {
 						className="w-30 transform object-contain"
 					/>
 				</Button>
+
+				{isChatPage && (
+					<>
+						<div className="h-6 w-px bg-l5 dark:bg-d5 colors" />
+
+						<Button
+							onClick={actions.triggerChatReset}
+							className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+						>
+							<SquarePen className="all text-blue" />
+						</Button>
+					</>
+				)}
 			</div>
 
 			<div className="flex size-full flex-row items-center justify-end gap-1">
