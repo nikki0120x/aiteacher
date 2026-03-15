@@ -17,7 +17,7 @@ export default function SignPage() {
 				>
 					<div className="flex w-full flex-row items-center justify-center">
 						<Image
-							src="/images/logos/webp/Logo_AITeacher_small_theme.webp"
+							src="/images/logos/webp/Logo_FoCalrina_small_theme.webp"
 							alt="The AITeacher Logo"
 							width={160}
 							height={40}

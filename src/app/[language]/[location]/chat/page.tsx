@@ -407,7 +407,7 @@ const TurnItem = React.memo(
 							initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
 							animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 							transition={{ duration: 0.5, ease: "backOut" }}
-							className="flex w-full flex-col items-end justify-start mt-8"
+							className="flex w-full flex-col items-end justify-start"
 						>
 							<div className="flex w-full justify-end items-center">
 								<div className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg overflow-hidden">

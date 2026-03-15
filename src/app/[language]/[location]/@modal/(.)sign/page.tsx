@@ -46,8 +46,8 @@ export default function SignModal() {
                                 <div className="flex size-10 items-center justify-center rounded-full" />
 
                                 <Image
-                                    src="/images/logos/webp/Logo_AITeacher_small_theme.webp"
-                                    alt="The AITeacher Logo"
+                                    src="/images/logos/webp/Logo_FoCalrina_small_theme.webp"
+                                    alt="The FoCarina Logo"
                                     width={160}
                                     height={40}
                                     priority
