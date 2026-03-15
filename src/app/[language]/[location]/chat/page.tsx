@@ -11,20 +11,99 @@ import {
 	Trash2,
 	Zap,
 	Sparkles,
+	ChevronDown,
 	Brain,
+	ScrollText,
+	BookText,
+	BookCheck,
+	BowArrow,
 } from "lucide-react";
 import rehypeRaw from "rehype-raw";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { AnimatePresence, motion } from "motion/react";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Button, Input, Label } from "@/components/ui";
 import type { VirtuosoHandle } from "react-virtuoso";
 import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
+
+const ICON_MAP: Record<string, React.ElementType> = {
+	"要約": ScrollText,
+	"指針": BowArrow,
+	"解説": BookText,
+	"解答": BookCheck,
+};
+
+const COLOR_MAP: Record<string, string> = {
+	"要約": "text-blue",
+	"指針": "text-orange",
+	"解説": "text-red",
+	"解答": "text-green",
+};
+
+const CustomAccordion = ({ title, children, defaultOpen }: { title: string, children: React.ReactNode, defaultOpen: boolean }) => {
+	const [isOpen, setIsOpen] = useState(defaultOpen);
+	const matchKey = Object.keys(ICON_MAP).find(key => title.includes(key));
+	const IconComponent = matchKey ? ICON_MAP[matchKey] : null;
+	const colorClass = matchKey ? COLOR_MAP[matchKey] : "text-blue";
+
+	const toggleAccordion = (e: React.MouseEvent | React.KeyboardEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsOpen((prev) => !prev);
+	};
+
+	return (
+		<div className="w-full rounded-3xl mb-4 bg-l2 dark:bg-d2 shadow-lg colors overflow-hidden">
+			<Button
+				onClick={toggleAccordion}
+				className="w-full flex justify-center items-center px-6 py-4 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 colors"
+			>
+				<div className="scale-100! w-full flex flex-row justify-between items-center select-none">
+					<div className="flex flex-row justify-start items-center gap-4">
+						{IconComponent && <IconComponent className={`${colorClass} colors`} />}
+
+						<motion.span
+							transition={{ duration: 0.5, ease: "backOut" }}
+							className={`text-center text-lg font-bold ${colorClass} colors`}
+						>
+							{title}
+						</motion.span>
+					</div>
+
+					<motion.div
+						animate={{ rotate: isOpen ? 180 : 0 }}
+						transition={{ duration: 0.5, ease: "backOut" }}
+						className="flex items-center justify-center"
+					>
+						<ChevronDown className="text-blue colors" />
+					</motion.div>
+				</div>
+			</Button>
+
+			<AnimatePresence initial={false}>
+				{isOpen && (
+					<motion.div
+						key="content"
+						initial={{ height: 0, opacity: 0 }}
+						animate={{ height: "auto", opacity: 1 }}
+						exit={{ height: 0, opacity: 0 }}
+						transition={{ duration: 0.25, ease: "easeOut" }}
+						className="overflow-hidden select-text"
+					>
+						<div className="px-8 py-4 prose dark:prose-invert max-w-none font-medium text-base text-d1 dark:text-l1 prose-p:leading-relaxed">
+							{children}
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+		</div>
+	);
+};
 
 const MediaPreviewItem = ({
 	media,
@@ -167,6 +246,376 @@ const MediaPreviewItem = ({
 	);
 };
 
+const MarkdownP = React.memo(({ children }: { children: React.ReactNode }) => (
+	<motion.p
+		layout
+		transition={{ duration: 0.5, ease: "backOut" }}
+		className="select-text scale-100! colors px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1"
+	>
+		{children}
+	</motion.p>
+));
+
+const MarkdownH3 = React.memo(({ children }: { children: React.ReactNode }) => {
+	const rawText = String(children).replace(/["']/g, "").trim();
+	let parts = ["Unknown"];
+
+	if (rawText.startsWith("Curriculum:")) {
+		const cleanText = rawText.replace("Curriculum:", "").trim();
+
+		const extractedParts = cleanText.split("/").map(p => p.trim());
+
+		if (extractedParts.length === 3) {
+			const [subject, course, unit] = extractedParts;
+
+			type CurriculumStructure = Record<string, Record<string, string[]>>;
+			const data = curriculumData as CurriculumStructure;
+
+			const isValid = data[subject]?.[course]?.includes(unit);
+
+			if (isValid) {
+				parts = extractedParts;
+			}
+		}
+	}
+	return (
+		<div className="scale-100! flex flex-row gap-2 justify-end items-center w-full px-4 py-2">
+			{parts.map((part) => (
+				<div key={part} className="bg-l3 dark:bg-d3 group-hover:bg-l4 group-focus-visible:bg-l4 dark:group-focus-visible:bg-d4 dark:group-hover:bg-d4 px-2 py-1 rounded-lg colors shadow-lg">
+					<motion.span
+						layout
+						transition={{ duration: 0.5, ease: "backOut" }}
+						className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap"
+					>
+						{part}
+					</motion.span>
+				</div>
+			))}
+		</div>
+	);
+});
+
+const MarkdownH1 = React.memo(({ children, problemIndex }: { children: React.ReactNode, problemIndex: number }) => {
+	const rawText = String(children);
+	let originalNumParts: string[] = [];
+
+	if (rawText.includes("Problem:")) {
+		const numStr = rawText.replace("Problem:", "").trim();
+		if (numStr) {
+			originalNumParts = numStr.split("/").map(p => p.trim());
+		}
+	}
+
+	return (
+		<div className="scale-100! flex flex-row justify-between w-full items-center">
+			<div className="bg-blue px-4 py-2 rounded-br-3xl">
+				<motion.h1
+					layout
+					transition={{ duration: 0.5, ease: "backOut" }}
+					className="colors text-l1 font-bold text-lg text-left whitespace-nowrap"
+				>
+					問題 {problemIndex}
+				</motion.h1>
+			</div>
+
+			{originalNumParts.length > 0 && (
+				<div className="px-4 py-2 flex flex-row justify-end items-center gap-2">
+					{originalNumParts.map((part, idx) => {
+						const uniqueKey = `num-tag-${part}-${idx}`;
+
+						return (
+							<div
+								key={uniqueKey}
+								className="colors bg-blue rounded-lg px-2"
+							>
+								<motion.span
+									layout
+									transition={{ duration: 0.5, ease: "backOut" }}
+									className="colors text-l1 font-bold text-lg text-right whitespace-nowrap"
+								>
+									{part}
+								</motion.span>
+							</div>
+						);
+					})}
+				</div>
+			)}
+		</div>
+	);
+});
+
+const MarkdownSpan = React.memo(({ node, className, children, ...props }: any) => {
+	if (className && typeof className === "string" && className.includes("katex-display")) {
+		return (
+			<div className="scale-100! w-full overflow-x-auto my-6 py-4 px-6 bg-l3 dark:bg-d3 rounded-2xl shadow-inner flex justify-center items-center colors">
+				<span className={className} {...props}>
+					{children}
+				</span>
+			</div>
+		);
+	}
+
+	return <span className={className} {...props}>{children}</span>;
+});
+
+interface TurnItemProps {
+	turn: any;
+	isLatestTurn: boolean;
+	chatAreaHeight: number | string;
+	handleSolve: (content: string, turnId: string) => void;
+}
+
+const TurnItem = React.memo(
+	({ turn, isLatestTurn, chatAreaHeight, handleSolve }: TurnItemProps) => {
+		const problemItems = React.useMemo(() => {
+			return turn.pages
+				.filter((page: any) => page.messages.model && page.messages.model.length > 0)
+				.map((page: any) => ({
+					id: page.messages.model?.[0]?.modelMessageId || `prob-${page.pageIndex}`,
+					content: page.messages.model?.[0]?.blocks[0]?.content as string,
+					index: page.pageIndex,
+				}));
+		}, [turn.pages]);
+
+		const firstPage = turn.pages[0];
+		const userContent = typeof firstPage?.messages?.user?.blocks[0]?.content === "string"
+			? firstPage.messages.user.blocks[0].content
+			: "";
+		const userMedia = firstPage?.messages?.user?.media || [];
+		const hasUserInput = userContent.trim() !== "" || userMedia.length > 0;
+
+		const solveRequestComponents = React.useMemo(() => ({
+			h1: ({ children }: any) => <MarkdownH1 problemIndex={problemItems[0]?.index + 1 || 1}>{children}</MarkdownH1>,
+			p: ({ children }: any) => <MarkdownP>{children}</MarkdownP>,
+			h3: ({ children }: any) => <MarkdownH3>{children}</MarkdownH3>,
+			span: MarkdownSpan,
+		}), [problemItems]);
+
+		if (turn.title === "solve_request") {
+			const modelContent = firstPage?.messages?.model?.[0]?.blocks[0]?.content as string || "";
+
+			// 受け取ったテキストを [SECTION: xxx] ごとに分割する関数
+			const parseSections = (content: string) => {
+				const sections: { title: string, content: string }[] = [];
+				const regex = /\[SECTION:\s*(.+?)\]\n([\s\S]*?)(?=\n\[SECTION:|$)/g;
+				let match;
+				let hasSections = false;
+
+				while ((match = regex.exec(content)) !== null) {
+					hasSections = true;
+					sections.push({
+						title: match[1].trim(),
+						content: match[2].trim()
+					});
+				}
+
+				// 万が一フォーマット通りに来なかった場合の保険
+				if (!hasSections && content.trim()) {
+					sections.push({ title: "解答・解説", content: content.trim() });
+				}
+
+				return sections;
+			};
+
+			const sections = parseSections(modelContent);
+
+			return (
+				<div style={{ minHeight: isLatestTurn ? chatAreaHeight : 0 }} className="flex w-full flex-col justify-start">
+					{hasUserInput && (
+						<motion.div
+							initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+							animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+							transition={{ duration: 0.5, ease: "backOut" }}
+							className="flex w-full flex-col items-end justify-start mt-8"
+						>
+							<div className="flex w-full justify-end items-center">
+								<div className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full overflow-hidden">
+									<ReactMarkdown
+										remarkPlugins={[remarkMath]}
+										rehypePlugins={[rehypeKatex, rehypeRaw]}
+										components={solveRequestComponents}
+									>
+										{userContent}
+									</ReactMarkdown>
+								</div>
+							</div>
+						</motion.div>
+					)}
+
+					{modelContent && (
+						<motion.div
+							initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+							animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+							transition={{ duration: 0.5, ease: "backOut" }}
+							className="flex w-full justify-center items-center my-8"
+						>
+							<div className="colors flex w-full flex-col h-full cursor-text select-text">
+								{sections.map((sec, idx) => (
+									<CustomAccordion key={idx} title={sec.title} defaultOpen={false}>
+										<ReactMarkdown
+											remarkPlugins={[remarkMath]}
+											rehypePlugins={[rehypeKatex, rehypeRaw]}
+											components={{
+												span: MarkdownSpan,
+											}}
+										>
+											{sec.content}
+										</ReactMarkdown>
+									</CustomAccordion>
+								))}
+							</div>
+						</motion.div>
+					)}
+				</div>
+			);
+		}
+
+		return (
+			<div
+				style={{ minHeight: isLatestTurn ? chatAreaHeight : 0 }}
+				className="flex w-full flex-col justify-start"
+			>
+				{hasUserInput && (
+					<motion.div
+						initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+						animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+						transition={{ duration: 0.5, ease: "backOut" }}
+						className="flex w-full flex-col items-end justify-start mb-8"
+					>
+						{userMedia.length > 0 && (
+							<div className="flex w-full flex-row-reverse justify-start items-center gap-4 overflow-x-auto p-2">
+								{userMedia.map((m: any) => (
+									<div key={m.mediumId} className="size-32 flex-none rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
+										{m.mimeType.startsWith("image/") ? (
+											<img src={m.src} alt={m.fileName} className="size-full object-cover" />
+										) : m.mimeType.startsWith("video/") ? (
+											<video src={m.src} className="size-full object-cover" />
+										) : (
+											(() => {
+												const lastDotIndex = m.fileName.lastIndexOf(".");
+												const hasExtension = lastDotIndex !== -1 && lastDotIndex !== 0 && lastDotIndex !== m.fileName.length - 1;
+
+												const name = hasExtension ? m.fileName.slice(0, lastDotIndex) : m.fileName;
+												const extension = hasExtension ? m.fileName.slice(lastDotIndex + 1).toUpperCase() : "";
+
+												return (
+													<div className="relative flex size-full flex-col items-center justify-center p-2">
+														<motion.span
+															layout
+															transition={{ duration: 0.5, ease: "backOut" }}
+															className="colors break-all text-center font-medium text-base text-d1 dark:text-l1 line-clamp-2"
+														>
+															{name}
+														</motion.span>
+
+														{extension && (
+															<div className="flex justify-center items-center absolute bottom-1 left-1 rounded-full px-2 py-1 bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
+																<motion.span
+																	layout
+																	transition={{ duration: 0.5, ease: "backOut" }}
+																	className="text-d1 dark:text-l1 text-left text-sm font-medium colors"
+																>
+																	{extension}
+																</motion.span>
+															</div>
+														)}
+													</div>
+												);
+											})()
+										)}
+									</div>
+								))}
+							</div>
+						)}
+
+						{userContent.trim() !== "" && (
+							<div className="flex w-full justify-end items-center p-2">
+								<div className="bg-l2 dark:bg-d2 px-4 py-3 rounded-3xl shadow-lg colors">
+									<motion.p
+										layout
+										transition={{ duration: 0.5, ease: "backOut" }}
+										className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text"
+									>
+										{userContent}
+									</motion.p>
+								</div>
+							</div>
+						)}
+					</motion.div>
+				)}
+
+				{problemItems.map((item: any, pIndex: number) => {
+					const isNewElement = isLatestTurn && pIndex === problemItems.length - 1;
+					const isError = item.content.trim().startsWith("# Error");
+
+					if (isError) {
+						return (
+							<motion.div
+								key={item.id}
+								layout
+								initial={isNewElement ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+								animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+								transition={{ duration: 0.5, ease: "backOut" }}
+								className="flex w-full justify-center items-center p-2"
+							>
+								<div className="colors flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg p-6 items-center justify-center border-2 border-red border-dashed">
+									<motion.span
+										layout
+										transition={{ duration: 0.5, ease: "backOut" }}
+										className="text-red font-medium text-base text-center"
+									>
+										問題が見つかりませんでした。再試行してください。
+									</motion.span>
+								</div>
+							</motion.div>
+						);
+					}
+
+					const rawContent = item.content.trim();
+					const displayContent = rawContent;
+
+					const itemComponents = {
+						h1: ({ children }: any) => <MarkdownH1 problemIndex={item.index + 1}>{children}</MarkdownH1>,
+						p: ({ children }: any) => <MarkdownP>{children}</MarkdownP>,
+						h3: ({ children }: any) => <MarkdownH3>{children}</MarkdownH3>,
+						span: MarkdownSpan, // ← これを追加
+					};
+
+					return (
+						<motion.div
+							key={item.id}
+							initial={isNewElement ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+							animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
+							transition={{ duration: 0.5, ease: "backOut" }}
+							className="flex w-full items-center justify-center p-2"
+						>
+							<Button
+								onClick={() => handleSolve(displayContent, turn.turnId)}
+								className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3 shadow-lg h-full overflow-hidden group"
+							>
+								<ReactMarkdown
+									remarkPlugins={[remarkMath]}
+									rehypePlugins={[rehypeKatex, rehypeRaw]}
+									components={itemComponents}
+								>
+									{displayContent}
+								</ReactMarkdown>
+							</Button>
+						</motion.div>
+					);
+				})}
+			</div>
+		);
+	},
+	(prev, next) => {
+		return (
+			prev.turn === next.turn &&
+			prev.isLatestTurn === next.isLatestTurn &&
+			prev.chatAreaHeight === next.chatAreaHeight
+		);
+	}
+);
+
 export default function Chat() {
 	const { refs, states, actions } = useChatView();
 
@@ -258,291 +707,14 @@ export default function Chat() {
 									itemContent={(index, turn) => {
 										const isLatestTurn = index === states.chatFlow.turns.length - 1;
 
-										const firstPage = turn.pages[0];
-										const userText = typeof firstPage?.messages?.user?.blocks[0]?.content === "string"
-											? firstPage.messages.user.blocks[0].content
-											: "";
-										const userMedia = firstPage?.messages?.user?.media || [];
-										const hasUserInput = userText.trim() !== "" || userMedia.length > 0;
-
-										if (turn.title === "solve_request") {
-											const modelContent = firstPage?.messages?.model?.[0]?.blocks[0]?.content as string || "";
-											return (
-												<div key={turn.turnId} style={{ minHeight: isLatestTurn ? states.chatAreaHeight : 0 }} className="flex w-full flex-col justify-start">
-													{hasUserInput && (
-														<motion.div
-															initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
-															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
-															transition={{ duration: 0.5, ease: "backOut" }}
-															className="flex w-full flex-col items-end justify-start mb-4 gap-4"
-														>
-															<div className="flex w-full justify-end items-center">
-																<div className="bg-l2 dark:bg-d2 px-4 py-2 rounded-3xl shadow-lg colors max-w-[80%]">
-																	<p className="text-d1 dark:text-l1 font-medium text-sm text-right colors select-text line-clamp-3">
-																		{userText}
-																	</p>
-																</div>
-															</div>
-														</motion.div>
-													)}
-
-													{modelContent && (
-														<motion.div
-															layout
-															initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
-															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
-															transition={{ duration: 0.5, ease: "backOut" }}
-															className="flex w-full justify-center items-center mb-4"
-														>
-															<div className="colors flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg h-full p-6 cursor-text select-text">
-																<ReactMarkdown
-																	remarkPlugins={[remarkMath]}
-																	rehypePlugins={[rehypeKatex, rehypeRaw]}
-																>
-																	{modelContent}
-																</ReactMarkdown>
-															</div>
-														</motion.div>
-													)}
-												</div>
-											);
-										}
-
-										const problemItems = turn.pages
-											.filter(page => page.messages.model && page.messages.model.length > 0)
-											.map(page => ({
-												id: page.messages.model?.[0]?.modelMessageId || `prob-${page.pageIndex}`,
-												content: page.messages.model?.[0]?.blocks[0]?.content as string,
-												index: page.pageIndex,
-											}));
-
 										return (
-											<div
+											<TurnItem
 												key={turn.turnId}
-												style={{ minHeight: isLatestTurn ? states.chatAreaHeight : 0 }}
-												className="flex w-full flex-col justify-start"
-											>
-												{hasUserInput && (
-													<motion.div
-														initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
-														animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
-														transition={{ duration: 0.5, ease: "backOut" }}
-														className="flex w-full flex-col items-end justify-start mb-8"
-													>
-														{userMedia.length > 0 && (
-															<div className="flex w-full flex-row-reverse justify-start items-center gap-4 overflow-x-auto p-2">
-																{userMedia.map((m) => (
-																	<div key={m.mediumId} className="size-32 flex-none rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg">
-																		{m.mimeType.startsWith("image/") ? (
-																			<img src={m.src} alt={m.fileName} className="size-full object-cover" />
-																		) : m.mimeType.startsWith("video/") ? (
-																			<video src={m.src} className="size-full object-cover" />
-																		) : (
-																			(() => {
-																				const lastDotIndex = m.fileName.lastIndexOf(".");
-																				const hasExtension = lastDotIndex !== -1 && lastDotIndex !== 0 && lastDotIndex !== m.fileName.length - 1;
-
-																				const name = hasExtension ? m.fileName.slice(0, lastDotIndex) : m.fileName;
-																				const extension = hasExtension ? m.fileName.slice(lastDotIndex + 1).toUpperCase() : "";
-
-																				return (
-																					<div className="relative flex size-full flex-col items-center justify-center p-2">
-																						<motion.span
-																							layout
-																							transition={{ duration: 0.5, ease: "backOut" }}
-																							className="colors break-all text-center font-medium text-base text-d1 dark:text-l1 line-clamp-2"
-																						>
-																							{name}
-																						</motion.span>
-
-																						{extension && (
-																							<div className="flex justify-center items-center absolute bottom-1 left-1 rounded-full px-2 py-1 bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
-																								<motion.span
-																									layout
-																									transition={{ duration: 0.5, ease: "backOut" }}
-																									className="text-d1 dark:text-l1 text-left text-sm font-medium colors"
-																								>
-																									{extension}
-																								</motion.span>
-																							</div>
-																						)}
-																					</div>
-																				);
-																			})()
-																		)}
-																	</div>
-																))}
-															</div>
-														)}
-
-														{userText.trim() !== "" && (
-															<div className="flex w-full justify-end items-center p-2">
-																<div className="bg-l2 dark:bg-d2 px-4 py-3 rounded-3xl shadow-lg colors">
-																	<motion.p
-																		layout
-																		transition={{ duration: 0.5, ease: "backOut" }}
-																		className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text"
-																	>
-																		{userText}
-																	</motion.p>
-																</div>
-															</div>
-														)}
-													</motion.div>
-												)}
-
-												{problemItems.map((item, pIndex) => {
-													const isNewElement = isLatestTurn && pIndex === problemItems.length - 1;
-													const isError = item.content.trim().startsWith("# Error");
-
-													if (isError) {
-														return (
-															<motion.div
-																key={item.id}
-																layout
-																initial={isNewElement ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
-																animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="flex w-full justify-center items-center p-2"
-															>
-																<div className="colors flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg p-6 items-center justify-center border-2 border-red border-dashed">
-																	<motion.span
-																		layout
-																		transition={{ duration: 0.5, ease: "backOut" }}
-																		className="text-red font-medium text-base text-center"
-																	>
-																		問題が見つかりませんでした。再試行してください。
-																	</motion.span>
-																</div>
-															</motion.div>
-														);
-													}
-
-													const rawContent = item.content.trim();
-													const displayContent = rawContent;
-
-													return (
-														<motion.div
-															key={item.id}
-															initial={isNewElement ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
-															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
-															transition={{ duration: 0.5, ease: "backOut" }}
-															className="flex w-full items-center justify-center p-2"
-														>
-															<Button
-																onClick={() => actions.handleSolve(displayContent, turn.turnId)}
-																className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3 shadow-lg h-full overflow-hidden group"
-															>
-																<ReactMarkdown
-																	remarkPlugins={[remarkMath]}
-																	rehypePlugins={[rehypeKatex, rehypeRaw]}
-																	components={{
-																		h1: ({ children }) => {
-																			const rawText = String(children);
-																			let originalNumParts: string[] = [];
-
-																			if (rawText.includes("Problem:")) {
-																				const numStr = rawText.replace("Problem:", "").trim();
-																				if (numStr && numStr !== "None") {
-																					originalNumParts = numStr.split("/").map(p => p.trim());
-																				}
-																			}
-
-																			return (
-																				<div className="scale-100! flex flex-row justify-between w-full items-center">
-																					<div className="bg-blue px-4 py-2 rounded-br-3xl">
-																						<motion.h1
-																							layout
-																							transition={{ duration: 0.5, ease: "backOut" }}
-																							className="colors text-l1 font-bold text-lg text-left whitespace-nowrap"
-																						>
-																							問題 {item.index + 1}
-																						</motion.h1>
-																					</div>
-
-																					{originalNumParts.length > 0 && (
-																						<div className="px-4 py-2 flex flex-row justify-end items-center gap-2">
-																							{originalNumParts.map((part, idx) => {
-																								const uniqueKey = `num-tag-${part}-${idx}`;
-
-																								return (
-																									<div
-																										key={uniqueKey}
-																										className="colors bg-blue rounded-lg px-2"
-																									>
-																										<motion.span
-																											layout
-																											transition={{ duration: 0.5, ease: "backOut" }}
-																											className="colors text-l1 font-bold text-lg text-right whitespace-nowrap"
-																										>
-																											{part}
-																										</motion.span>
-																									</div>
-																								);
-																							})}
-																						</div>
-																					)}
-																				</div>
-																			);
-																		},
-
-																		p: ({ children }) => (
-																			<motion.p
-																				layout
-																				transition={{ duration: 0.5, ease: "backOut" }}
-																				className="scale-100! colors px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1"
-																			>
-																				{children}
-																			</motion.p>
-																		),
-
-																		h3: ({ children }) => {
-																			const rawText = String(children).replace(/["']/g, "").trim();
-																			let parts = ["Unknown"];
-
-																			if (rawText.startsWith("Curriculum:")) {
-																				const cleanText = rawText.replace("Curriculum:", "").trim();
-
-																				const extractedParts = cleanText.split("/").map(p => p.trim());
-
-																				if (extractedParts.length === 3) {
-																					const [subject, course, unit] = extractedParts;
-
-																					type CurriculumStructure = Record<string, Record<string, string[]>>;
-																					const data = curriculumData as CurriculumStructure;
-
-																					const isValid = data[subject]?.[course]?.includes(unit);
-
-																					if (isValid) {
-																						parts = extractedParts;
-																					}
-																				}
-																			}
-																			return (
-																				<div className="scale-100! flex flex-row gap-2 justify-end items-center w-full px-4 py-2">
-																					{parts.map((part) => (
-																						<div key={part} className="bg-l3 dark:bg-d3 group-hover:bg-l4 group-focus-visible:bg-l4 dark:group-focus-visible:bg-d4 dark:group-hover:bg-d4 px-2 py-1 rounded-lg colors shadow-lg">
-																							<motion.span
-																								layout
-																								transition={{ duration: 0.5, ease: "backOut" }}
-																								className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap"
-																							>
-																								{part}
-																							</motion.span>
-																						</div>
-																					))}
-																				</div>
-																			);
-																		},
-																	}}
-																>
-																	{displayContent}
-																</ReactMarkdown>
-															</Button>
-														</motion.div>
-													);
-												})}
-											</div>
+												turn={turn}
+												isLatestTurn={isLatestTurn}
+												chatAreaHeight={states.chatAreaHeight}
+												handleSolve={actions.handleSolve}
+											/>
 										);
 									}}
 								/>

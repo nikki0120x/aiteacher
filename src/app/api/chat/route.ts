@@ -55,19 +55,12 @@ export async function POST(request: Request) {
         }
 
         if (action === "solve") {
-            if (mode === "think") {
-                targetModel = "gemini-3.1-pro";
-            } else if (mode === "standard") {
-                targetModel = "gemini-3.1-flash";
-            } else {
-                targetModel = "gemini-3.1-flash-lite-preview";
-            }
-
-            temperature = 0.7;
+            targetModel = "gemini-3.1-flash-lite-preview";
+            temperature = 0;
 
             promptParts = [
                 ...mediaParts,
-                { text: `提供された画像を参考に、以下の問題について解答・解説を行ってください。\n\n${text}` }
+                { text: `提供された画像を参考に、以下の問題について解答・解説を行ってください。\n\n${text}\n\n[重要事項]\n出力は必ず以下の4つのセクション（要約、指針、解説、解答）に分けてください。\n各セクションの開始行は必ず [SECTION: セクション名] という形式で記述してください。\n\n【数式の出力に関する厳密なルール】\n1. 文中の単一の変数や短い記号（例: $x$ や $y$）のみインライン数式 ($...$) を使用すること。\n2. 計算過程、分数、ベクトル、方程式など、少しでも長さのある数式は、**必ず**ディスプレイ数式 ($$...$$) を用いて独立した行として出力すること。\n3. 単一の $ 記号で数式を囲んで改行するだけ（例: $\n3x+2\n$）の記法は絶対に禁止です。\n\n【良い出力例】\n[SECTION: 解説]\n同類項をまとめると以下のようになります。\n\n$$\n-x^2 + 2x^2 = x^2\n$$\n\n【悪い出力例（絶対にしないこと）】\n同類項をまとめると以下のようになります。\n$-x^2 + 2x^2 = x^2$\n\n前置きや挨拶は一切出力せず、以下の形式のみを出力してください。\n\n[SECTION: 要約]\n(要約の内容)\n\n[SECTION: 指針]\n(指針の内容)\n\n[SECTION: 解説]\n(解説の内容)\n\n[SECTION: 解答]\n(解答の内容)` }
             ];
         }
         else {

@@ -533,7 +533,7 @@ export const useChatAreaHeight = () => {
 
 				lastHeightRef.current = finalHeight;
 				setChatAreaHeight(finalHeight);
-			}, 250);
+			}, 100);
 		});
 
 		observer.observe(mainEl);

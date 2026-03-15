@@ -4,6 +4,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import Client from "@/app/client";
 import Server from "@/app/server";
 import "@/app/globals.css";
+import { Providers } from "@/app/provider"
 
 export const viewport: Viewport = {
 	width: "device-width",
@@ -47,7 +48,9 @@ export default async function RootLayout({
 				className="overflow-hidden bg-l1 text-d1 dark:bg-d1 dark:text-l1"
 			>
 				<NextIntlClientProvider messages={messages}>
-					<Client>{children}</Client>
+					<Providers>
+						<Client>{children}</Client>
+					</Providers>
 				</NextIntlClientProvider>
 			</body>
 		</html>
