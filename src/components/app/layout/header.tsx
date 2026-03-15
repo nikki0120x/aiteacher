@@ -22,7 +22,7 @@ export default function Header() {
 
 				<Button
 					onClick={() => actions.router.push("/")}
-					className="colors flex h-10 w-35 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+					className="colors max-lg:hidden lg:flex h-10 w-35 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 				>
 					<Image
 						src="/images/logos/webp/Logo_AITeacher_small_theme.webp"
