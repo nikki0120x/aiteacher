@@ -1,6 +1,5 @@
 "use client";
 import { Bell, Globe, Languages, Menu, SunMoon, UserRound, SquarePen, TextAlignStart } from "lucide-react";
-import Image from "next/image";
 import { useAppView } from "@/app/[language]/[location]/views/viewApp";
 import { Button } from "@/components/ui";
 import { usePathname } from "@/i18n/routing";
@@ -18,20 +17,6 @@ export default function Header() {
 					className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 				>
 					<Menu className="all text-d1 dark:text-l1" />
-				</Button>
-
-				<Button
-					onClick={() => actions.router.push("/")}
-					className="colors max-lg:hidden lg:flex h-10 w-35 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-				>
-					<Image
-						src="/images/logos/webp/Logo_AITeacher_small_theme.webp"
-						alt="The AITeacher Logo"
-						width={160}
-						height={40}
-						priority
-						className="w-30 transform object-contain"
-					/>
 				</Button>
 
 				{isChatPage && (

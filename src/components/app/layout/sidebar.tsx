@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import {
 	BellRing,
 	BrickWallShield,
@@ -70,6 +71,47 @@ export default function Sidebar() {
 				className="colors max-lg:border-r-(length:--sidebar-border-mobile) z-10000 flex h-full flex-none flex-col items-center justify-between overflow-hidden border-l5 max-lg:absolute max-lg:inset-0 max-lg:w-(--sidebar-w-mobile) max-lg:bg-l1/50 max-lg:opacity-(--sidebar-opacity-mobile) max-lg:shadow-lg max-lg:backdrop-blur-lg lg:relative lg:w-(--sidebar-w-desktop) lg:border-r lg:bg-l1 lg:opacity-100 lg:shadow-none lg:backdrop-blur-none dark:border-d5 dark:lg:bg-d1 dark:max-lg:bg-d1/50"
 			>
 				<div className="flex size-full flex-1 flex-col items-start justify-start gap-2 p-2">
+
+					<Button
+						onClick={() => actions.router.push("/")}
+						className="flex h-10 w-full items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors"
+					>
+						<div
+							className={`flex size-full transform flex-row items-center justify-start gap-8 px-2 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
+						>
+							<Image
+								src="/images/icons/webp/Icon_AITeacher_small_theme.webp"
+								alt="The AITeacher Logo"
+								width={40}
+								height={40}
+								priority
+								className="w-6 transform object-contain flex-none"
+							/>
+
+							<AnimatePresence>
+								{states.isSidebarOpen && (
+									<motion.div
+										layout
+										initial={{ x: -16, opacity: 0 }}
+										animate={{ x: 0, opacity: 1 }}
+										exit={{ x: -16, opacity: 0 }}
+										transition={{ duration: 0.5, ease: "backOut" }}
+										className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
+									>
+										<Image
+											src="/images/logos/webp/Logo_AITeacher_small_theme.webp"
+											alt="The AITeacher Logo"
+											width={160}
+											height={40}
+											priority
+											className="w-30 transform object-contain"
+										/>
+									</motion.div>
+								)}
+							</AnimatePresence>
+						</div>
+					</Button>
+
 					<div className="colors h-px w-full rounded-full bg-l5 dark:bg-d5" />
 
 					<Link href="/chat" className="contents">
@@ -721,7 +763,7 @@ export default function Sidebar() {
 															</Link>
 
 															<Link href="/sign?mode=signup" className="contents">
-																	<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full bg-blue px-2">
+																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full bg-blue px-2">
 																	<div className="flex size-full transform flex-row items-center justify-center gap-4">
 																		<UserRoundPlus className="colors text-d1 dark:text-l1" />
 
