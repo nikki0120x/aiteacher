@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Globe, Languages, Menu, SunMoon, UserRound, SquarePen } from "lucide-react";
+import { Bell, Globe, Languages, Menu, SunMoon, UserRound, SquarePen, TextAlignStart } from "lucide-react";
 import Image from "next/image";
 import { useAppView } from "@/app/[language]/[location]/views/viewApp";
 import { Button } from "@/components/ui";
@@ -39,40 +39,52 @@ export default function Header() {
 						<div className="h-6 w-px bg-l5 dark:bg-d5 colors" />
 
 						<Button
-							onClick={actions.triggerChatReset}
 							className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 						>
-							<SquarePen className="all text-blue" />
+							<TextAlignStart className="all text-blue" />
 						</Button>
 					</>
 				)}
 			</div>
 
 			<div className="flex size-full flex-row items-center justify-end gap-1">
+				{isChatPage && (
+					<>
+						<Button
+							onClick={actions.triggerChatReset}
+							className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+						>
+							<SquarePen className="all text-blue" />
+						</Button>
+
+						<div className="h-6 w-px bg-l5 dark:bg-d5 colors" />
+					</>
+				)}
+
 				<Button
 					onClick={() => actions.handleMenuToggle("notifications")}
-					className={`flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "notifications" && "bg-l5! dark:bg-d5!"}`}
+					className={`max-lg:hidden lg:flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "notifications" && "bg-l5! dark:bg-d5!"}`}
 				>
 					<Bell className="all text-d1 dark:text-l1" />
 				</Button>
 
 				<Button
 					onClick={() => actions.handleMenuToggle("theme")}
-					className={`hidden size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 lg:flex dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "theme" && "bg-l5! dark:bg-d5!"}`}
+					className={`max-lg:hidden size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 lg:flex dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "theme" && "bg-l5! dark:bg-d5!"}`}
 				>
 					<SunMoon className="all text-d1 dark:text-l1" />
 				</Button>
 
 				<Button
 					onClick={() => actions.handleMenuToggle("language")}
-					className={`hidden size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 lg:flex dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "language" && "bg-l5! dark:bg-d5!"}`}
+					className={`max-lg:hidden size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 lg:flex dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "language" && "bg-l5! dark:bg-d5!"}`}
 				>
 					<Languages className="all text-d1 dark:text-l1" />
 				</Button>
 
 				<Button
 					onClick={() => actions.handleMenuToggle("location")}
-					className={`hidden size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 lg:flex dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "location" && "bg-l5! dark:bg-d5!"}`}
+					className={`max-lg:hidden size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 lg:flex dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "location" && "bg-l5! dark:bg-d5!"}`}
 				>
 					<Globe className="all text-d1 dark:text-l1" />
 				</Button>
@@ -81,7 +93,7 @@ export default function Header() {
 					onClick={() => actions.handleMenuToggle("settings")}
 					className="colors flex size-10 items-center justify-center rounded-full bg-blue"
 				>
-					<UserRound className="all text-d1 dark:text-l1" />
+					<UserRound className="all text-l1" />
 				</Button>
 			</div>
 		</header>
