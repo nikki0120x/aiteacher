@@ -20,21 +20,21 @@ export default function Header() {
 				</Button>
 
 				{isChatPage && (
-					<>
-						<div className="h-6 w-px bg-l5 dark:bg-d5 colors" />
+					<div className="flex flex-row gap-2 justify-start items-center">
+						<div className="h-8 w-px bg-l5 dark:bg-d5 colors" />
 
 						<Button
 							className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 						>
 							<TextAlignStart className="all text-blue" />
 						</Button>
-					</>
+					</div>
 				)}
 			</div>
 
-			<div className="flex size-full flex-row items-center justify-end gap-1">
+			<div className="flex size-full flex-row items-center justify-end gap-2">
 				{isChatPage && (
-					<>
+					<div className="flex flex-row gap-2 justify-end items-center">
 						<Button
 							onClick={actions.triggerChatReset}
 							className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
@@ -43,7 +43,7 @@ export default function Header() {
 						</Button>
 
 						<div className="h-6 w-px bg-l5 dark:bg-d5 colors" />
-					</>
+					</div>
 				)}
 
 				<Button

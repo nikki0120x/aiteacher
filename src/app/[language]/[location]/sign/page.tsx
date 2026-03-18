@@ -8,7 +8,6 @@ export default function SignPage() {
 		<div className="colors relative inset-0 flex w-full h-[calc(100dvh-3.75rem)] select-none items-center justify-center bg-l1 p-2 dark:bg-d1">
 			<LayoutGroup>
 				<motion.div
-					layout
 					initial={{ y: 32, opacity: 0, filter: "blur(1rem)" }}
 					animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 					exit={{ y: 32, opacity: 0, filter: "blur(1rem)" }}
@@ -18,7 +17,7 @@ export default function SignPage() {
 					<div className="flex w-full flex-row items-center justify-center">
 						<Image
 							src="/images/logos/webp/Logo_FoCalrina_small_theme.webp"
-							alt="The AITeacher Logo"
+							alt="The FoCalrina Logo"
 							width={160}
 							height={40}
 							priority

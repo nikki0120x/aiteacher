@@ -342,16 +342,11 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
     };
 
     return (
-        <motion.div
-            layout
-            transition={{ duration: 0.5, ease: "backOut" }}
-            className="flex w-full select-none flex-col items-center justify-start overflow-hidden"
-        >
+        <div className="flex w-full select-none flex-col items-center justify-start overflow-hidden">
             <AnimatePresence mode="popLayout">
                 {mode === "signin" && (
                     <motion.div
                         key="signin"
-                        layout
                         initial={{ opacity: 0, filter: "blur(1rem)" }}
                         animate={{ opacity: 1, filter: "blur(0)" }}
                         exit={{ opacity: 0, filter: "blur(1rem)" }}
@@ -360,13 +355,11 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                     >
                         <div className="flex w-full flex-row items-center justify-center gap-4 py-4">
                             <div className="colors h-px w-full rounded-full bg-blue" />
-                            <motion.span
-                                layout
-                                transition={{ duration: 0.5, ease: "backOut" }}
-                                className="colors whitespace-nowrap text-center font-medium text-blue text-base"
-                            >
+
+                            <span className="colors whitespace-nowrap text-center font-medium text-blue text-base">
                                 アカウント接続
-                            </motion.span>
+                            </span>
+                            
                             <div className="colors h-px w-full rounded-full bg-blue" />
                         </div>
 
@@ -411,13 +404,9 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                             transition={{ duration: 0.5, ease: "backOut" }}
                                             className="px-4 w-full flex justify-start items-center"
                                         >
-                                            <motion.span
-                                                layout
-                                                transition={{ duration: 0.5, ease: "backOut" }}
-                                                className="colors text-left font-medium text-red text-base"
-                                            >
+                                            <span className="colors text-left font-medium text-red text-base">
                                                 ⚠ {errors.root}
-                                            </motion.span>
+                                            </span>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -790,6 +779,6 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </motion.div>
+        </div>
     );
 }

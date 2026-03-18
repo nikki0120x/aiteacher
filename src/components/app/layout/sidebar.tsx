@@ -6,12 +6,10 @@ import {
 	ChevronRight,
 	CircleUserRound,
 	Info,
-	LayoutDashboard,
 	LogIn,
 	MessageCircleMore,
 	MessageSquareWarning,
 	MonitorCog,
-	PenLine,
 	Settings,
 	LogOut,
 	SquareUserRound,
@@ -74,10 +72,10 @@ export default function Sidebar() {
 
 					<Button
 						onClick={() => actions.router.push("/")}
-						className="flex h-10 w-full items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors"
+						className="flex h-10 w-full px-2 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors"
 					>
 						<div
-							className={`flex size-full transform flex-row items-center justify-start gap-8 px-2 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
+							className={`flex size-full transform flex-row items-center justify-start gap-8 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
 						>
 							<Image
 								src="/images/icons/webp/Icon_AITeacher_small_theme.webp"
@@ -117,23 +115,22 @@ export default function Sidebar() {
 					<Link href="/chat" className="contents">
 						<Button
 							onClick={actions.handleSidebarLinkClick}
-							className={`flex h-10 w-full items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${actions.isPathActive("/chat") && "bg-l5! dark:bg-d5!"
+							className={`flex h-10 w-full px-2 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${actions.isPathActive("/chat") && "bg-l5! dark:bg-d5!"
 								}`}
 						>
 							<div
-								className={`flex size-full transform flex-row items-center justify-start gap-8 px-2 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
+								className={`flex size-full transform flex-row items-center justify-start gap-8 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
 							>
 								<MessageCircleMore className="colors flex-none text-d1 dark:text-l1" />
 
 								<AnimatePresence>
 									{states.isSidebarOpen && (
 										<motion.span
-											layout
 											initial={{ x: -16, opacity: 0 }}
 											animate={{ x: 0, opacity: 1 }}
 											exit={{ x: -16, opacity: 0 }}
 											transition={{ duration: 0.5, ease: "backOut" }}
-											className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
+											className="colors whitespace-nowrap truncate text-left font-medium text-base text-d1 dark:text-l1"
 										>
 											{states.app("bar.questions")}
 										</motion.span>
@@ -150,23 +147,22 @@ export default function Sidebar() {
 					<Link href="/settings" className="contents">
 						<Button
 							onClick={actions.handleSidebarLinkClick}
-							className={`flex h-10 w-full items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${actions.isPathActive("/settings") && "bg-l5! dark:bg-d5!"
+							className={`flex h-10 w-full px-2 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${actions.isPathActive("/settings") && "bg-l5! dark:bg-d5!"
 								}`}
 						>
 							<div
-								className={`flex size-full transform flex-row items-center justify-start gap-8 px-2 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
+								className={`flex size-full transform flex-row items-center justify-start gap-8 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
 							>
 								<Settings className="colors flex-none text-d1 dark:text-l1" />
 
 								<AnimatePresence>
 									{states.isSidebarOpen && (
 										<motion.span
-											layout
 											initial={{ x: -16, opacity: 0 }}
 											animate={{ x: 0, opacity: 1 }}
 											exit={{ x: -16, opacity: 0 }}
 											transition={{ duration: 0.5, ease: "backOut" }}
-											className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
+											className="colors whitespace-nowrap truncate text-left font-medium text-base text-d1 dark:text-l1"
 										>
 											{states.app("bar.settings")}
 										</motion.span>
@@ -195,7 +191,6 @@ export default function Sidebar() {
 							{
 								opacity: 0,
 								filter: "blur(1rem)",
-								pointerEvents: "none",
 								"--menu-width": "0%",
 								"--menu-scale": 0.5,
 							} as HTMLMotionProps<"div">["initial"]
@@ -204,7 +199,6 @@ export default function Sidebar() {
 							{
 								opacity: 1,
 								filter: "blur(0)",
-								pointerEvents: "auto",
 								"--menu-width": "100%",
 								"--menu-scale": 1,
 							} as HTMLMotionProps<"div">["animate"]
@@ -213,7 +207,6 @@ export default function Sidebar() {
 							{
 								opacity: 0,
 								filter: "blur(1rem)",
-								pointerEvents: "none",
 								"--menu-width": "0%",
 								"--menu-scale": 0.5,
 							} as HTMLMotionProps<"div">["exit"]
@@ -232,9 +225,9 @@ export default function Sidebar() {
 								<motion.span
 									layout
 									key={states.activeMenu}
-									initial={{ y: -5, opacity: 0 }}
-									animate={{ y: 0, opacity: 1 }}
-									exit={{ y: 5, opacity: 0 }}
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									exit={{ opacity: 0 }}
 									transition={{ duration: 0.5, ease: "backOut" }}
 									className="colors whitespace-nowrap text-center font-bold text-d1 text-lg dark:text-l1"
 								>
@@ -314,20 +307,14 @@ export default function Sidebar() {
 															/>
 														)}
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className={`colors relative z-10 whitespace-nowrap text-center font-medium text-base ${states.activeNotificationTab === tabId
-																	? "text-d1 dark:text-l1"
-																	: "text-l5 group-hover:text-d1 dark:text-d5 dark:group-hover:text-l1"
-																	}`}
-															>
-																{states.app(
-																	`options.${APP_NOTIFICATION_MAP[tabId]}`,
-																)}
-															</motion.span>
-														</AnimatePresence>
+														<span className={`colors relative z-10 whitespace-nowrap text-center font-medium text-base ${states.activeNotificationTab === tabId
+															? "text-d1 dark:text-l1"
+															: "text-l5 group-hover:text-d1 dark:text-d5 dark:group-hover:text-l1"
+															}`}>
+															{states.app(
+																`options.${APP_NOTIFICATION_MAP[tabId]}`,
+															)}
+														</span>
 													</Label>
 												))}
 											</div>
@@ -410,17 +397,11 @@ export default function Sidebar() {
 															</div>
 														)}
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1"
-															>
-																{states.app(
-																	`options.${APP_THEME_MAP[themeId]}`,
-																)}
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1">
+															{states.app(
+																`options.${APP_THEME_MAP[themeId]}`,
+															)}
+														</span>
 
 														<Input
 															type="radio"
@@ -457,21 +438,15 @@ export default function Sidebar() {
 															className="colors flex size-5 items-center justify-center rounded-full border-l5 dark:border-d5"
 														/>
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors text-left font-bold text-base text-d1 dark:text-l1"
-															>
-																{states.app(
-																	`options.${APP_LANGUAGE_MAP[languageId]}.native`,
-																)}{" "}
-																/{" "}
-																{states.app(
-																	`options.${APP_LANGUAGE_MAP[languageId]}.name`,
-																)}
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors text-left font-bold text-base text-d1 dark:text-l1">
+															{states.app(
+																`options.${APP_LANGUAGE_MAP[languageId]}.native`,
+															)}{" "}
+															/{" "}
+															{states.app(
+																`options.${APP_LANGUAGE_MAP[languageId]}.name`,
+															)}
+														</span>
 													</Label>
 												),
 											)}
@@ -497,17 +472,11 @@ export default function Sidebar() {
 															className="colors flex size-5 items-center justify-center rounded-full border-l5 dark:border-d5"
 														/>
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors text-left font-bold text-base text-d1 dark:text-l1"
-															>
-																{states.app(
-																	`options.${APP_LOCATION_MAP[locationId]}`,
-																)}
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors text-left font-bold text-base text-d1 dark:text-l1">
+															{states.app(
+																`options.${APP_LOCATION_MAP[locationId]}`,
+															)}
+														</span>
 													</Label>
 												),
 											)}
@@ -520,15 +489,9 @@ export default function Sidebar() {
 												<div className="flex w-full flex-none flex-row items-center justify-start gap-4 py-2">
 													<div className="colors h-7 w-1 flex-none rounded-full bg-blue" />
 
-													<AnimatePresence mode="popLayout">
-														<motion.span
-															layout
-															transition={{ duration: 0.5, ease: "backOut" }}
-															className="colors whitespace-nowrap text-left font-bold text-blue text-xl"
-														>
-															管理
-														</motion.span>
-													</AnimatePresence>
+													<span className="colors whitespace-nowrap text-left font-bold text-blue text-xl">
+														管理
+													</span>
 
 													<div className="colors h-px w-full rounded-full bg-blue" />
 												</div>
@@ -537,15 +500,9 @@ export default function Sidebar() {
 													<div className="flex size-full origin-left transform flex-row items-center justify-start gap-4">
 														<CircleUserRound className="colors text-d1 dark:text-l1" />
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-															>
-																アカウント
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1">
+															アカウント
+														</span>
 													</div>
 
 													<ChevronRight className="all text-d1 dark:text-l1" />
@@ -555,15 +512,9 @@ export default function Sidebar() {
 													<div className="flex size-full origin-left transform flex-row items-center justify-start gap-4">
 														<SquareUserRound className="colors text-d1 dark:text-l1" />
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-															>
-																プロフィール
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1">
+															プロフィール
+														</span>
 													</div>
 
 													<ChevronRight className="all text-d1 dark:text-l1" />
@@ -573,15 +524,9 @@ export default function Sidebar() {
 													<div className="flex size-full origin-left transform flex-row items-center justify-start gap-4">
 														<WalletCards className="colors text-d1 dark:text-l1" />
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-															>
-																プラン
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1">
+															プラン
+														</span>
 													</div>
 
 													<ChevronRight className="all text-d1 dark:text-l1" />
@@ -590,15 +535,9 @@ export default function Sidebar() {
 												<div className="flex w-full flex-none flex-row items-center justify-start gap-4 py-2">
 													<div className="colors h-7 w-1 flex-none rounded-full bg-blue" />
 
-													<AnimatePresence mode="popLayout">
-														<motion.span
-															layout
-															transition={{ duration: 0.5, ease: "backOut" }}
-															className="colors whitespace-nowrap text-left font-bold text-blue text-xl"
-														>
-															構成
-														</motion.span>
-													</AnimatePresence>
+													<span className="colors whitespace-nowrap text-left font-bold text-blue text-xl">
+														構成
+													</span>
 
 													<div className="colors h-px w-full rounded-full bg-blue" />
 												</div>
@@ -607,15 +546,9 @@ export default function Sidebar() {
 													<div className="flex size-full origin-left transform flex-row items-center justify-start gap-4">
 														<BellRing className="colors text-d1 dark:text-l1" />
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-															>
-																通知設定
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1">
+															通知設定
+														</span>
 													</div>
 
 													<ChevronRight className="all text-d1 dark:text-l1" />
@@ -625,15 +558,9 @@ export default function Sidebar() {
 													<div className="flex size-full origin-left transform flex-row items-center justify-start gap-4">
 														<MonitorCog className="colors text-d1 dark:text-l1" />
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-															>
-																システム設定
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1">
+															システム設定
+														</span>
 													</div>
 
 													<ChevronRight className="all text-d1 dark:text-l1" />
@@ -643,15 +570,9 @@ export default function Sidebar() {
 													<div className="flex size-full origin-left transform flex-row items-center justify-start gap-4">
 														<BrickWallShield className="colors text-d1 dark:text-l1" />
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-															>
-																プライバシー設定
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1">
+															プライバシー設定
+														</span>
 													</div>
 
 													<ChevronRight className="all text-d1 dark:text-l1" />
@@ -661,15 +582,9 @@ export default function Sidebar() {
 													<div className="flex size-full origin-left transform flex-row items-center justify-start gap-4">
 														<MessageSquareWarning className="colors text-d1 dark:text-l1" />
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-															>
-																報告
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1">
+															報告
+														</span>
 													</div>
 
 													<ChevronRight className="all text-d1 dark:text-l1" />
@@ -679,15 +594,9 @@ export default function Sidebar() {
 													<div className="flex size-full origin-left transform flex-row items-center justify-start gap-4">
 														<Info className="colors text-d1 dark:text-l1" />
 
-														<AnimatePresence mode="popLayout">
-															<motion.span
-																layout
-																transition={{ duration: 0.5, ease: "backOut" }}
-																className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1"
-															>
-																詳細
-															</motion.span>
-														</AnimatePresence>
+														<span className="colors whitespace-nowrap text-left font-medium text-base text-d1 dark:text-l1">
+															詳細
+														</span>
 													</div>
 
 													<ChevronRight className="all text-d1 dark:text-l1" />
@@ -711,22 +620,13 @@ export default function Sidebar() {
 															className="flex w-full flex-none flex-row items-center justify-center gap-2"
 														>
 															<Link href="/sign?mode=signout" className="contents">
-																<Button className="colors flex w-full h-15 items-center justify-center rounded-full px-2 bg-red">
+																<Button className="colors flex w-full h-15 items-center justify-center rounded-full px-4 bg-red">
 																	<div className="flex size-full transform flex-row items-center justify-center gap-4">
-																		<LogOut className="colors text-d1 dark:text-l1" />
+																		<LogOut className="colors flex-none text-l1" />
 
-																		<AnimatePresence mode="popLayout">
-																			<motion.span
-																				layout
-																				transition={{
-																					duration: 0.5,
-																					ease: "backOut",
-																				}}
-																				className="colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1"
-																			>
-																				切断
-																			</motion.span>
-																		</AnimatePresence>
+																		<span className="colors truncate whitespace-nowrap text-center font-medium text-base text-l1">
+																			切断
+																		</span>
 																	</div>
 																</Button>
 															</Link>
@@ -742,43 +642,25 @@ export default function Sidebar() {
 															className="flex w-full flex-none flex-row items-center justify-center gap-2"
 														>
 															<Link href="/sign?mode=signin" className="contents">
-																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full px-2 hover:bg-l2/50 dark:hover:bg-d2/50">
+																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full px-4 hover:bg-l2/50 dark:hover:bg-d2/50">
 																	<div className="flex size-full transform flex-row items-center justify-center gap-4">
-																		<LogIn className="colors text-d1 dark:text-l1" />
+																		<LogIn className="flex-none colors text-d1 dark:text-l1" />
 
-																		<AnimatePresence mode="popLayout">
-																			<motion.span
-																				layout
-																				transition={{
-																					duration: 0.5,
-																					ease: "backOut",
-																				}}
-																				className="colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1"
-																			>
-																				接続
-																			</motion.span>
-																		</AnimatePresence>
+																		<span className="truncate colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1">
+																			接続
+																		</span>
 																	</div>
 																</Button>
 															</Link>
 
 															<Link href="/sign?mode=signup" className="contents">
-																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full bg-blue px-2">
+																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full bg-blue px-4">
 																	<div className="flex size-full transform flex-row items-center justify-center gap-4">
-																		<UserRoundPlus className="colors text-d1 dark:text-l1" />
+																		<UserRoundPlus className="flex-none colors text-l1" />
 
-																		<AnimatePresence mode="popLayout">
-																			<motion.span
-																				layout
-																				transition={{
-																					duration: 0.5,
-																					ease: "backOut",
-																				}}
-																				className="colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1"
-																			>
-																				登録
-																			</motion.span>
-																		</AnimatePresence>
+																		<span className="truncate colors whitespace-nowrap text-center font-medium text-base text-l1">
+																			登録
+																		</span>
 																	</div>
 																</Button>
 															</Link>
