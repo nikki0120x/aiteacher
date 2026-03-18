@@ -663,7 +663,7 @@ export default function Chat() {
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
 					transition={{ duration: 0.5, ease: "backOut" }}
-					className="flex size-full flex-col items-center justify-center"
+					className="flex size-full flex-col items-center justify-center gap-4"
 				>
 					<AnimatePresence mode="popLayout">
 						{states.chatFlow.turns.length > 0 && !states.isFullTextarea ? (
@@ -711,7 +711,7 @@ export default function Chat() {
 								}}
 								exit={{ height: 0, opacity: 0 }}
 								transition={{ duration: 0.5, ease: "backOut" }}
-								className="colors flex size-full flex-col items-center justify-center gap-4"
+								className="colors flex size-full flex-col items-center justify-center gap-2"
 							>
 								<div className="colors flex w-full flex-row items-center justify-center gap-8">
 									<div className="colors h-px w-full rounded-full bg-blue" />
@@ -723,34 +723,36 @@ export default function Chat() {
 									<div className="colors h-px w-full rounded-full bg-blue" />
 								</div>
 
-								<div className="colors flex w-full gap-4 flex-col items-center justify-center pb-8">
+								<div className="colors flex w-full gap-2 flex-col items-center justify-center">
 									<span ref={refs.pageTitleTextRef} className="colors text-center font-bold text-base text-d5 italic dark:text-l5">
 										分からない問題がある？何でも訊いてみてね！
 									</span>
 
-									<div className="flex w-full p-2 overflow-x-auto gap-4 scrollbar-hide">
-										{[
-											"この数式の解き方をステップごとに解説して",
-											"この問題の指針（ヒント）だけ教えて",
-											"問題文を分かりやすく要約して",
-											"この単元でよく使う公式をまとめて",
-										].map((text) => (
-											<Button
-												key={text}
-												onClick={() => {
-													actions.setInterimText("");
-													actions.setInputText((prev) => ({
-														...prev,
-														inputText: text,
-													}));
-												}}
-												className="flex justify-items-start items-start flex-none w-64 bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 rounded-2xl px-8 py-4 shadow-lg colors"
-											>
-												<span className="colors text-left font-medium text-sm text-d2 dark:text-l2">
-													{text}
-												</span>
-											</Button>
-										))}
+									<div className="w-full mask-x-from-95% to-transparent">
+										<div className="flex w-full px-4 py-2 overflow-x-auto gap-4 scrollbar-hide">
+											{[
+												"この数式の解き方をステップごとに解説して",
+												"この問題の指針（ヒント）だけ教えて",
+												"問題文を分かりやすく要約して",
+												"この単元でよく使う公式をまとめて",
+											].map((text) => (
+												<Button
+													key={text}
+													onClick={() => {
+														actions.setInterimText("");
+														actions.setInputText((prev) => ({
+															...prev,
+															inputText: text,
+														}));
+													}}
+													className="flex justify-items-start items-start flex-none w-64 bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 rounded-2xl px-8 py-4 shadow-lg colors"
+												>
+													<span className="colors text-left font-medium text-sm text-d2 dark:text-l2">
+														{text}
+													</span>
+												</Button>
+											))}
+										</div>
 									</div>
 								</div>
 							</motion.div>
