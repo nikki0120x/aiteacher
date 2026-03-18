@@ -812,7 +812,7 @@ export default function Chat() {
 											inputText: e.target.value,
 										}));
 									}}
-									className={`colors my-2 ml-2 w-full animate-caret resize-none text-left font-medium text-base text-d1 outline-none placeholder:text-l5 dark:text-l1 dark:placeholder:text-d5 ${states.isListening ? "cursor-not-allowed" : ""}`}
+									className={`colors my-2 ml-2 w-full animate-caret resize-none text-left font-medium text-base text-d1 outline-none placeholder:text-l5 placeholder:colors dark:text-l1 dark:placeholder:text-d5 ${states.isListening ? "cursor-not-allowed" : ""}`}
 								/>
 
 								<div className="colors flex flex-col items-center justify-center gap-1">
