@@ -39,7 +39,7 @@ const AuthCodeEmail = ({
 				fontStyle="normal"
 			/>
 		</Head>
-		
+
 		<Tailwind
 			config={{
 				theme: {
@@ -91,7 +91,7 @@ const AuthCodeEmail = ({
 							width="120"
 							className=" p-2"
 						/>
-						
+
 						<Text className="p-2 text-left font-black text-xl text-blue m-0!">
 							アカウント認証コード
 						</Text>
@@ -110,6 +110,7 @@ const AuthCodeEmail = ({
 						</Text>
 
 						<Text className="font-black text-4xl text-blue tracking-widest text-center select-all!">
+							<span className="text-sm font-medium block select-none!">Verification Code:</span>
 							{validationCode}
 						</Text>
 
