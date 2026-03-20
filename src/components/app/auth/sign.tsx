@@ -353,7 +353,7 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                         transition={{ duration: 0.5, ease: "backOut" }}
                         className="w-full flex flex-col items-center gap-4 overflow-y-auto p-2"
                     >
-                        <div className="flex w-full flex-row items-center justify-center gap-4 py-4">
+                        <div className="flex w-full flex-row items-center justify-center gap-4">
                             <div className="colors h-px w-full rounded-full bg-blue" />
 
                             <span className="colors whitespace-nowrap text-center font-medium text-blue text-base">
@@ -421,62 +421,46 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                         "bg-l5 dark:bg-d5 cursor-not-allowed"
                                         }`}
                                 >
-                                    <motion.span
-                                        layout
-                                        transition={{ duration: 0.5, ease: "backOut" }}
-                                        className={`all whitespace-nowrap text-center font-bold text-d1 text-xl dark:text-l1
+                                    <span
+                                        className={`all whitespace-nowrap text-center font-bold text-xl text-l1
                                         ${isSigninInvalid &&
                                             "text-d5 dark:text-l5 scale-100!"}`}
                                     >
                                         {isLoading ? "接続中..." : "接続"}
-                                    </motion.span>
+                                    </span>
                                 </Button>
 
                                 <div className="flex w-full flex-row items-center justify-between px-2">
                                     <Button onClick={() => switchMode("signup")} className="colors flex items-center justify-start rounded-full px-2 decoration-2 decoration-blue outline-none hover:underline focus-visible:ring-2 focus-visible:ring-blue">
-                                        <motion.span
-                                            layout
-                                            transition={{ duration: 0.5, ease: "backOut" }}
-                                            className="all whitespace-nowrap text-left font-medium text-base text-blue"
-                                        >
+                                        <span className="all whitespace-nowrap text-left font-medium text-base text-blue">
                                             パスワード再設定
-                                        </motion.span>
+                                        </span>
                                     </Button>
 
                                     <Button onClick={() => switchMode("signup")} className="colors flex items-center justify-end rounded-full px-2 decoration-2 decoration-blue outline-none hover:underline focus-visible:ring-2 focus-visible:ring-blue">
-                                        <motion.span
-                                            layout
-                                            transition={{ duration: 0.5, ease: "backOut" }}
-                                            className="all whitespace-nowrap text-right font-medium text-base text-blue"
-                                        >
+                                        <span className="all whitespace-nowrap text-right font-medium text-base text-blue">
                                             登録
-                                        </motion.span>
+                                        </span>
                                     </Button>
                                 </div>
                             </div>
                         </form>
 
-                        <div className="flex w-full flex-row items-center justify-center gap-4 py-4">
+                        <div className="flex w-full flex-row items-center justify-center gap-4">
                             <div className="colors h-px w-full rounded-full bg-d5 dark:bg-l5" />
-                            <motion.span
-                                layout
-                                transition={{ duration: 0.5, ease: "backOut" }}
-                                className="colors whitespace-nowrap text-center font-medium text-d5 dark:text-l5 text-base"
-                            >
+
+                            <span className="colors whitespace-nowrap text-center font-medium text-d5 dark:text-l5 text-base">
                                 外部接続
-                            </motion.span>
+                            </span>
+
                             <div className="colors h-px w-full rounded-full bg-d5 dark:bg-l5" />
                         </div>
 
                         <div className="flex w-full flex-col items-center justify-center gap-4">
                             <Button onClick={() => handleSocialAuth("google")} className="colors flex w-full h-15 items-center justify-center rounded-full bg-d1 dark:bg-l1 hover:bg-d2 focus-visible:bg-d2 dark:focus-visible:bg-l2 dark:hover:bg-l2">
-                                <motion.span
-                                    layout
-                                    transition={{ duration: 0.5, ease: "backOut" }}
-                                    className="all whitespace-nowrap text-right font-bold text-xl text-l1 dark:text-d1"
-                                >
+                                <span className="all whitespace-nowrap text-right font-bold text-xl text-l1 dark:text-d1">
                                     Googleで接続
-                                </motion.span>
+                                </span>
                             </Button>
                         </div>
                     </motion.div>
@@ -491,20 +475,18 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                         transition={{ duration: 0.5, ease: "backOut" }}
                         className="w-full flex flex-col items-center gap-4 overflow-y-auto p-2"
                     >
-                        <div className="flex w-full flex-row items-center justify-center gap-4 py-4">
+                        <div className="flex w-full flex-row items-center justify-center gap-4">
                             <div className="colors h-px w-full rounded-full bg-blue" />
-                            <motion.span
-                                layout
-                                transition={{ duration: 0.5, ease: "backOut" }}
-                                className="colors whitespace-nowrap text-center font-medium text-blue text-base"
-                            >
+
+                            <span className="colors whitespace-nowrap text-center font-medium text-blue text-base">
                                 アカウント登録
-                            </motion.span>
+                            </span>
+
                             <div className="colors h-px w-full rounded-full bg-blue" />
                         </div>
 
                         <form noValidate onSubmit={handleSignup} className="flex w-full flex-col items-center justify-center gap-8">
-                            <div className="flex flex-col w-full justify-center items-center gap-4">
+                            <div className="flex flex-col w-full justify-start items-start gap-4">
                                 <Input
                                     required
                                     autoComplete="name"
@@ -520,6 +502,10 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                     className="colors border-l5 dark:border-d5"
                                 />
 
+                                <span className="px-2 text-d5 dark:text-l5 font-medium text-left text-sm colors">
+                                    ※ 大文字，小文字，数字，記号のみ可
+                                </span>
+
                                 <Input
                                     required
                                     autoComplete="email"
@@ -534,9 +520,6 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                     rightContent={
                                         <motion.div
                                             layout
-                                            initial={{ scale: 0, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            exit={{ scale: 0, opacity: 0 }}
                                             transition={{ duration: 0.5, ease: "backOut" }}
                                         >
                                             <Button
@@ -547,16 +530,14 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                                     "bg-l5 dark:bg-d5 cursor-not-allowed"
                                                     }`}
                                             >
-                                                <motion.span
-                                                    layout
-                                                    transition={{ duration: 0.5, ease: "backOut" }}
-                                                    className={`all whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1
+                                                <span
+                                                    className={`all whitespace-nowrap text-center font-medium text-base text-l1
                                                     ${(isEmailInvalid || countdown > 0) &&
                                                         "text-d5 dark:text-l5 scale-100!"
                                                         }`}
                                                 >
                                                     {countdown > 0 ? `${countdown}s` : hasSent ? "再送信" : "送信"}
-                                                </motion.span>
+                                                </span>
                                             </Button>
                                         </motion.div>
                                     }
@@ -572,7 +553,7 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                     spellCheck="false"
                                     inputMode="numeric"
                                     type="text"
-                                    name="code"
+                                    name="one-time-code"
                                     value={signupCode}
                                     label="認証コード"
                                     error={errors.code}
@@ -597,6 +578,10 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                     onChange={(e) => handleSignupChange("password", e.target.value)}
                                     className="colors border-l5 dark:border-d5"
                                 />
+
+                                <span className="px-2 text-d5 dark:text-l5 font-medium text-left text-sm colors">
+                                    ※ 大文字，小文字，数字，記号を各々1文字以上含有
+                                </span>
 
                                 <Input
                                     required
@@ -635,13 +620,10 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                             transition={{ duration: 0.5, ease: "backOut" }}
                                             className="px-4 w-full flex justify-start items-center"
                                         >
-                                            <motion.span
-                                                layout
-                                                transition={{ duration: 0.5, ease: "backOut" }}
-                                                className="colors text-left font-medium text-red text-base"
+                                            <span className="colors text-left font-medium text-red text-base"
                                             >
                                                 ⚠ {errors.root}
-                                            </motion.span>
+                                            </span>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -656,60 +638,45 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                         "bg-l5 dark:bg-d5 cursor-not-allowed"
                                         }`}
                                 >
-                                    <motion.span
-                                        layout
-                                        transition={{ duration: 0.5, ease: "backOut" }}
+                                    <span
                                         className={`all whitespace-nowrap text-center font-bold text-d1 text-xl dark:text-l1
                                         ${isSignupInvalid &&
                                             "text-d5 dark:text-l5 scale-100!"}`}
                                     >
                                         {isLoading ? "登録中..." : "登録"}
-                                    </motion.span>
+                                    </span>
                                 </Button>
 
                                 <div className="flex w-full flex-row items-center justify-center px-2">
-                                    <motion.span
-                                        layout
-                                        transition={{ duration: 0.5, ease: "backOut" }}
-                                        className="colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1"
-                                    >
+                                    <span className="colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1">
                                         アカウントを登録済：
-                                    </motion.span>
+                                    </span>
 
                                     <Button onClick={() => switchMode("signin")} className="colors flex items-center justify-center rounded-full px-2 decoration-2 decoration-blue outline-none hover:underline focus-visible:ring-2 focus-visible:ring-blue">
-                                        <motion.span
-                                            layout
-                                            transition={{ duration: 0.5, ease: "backOut" }}
-                                            className="all whitespace-nowrap text-center font-medium text-base text-blue"
+                                        <span className="all whitespace-nowrap text-center font-medium text-base text-blue"
                                         >
                                             接続
-                                        </motion.span>
+                                        </span>
                                     </Button>
                                 </div>
                             </div>
                         </form>
 
-                        <div className="flex w-full flex-row items-center justify-center gap-4 py-4">
+                        <div className="flex w-full flex-row items-center justify-center gap-4">
                             <div className="colors h-px w-full rounded-full bg-d5 dark:bg-l5" />
-                            <motion.span
-                                layout
-                                transition={{ duration: 0.5, ease: "backOut" }}
-                                className="colors whitespace-nowrap text-center font-medium text-d5 dark:text-l5 text-base"
-                            >
+
+                            <span className="colors whitespace-nowrap text-center font-medium text-d5 dark:text-l5 text-base">
                                 外部接続
-                            </motion.span>
+                            </span>
+                            
                             <div className="colors h-px w-full rounded-full bg-d5 dark:bg-l5" />
                         </div>
 
                         <div className="flex w-full flex-col items-center justify-center gap-4">
                             <Button onClick={() => handleSocialAuth("google")} className="colors flex w-full h-15 items-center justify-center rounded-full bg-d1 dark:bg-l1 hover:bg-d2 focus-visible:bg-d2 dark:focus-visible:bg-l2 dark:hover:bg-l2">
-                                <motion.span
-                                    layout
-                                    transition={{ duration: 0.5, ease: "backOut" }}
-                                    className="all whitespace-nowrap text-right font-bold text-xl text-l1 dark:text-d1"
-                                >
+                                <span className="all whitespace-nowrap text-right font-bold text-xl text-l1 dark:text-d1">
                                     Googleで接続
-                                </motion.span>
+                                </span>
                             </Button>
                         </div>
                     </motion.div>
@@ -727,24 +694,18 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                     >
                         <div className="flex w-full flex-row items-center justify-center gap-4 py-4">
                             <div className="colors h-px w-full rounded-full bg-red" />
-                            <motion.span
-                                layout
-                                transition={{ duration: 0.5, ease: "backOut" }}
-                                className="colors whitespace-nowrap text-center font-medium text-red text-base"
-                            >
+
+                            <span className="colors whitespace-nowrap text-center font-medium text-red text-base">
                                 アカウント切断
-                            </motion.span>
+                            </span>
+
                             <div className="colors h-px w-full rounded-full bg-red" />
                         </div>
 
                         <div className="flex w-full flex-col items-center justify-center gap-4">
-                            <motion.span
-                                layout
-                                transition={{ duration: 0.5, ease: "backOut" }}
-                                className="all whitespace-nowrap text-center font-medium text-d1 dark:text-l1 text-base"
-                            >
+                            <span className="all whitespace-nowrap text-center font-medium text-d1 dark:text-l1 text-base">
                                 接続中のアカウントから切断しますか？
-                            </motion.span>
+                            </span>
 
                             <AnimatePresence>
                                 {errors.root && (
@@ -755,25 +716,17 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
                                         transition={{ duration: 0.5, ease: "backOut" }}
                                         className="px-4 w-full flex justify-start items-center"
                                     >
-                                        <motion.span
-                                            layout
-                                            transition={{ duration: 0.5, ease: "backOut" }}
-                                            className="colors text-left font-medium text-red text-base"
-                                        >
+                                        <span className="colors text-left font-medium text-red text-base">
                                             ⚠ {errors.root}
-                                        </motion.span>
+                                        </span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
                             <Button disabled={isLoading} onClick={handleSignout} className={`colors flex h-15 w-full items-center justify-center rounded-full bg-red px-4 ${isLoading && "opacity-50 cursor-not-allowed"}`}>
-                                <motion.span
-                                    layout
-                                    transition={{ duration: 0.5, ease: "backOut" }}
-                                    className="all whitespace-nowrap text-center font-medium text-d1 dark:text-l1 text-base"
-                                >
+                                <span className="all whitespace-nowrap text-center font-medium text-d1 dark:text-l1 text-base">
                                     {isLoading ? "切断中..." : "切断"}
-                                </motion.span>
+                                </span>
                             </Button>
                         </div>
                     </motion.div>

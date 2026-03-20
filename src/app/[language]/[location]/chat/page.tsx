@@ -17,6 +17,7 @@ import {
 	BookText,
 	BookCheck,
 	BowArrow,
+	MousePointerClick
 } from "lucide-react";
 import rehypeRaw from "rehype-raw";
 import type { ExtraProps, Components } from "react-markdown";
@@ -44,7 +45,7 @@ const COLOR_MAP: Record<string, string> = {
 	"要約": "text-blue",
 	"指針": "text-orange",
 	"解説": "text-red",
-	"解答": "text-green",
+	"解答": "text-violet",
 };
 
 const CustomAccordion = ({ title, children, defaultOpen }: { title: string, children: React.ReactNode, defaultOpen: boolean }) => {
@@ -165,13 +166,9 @@ const MediaPreviewItem = ({
 					/>
 				</svg>
 
-				<motion.span
-					layout
-					transition={{ duration: 0.5, ease: "backOut" }}
-					className="absolute text-xs font-medium text-d1 dark:text-l1 colors"
-				>
+				<span className="absolute text-xs font-medium text-d1 dark:text-l1 colors">
 					{Math.round(progress)}%
-				</motion.span>
+				</span>
 			</div>
 		);
 	};
@@ -190,6 +187,7 @@ const MediaPreviewItem = ({
 		return (
 			<div className="relative size-full">
 				<CircularProgress />
+
 				<video
 					src={media.src}
 					className="size-full object-cover"
@@ -199,13 +197,9 @@ const MediaPreviewItem = ({
 
 				{duration && (
 					<div className="flex justify-center items-center absolute bottom-1 left-1 rounded-full px-2 py-1 bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
-						<motion.span
-							layout
-							transition={{ duration: 0.5, ease: "backOut" }}
-							className="text-d1 dark:text-l1 text-left text-sm font-medium colors"
-						>
+						<span className="text-d1 dark:text-l1 text-left text-sm font-medium colors">
 							{duration}
-						</motion.span>
+						</span>
 					</div>
 				)}
 			</div>
@@ -222,23 +216,15 @@ const MediaPreviewItem = ({
 		<div className="relative flex size-full flex-col items-center justify-center p-2">
 			<CircularProgress />
 
-			<motion.span
-				layout
-				transition={{ duration: 0.5, ease: "backOut" }}
-				className="colors break-all text-center font-medium text-base text-d1 dark:text-l1 line-clamp-2"
-			>
+			<span className="colors break-all text-center font-medium text-base text-d1 dark:text-l1 line-clamp-2">
 				{name}
-			</motion.span>
+			</span>
 
 			{extension && (
 				<div className="flex justify-center items-center absolute bottom-1 left-1 rounded-full px-2 py-1 bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
-					<motion.span
-						layout
-						transition={{ duration: 0.5, ease: "backOut" }}
-						className="text-d1 dark:text-l1 text-left text-sm font-medium colors"
-					>
+					<span className="text-d1 dark:text-l1 text-left text-sm font-medium colors">
 						{extension}
-					</motion.span>
+					</span>
 				</div>
 			)}
 		</div>
@@ -481,23 +467,15 @@ const TurnItem = React.memo(
 
 												return (
 													<div className="relative flex size-full flex-col items-center justify-center p-2">
-														<motion.span
-															layout
-															transition={{ duration: 0.5, ease: "backOut" }}
-															className="colors break-all text-center font-medium text-base text-d1 dark:text-l1 line-clamp-2"
-														>
+														<span className="colors break-all text-center font-medium text-base text-d1 dark:text-l1 line-clamp-2">
 															{name}
-														</motion.span>
+														</span>
 
 														{extension && (
 															<div className="flex justify-center items-center absolute bottom-1 left-1 rounded-full px-2 py-1 bg-l1/50 dark:bg-d1/50 backdrop-blur-lg colors">
-																<motion.span
-																	layout
-																	transition={{ duration: 0.5, ease: "backOut" }}
-																	className="text-d1 dark:text-l1 text-left text-sm font-medium colors"
-																>
+																<span className="text-d1 dark:text-l1 text-left text-sm font-medium colors">
 																	{extension}
-																</motion.span>
+																</span>
 															</div>
 														)}
 													</div>
@@ -512,13 +490,9 @@ const TurnItem = React.memo(
 						{userContent.trim() !== "" && (
 							<div className="flex w-full justify-end items-center p-2">
 								<div className="bg-l2 dark:bg-d2 px-4 py-3 rounded-3xl shadow-lg colors">
-									<motion.p
-										layout
-										transition={{ duration: 0.5, ease: "backOut" }}
-										className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text"
-									>
+									<p className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text">
 										{userContent}
-									</motion.p>
+									</p>
 								</div>
 							</div>
 						)}
@@ -540,13 +514,9 @@ const TurnItem = React.memo(
 								className="flex w-full justify-center items-center p-2"
 							>
 								<div className="colors flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 shadow-lg p-6 items-center justify-center border-2 border-red border-dashed">
-									<motion.span
-										layout
-										transition={{ duration: 0.5, ease: "backOut" }}
-										className="text-red font-medium text-base text-center"
-									>
+									<span className="text-red font-medium text-base text-center">
 										問題が見つかりませんでした。再試行してください。
-									</motion.span>
+									</span>
 								</div>
 							</motion.div>
 						);
@@ -612,7 +582,7 @@ export default function Chat() {
 					align: "end",
 					behavior: "smooth",
 				});
-			}, 500);
+			}, 0);
 
 			return () => clearTimeout(timer);
 		}
@@ -642,14 +612,12 @@ export default function Chat() {
 								className="colors animate-bounce text-blue"
 							/>
 
-							<motion.span
-								layout
-								transition={{ duration: 0.5, ease: "backOut" }}
+							<span
 								ref={refs.dragAndDropTextRef}
 								className="colors text-center font-black text-2xl text-blue"
 							>
 								{states.dragInfo.count}ファイルをドロップ
-							</motion.span>
+							</span>
 						</div>
 					</motion.div>
 				)}
@@ -678,7 +646,7 @@ export default function Chat() {
 								}}
 								exit={{ height: 0, opacity: 0, filter: "blur(1rem)" }}
 								transition={{ duration: 0.5, ease: "backOut" }}
-								className="w-full mask-y-from-95% mask-y-to-transparent"
+								className="w-full mask-y-from-99% mask-y-to-transparent"
 							>
 								<Virtuoso
 									ref={virtuosoRef}
@@ -728,13 +696,16 @@ export default function Chat() {
 										分からない問題がある？何でも訊いてみてね！
 									</span>
 
-									<div className="w-full mask-x-from-95% to-transparent">
-										<div className="flex w-full px-4 py-2 overflow-x-auto gap-4 scrollbar-hide">
+									<div className="w-full mask-x-from-99% to-transparent">
+										<div className="flex w-full px-2 py-1 overflow-x-auto gap-2 scrollbar-hide">
 											{[
-												"この数式の解き方をステップごとに解説して",
-												"この問題の指針（ヒント）だけ教えて",
-												"問題文を分かりやすく要約して",
-												"この単元でよく使う公式をまとめて",
+												"国語",
+												"地理歴史",
+												"公民",
+												"数学",
+												"理科",
+												"外国語",
+												"情報"
 											].map((text) => (
 												<Button
 													key={text}
@@ -745,11 +716,19 @@ export default function Chat() {
 															inputText: text,
 														}));
 													}}
-													className="flex justify-items-start items-start flex-none w-64 bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 rounded-2xl px-8 py-4 shadow-lg colors"
+													className="flex justify-center items-center flex-none bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 rounded-2xl px-8 py-4 shadow-lg colors"
 												>
-													<span className="colors text-left font-medium text-sm text-d2 dark:text-l2">
-														{text}
-													</span>
+													<div className="all flex flex-col gap-2 justify-center items-start">
+														<span className="colors text-left font-medium text-sm text-d2 dark:text-l2">
+															{text}
+														</span>
+
+														<div className="flex flex-row justify-start items-center">
+															<MousePointerClick className="colors size-4 text-d5 dark:text-l5" />
+
+															<span className="colors text-left font-medium text-xs text-d5 dark:text-l5">タップして生成</span>
+														</div>
+													</div>
 												</Button>
 											))}
 										</div>
@@ -822,9 +801,9 @@ export default function Chat() {
 										{states.displayText && (
 											<motion.div
 												layout
-												initial={{ scale: 0, opacity: 0 }}
-												animate={{ scale: 1, opacity: 1 }}
-												exit={{ scale: 0, opacity: 0 }}
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
 												transition={{ duration: 0.5, ease: "backOut" }}
 											>
 												<Button
@@ -841,9 +820,9 @@ export default function Chat() {
 										{(states.isOverLimit || states.isFullTextarea) && (
 											<motion.div
 												layout
-												initial={{ scale: 0, opacity: 0 }}
-												animate={{ scale: 1, opacity: 1 }}
-												exit={{ scale: 0, opacity: 0 }}
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
 												transition={{ duration: 0.5, ease: "backOut" }}
 											>
 												<Button
@@ -881,9 +860,9 @@ export default function Chat() {
 											<AnimatePresence mode="popLayout">
 												<motion.div
 													layout
-													initial={{ scale: 0, opacity: 0 }}
-													animate={{ scale: 1, opacity: 1 }}
-													exit={{ scale: 0, opacity: 0 }}
+													initial={{ opacity: 0 }}
+													animate={{ opacity: 1 }}
+													exit={{ opacity: 0 }}
 													transition={{ duration: 0.5, ease: "backOut" }}
 												>
 													<Button
@@ -907,9 +886,9 @@ export default function Chat() {
 												<AnimatePresence mode="popLayout">
 													<motion.div
 														layout
-														initial={{ scale: 0, opacity: 0 }}
-														animate={{ scale: 1, opacity: 1 }}
-														exit={{ scale: 0, opacity: 0 }}
+														initial={{ opacity: 0 }}
+														animate={{ opacity: 1 }}
+														exit={{ opacity: 0 }}
 														transition={{ duration: 0.5, ease: "backOut" }}
 													>
 														<Button
@@ -929,9 +908,9 @@ export default function Chat() {
 												<AnimatePresence mode="popLayout">
 													<motion.div
 														layout
-														initial={{ scale: 0, opacity: 0 }}
-														animate={{ scale: 1, opacity: 1 }}
-														exit={{ scale: 0, opacity: 0 }}
+														initial={{ opacity: 0 }}
+														animate={{ opacity: 1 }}
+														exit={{ opacity: 0 }}
 														transition={{ duration: 0.5, ease: "backOut" }}
 														className="relative"
 													>
@@ -985,11 +964,9 @@ export default function Chat() {
 																			<div className="w-full flex flex-row gap-2 justify-start items-center">
 																				<mode.icon className={states.thinkMode === mode.id ? "text-blue colors" : "text-l5 dark:text-d5 colors"} />
 
-																				<motion.span
-																					className="whitespace-nowrap font-medium text-left text-base text-d1 dark:text-l1 colors"
-																				>
+																				<span className="whitespace-nowrap font-medium text-left text-base text-d1 dark:text-l1 colors">
 																					{mode.label}
-																				</motion.span>
+																				</span>
 																			</div>
 																		</Label>
 																	))}
@@ -1002,9 +979,9 @@ export default function Chat() {
 												<AnimatePresence mode="popLayout">
 													<motion.div
 														layout
-														initial={{ scale: 0, opacity: 0 }}
-														animate={{ scale: 1, opacity: 1 }}
-														exit={{ scale: 0, opacity: 0 }}
+														initial={{ opacity: 0 }}
+														animate={{ opacity: 1 }}
+														exit={{ opacity: 0 }}
 														transition={{ duration: 0.5, ease: "backOut" }}
 													>
 														<Button
@@ -1021,9 +998,9 @@ export default function Chat() {
 														<motion.div
 															key="audio"
 															layout
-															initial={{ scale: 0, opacity: 0 }}
-															animate={{ scale: 1, opacity: 1 }}
-															exit={{ scale: 0, opacity: 0 }}
+															initial={{ opacity: 0 }}
+															animate={{ opacity: 1 }}
+															exit={{ opacity: 0 }}
 															transition={{ duration: 0.5, ease: "backOut" }}
 														>
 															<Button
@@ -1036,9 +1013,9 @@ export default function Chat() {
 														<motion.div
 															key="send"
 															layout
-															initial={{ scale: 0, opacity: 0 }}
-															animate={{ scale: 1, opacity: 1 }}
-															exit={{ scale: 0, opacity: 0 }}
+															initial={{ opacity: 0 }}
+															animate={{ opacity: 1 }}
+															exit={{ opacity: 0 }}
 															transition={{ duration: 0.5, ease: "backOut" }}
 														>
 															<Button
@@ -1150,13 +1127,9 @@ export default function Chat() {
 																			htmlFor="file-upload"
 																			className="all flex justify-center items-center size-full px-4 py-2"
 																		>
-																			<motion.span
-																				layout
-																				transition={{ duration: 0.5, ease: "backOut" }}
-																				className="colors whitespace-nowrap text-center font-bold text-lg text-l1"
-																			>
+																			<span className="colors whitespace-nowrap text-center font-bold text-lg text-l1">
 																				アップロード
-																			</motion.span>
+																			</span>
 																		</Label>
 																	</Button>
 
@@ -1167,13 +1140,9 @@ export default function Chat() {
 																		<div className="all flex justify-center items-center gap-2 size-full px-4 py-2 cursor-pointer">
 																			<Trash2 className="text-red all" />
 
-																			<motion.span
-																				layout
-																				transition={{ duration: 0.5, ease: "backOut" }}
-																				className="colors whitespace-nowrap text-center font-bold text-lg text-red"
-																			>
+																			<span className="colors whitespace-nowrap text-center font-bold text-lg text-red">
 																				全削除
-																			</motion.span>
+																			</span>
 																		</div>
 																	</Button>
 																</motion.div>
@@ -1193,13 +1162,9 @@ export default function Chat() {
 																		htmlFor="file-upload"
 																		className="all flex justify-center items-center size-full px-4 py-2"
 																	>
-																		<motion.span
-																			layout
-																			transition={{ duration: 0.5, ease: "backOut" }}
-																			className="colors whitespace-nowrap text-center font-bold text-lg text-l1"
-																		>
+																		<span className="colors whitespace-nowrap text-center font-bold text-lg text-l1">
 																			アップロード
-																		</motion.span>
+																		</span>
 																	</Label>
 																</Button>
 															</motion.div>

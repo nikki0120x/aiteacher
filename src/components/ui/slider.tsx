@@ -55,13 +55,9 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
                         </label>
                     )}
 
-                    <motion.span
-                        layout
-                        transition={{ duration: 0.5, ease: "backOut" }}
-                        className="colors font-medium text-base text-d1 dark:text-l1"
-                    >
+                    <span className="colors font-medium text-base text-d1 dark:text-l1">
                         {percentStr}
-                    </motion.span>
+                    </span>
                 </div>
 
                 <div className="relative flex h-8 w-full items-center justify-center">
@@ -113,15 +109,12 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
                 {marks && (
                     <div className="relative h-6 w-full ">
                         {marks?.map((mark) => mark.label && (
-                            <motion.span
-                                key={`label-${mark.value}`}
-                                layout
-                                transition={{ duration: 0.5, ease: "backOut" }}
+                            <span
                                 className="absolute -translate-x-1/2 whitespace-nowrap text-center text-sm font-medium text-d5 dark:text-l5 colors"
                                 style={{ left: getPositionStyle(mark.value) }}
                             >
                                 {mark.label}
-                            </motion.span>
+                            </span>
                         ))}
                     </div>
                 )}

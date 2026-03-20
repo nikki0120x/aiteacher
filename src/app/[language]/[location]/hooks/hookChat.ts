@@ -506,8 +506,6 @@ export const useInputTextClear = (
 	};
 };
 
-// hookChat.ts
-
 export const useChatAreaHeight = () => {
 	const mainContainerRef = useRef<HTMLDivElement>(null);
 	const inputContainerRef = useRef<HTMLDivElement>(null);

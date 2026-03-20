@@ -48,10 +48,10 @@ export default function SignModal() {
                                 <Image
                                     src="/images/logos/webp/Logo_FoCalrina_small_theme.webp"
                                     alt="The FoCarina Logo"
-                                    width={160}
+                                    width={120}
                                     height={40}
                                     priority
-                                    className="w-30 h-10 object-contain"
+                                    className="object-contain"
                                 />
 
                                 <Button

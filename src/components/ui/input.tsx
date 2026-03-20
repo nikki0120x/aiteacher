@@ -94,100 +94,93 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 		if (isFloatingType) {
 			return (
 				<div className="flex flex-col justify-center items-center size-full">
-					<AnimatePresence mode="popLayout">
-						<motion.div
-							layout
-							transition={{ duration: 0.5, ease: "backOut" }}
-							className={cn(
-								"colors flex h-15 w-full flex-row items-center justify-center gap-1 rounded-4xl border border-l5 p-2 dark:border-l5",
-								"has-focus:ring-2 has-focus:ring-blue",
-								!visibility && "hidden",
-								className,
-							)}
-						>
-							{leftContent && (
-								<div className="flex flex-row items-center justify-start">
-									{leftContent}
-								</div>
-							)}
-
-							<div className={cn(
-								"relative flex flex-1 items-center justify-center",
-								!leftContent && "ml-4"
-							)}>
-								<input
-									{...props}
-									ref={innerRef}
-									type={currentType}
-									name={name}
-									value={value}
-									placeholder=""
-									onChange={handleInputChange}
-									className={cn(
-										"peer size-full bg-transparent pt-2 text-left font-medium text-base text-d1 caret-blue outline-none placeholder:text-l5 dark:text-l1 dark:placeholder:text-d5",
-										props.disabled && "cursor-not-allowed",
-										autofillClass,
-									)}
-								/>
-
-								<label
-									className={cn(
-										"all pointer-events-none absolute left-0 origin-left text-l5 dark:text-d5",
-										"peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:text-blue!",
-										"peer-[:not(:placeholder-shown)]:-translate-y-4 peer-[:not(:placeholder-shown)]:scale-75",
-									)}
-								>
-									{label || placeholder}
-								</label>
+					<div
+						className={cn(
+							"colors flex h-15 w-full flex-row items-center justify-center gap-1 rounded-4xl border border-l5 p-2 dark:border-l5",
+							"has-focus:ring-2 has-focus:ring-blue",
+							!visibility && "hidden",
+							className,
+						)}
+					>
+						{leftContent && (
+							<div className="flex flex-row items-center justify-start">
+								{leftContent}
 							</div>
+						)}
 
-							<div className="flex flex-row items-center justify-center gap-1">
-								{rightContent}
+						<div className={cn(
+							"relative flex flex-1 items-center justify-center",
+							!leftContent && "ml-4"
+						)}>
+							<input
+								{...props}
+								ref={innerRef}
+								type={currentType}
+								name={name}
+								value={value}
+								placeholder=""
+								onChange={handleInputChange}
+								className={cn(
+									"peer size-full bg-transparent pt-2 text-left font-medium text-base text-d1 caret-blue outline-none placeholder:text-l5 dark:text-l1 dark:placeholder:text-d5",
+									props.disabled && "cursor-not-allowed",
+									autofillClass,
+								)}
+							/>
 
-								<AnimatePresence mode="popLayout">
-									{isPasswordType && (
-										<motion.div
-											layout
-											key="password-toggle"
-											initial={{ scale: 0, opacity: 0 }}
-											animate={{ scale: 1, opacity: 1 }}
-											exit={{ scale: 0, opacity: 0 }}
-											transition={{ duration: 0.5, ease: "backOut" }}
+							<label
+								className={cn(
+									"all pointer-events-none absolute left-0 origin-left text-l5 dark:text-d5",
+									"peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:text-blue!",
+									"peer-[:not(:placeholder-shown)]:-translate-y-4 peer-[:not(:placeholder-shown)]:scale-75",
+								)}
+							>
+								{label || placeholder}
+							</label>
+						</div>
+
+						<div className="flex flex-row items-center justify-center gap-1">
+							{rightContent}
+
+							<AnimatePresence mode="popLayout">
+								{isPasswordType && (
+									<motion.div
+										key="password-toggle"
+										layout
+										transition={{ duration: 0.5, ease: "backOut" }}
+									>
+										<Button
+											onClick={() => setShowPassword(!showPassword)}
+											className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 										>
-											<Button
-												onClick={() => setShowPassword(!showPassword)}
-												className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-											>
-												{showPassword ? (
-													<Eye className="all text-yellow" />
-												) : (
-													<EyeClosed className="all text-yellow" />
-												)}
-											</Button>
-										</motion.div>
-									)}
+											{showPassword ? (
+												<Eye className="all text-yellow" />
+											) : (
+												<EyeClosed className="all text-yellow" />
+											)}
+										</Button>
+									</motion.div>
+								)}
 
-									{hasValue && (
-										<motion.div
-											layout
-											key="clear"
-											initial={{ scale: 0, opacity: 0 }}
-											animate={{ scale: 1, opacity: 1 }}
-											exit={{ scale: 0, opacity: 0 }}
-											transition={{ duration: 0.5, ease: "backOut" }}
+								{hasValue && (
+									<motion.div
+										key="password-clear"
+										layout
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										exit={{ opacity: 0 }}
+										transition={{ duration: 0.5, ease: "backOut" }}
+									>
+										<Button
+											onClick={handleInputClear}
+											className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 										>
-											<Button
-												onClick={handleInputClear}
-												className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-											>
-												<Trash2 className="all text-red" />
-											</Button>
-										</motion.div>
-									)}
-								</AnimatePresence>
-							</div>
-						</motion.div>
-					</AnimatePresence>
+											<Trash2 className="all text-red" />
+										</Button>
+									</motion.div>
+								)}
+							</AnimatePresence>
+						</div>
+					</div>
 
 					<AnimatePresence>
 						{error && (
@@ -197,15 +190,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 								animate={{ height: "auto", opacity: 1 }}
 								exit={{ height: 0, opacity: 0 }}
 								transition={{ duration: 0.5, ease: "backOut" }}
-								className="px-4 w-full flex justify-start items-center" 
+								className="px-4 w-full flex justify-start items-center"
 							>
-								<motion.span
-									layout
-									transition={{ duration: 0.5, ease: "backOut" }}
-									className="mt-2 colors text-left font-medium text-base text-red"
-								>
+								<span className="mt-2 colors text-left font-medium text-base text-red">
 									⚠ {error}
-								</motion.span>
+								</span>
 							</motion.div>
 						)}
 					</AnimatePresence>

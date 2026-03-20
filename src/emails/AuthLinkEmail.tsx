@@ -1,4 +1,3 @@
-// emails/AuthCodeEmail.tsx
 import {
 	Body,
 	Container,
@@ -6,7 +5,9 @@ import {
 	Html,
 	Img,
 	Section,
+	Font,
 	Text,
+	Hr,
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 
@@ -24,44 +25,106 @@ const AuthCodeEmail = ({
 	<Html lang="ja" dir="ltr">
 		<Head>
 			<meta charSet="UTF-8" />
+
 			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+			<Font
+				fontFamily="Zen Maru Gothic"
+				fallbackFontFamily="sans-serif"
+				webFont={{
+					url: "https://fonts.gstatic.com/s/zenmarugothic/v11/n7bdE-98L_9B79B1f8Rzz_XyY5-p7_D7.woff2",
+					format: "woff2",
+				}}
+				fontWeight={500}
+				fontStyle="normal"
+			/>
 		</Head>
-		<Tailwind>
-			<Body>
-				<Container>
-					<Section className="my-3 w-full">
+		
+		<Tailwind
+			config={{
+				theme: {
+					extend: {
+						fontFamily: {
+							sans: ["Zen Maru Gothic", "ui-sans-serif", "system-ui", "sans-serif"],
+						},
+						colors: {
+							l1: "hsl(0, 0%, 95%)",
+							l2: "hsl(0, 0%, 90%)",
+							l3: "hsl(0, 0%, 85%)",
+							l4: "hsl(0, 0%, 80%)",
+							l5: "hsl(0, 0%, 75%)",
+							l6: "hsl(0, 0%, 70%)",
+							l7: "hsl(0, 0%, 65%)",
+							l8: "hsl(0, 0%, 60%)",
+							l9: "hsl(0, 0%, 55%)",
+							d1: "hsl(0, 0%, 5%)",
+							d2: "hsl(0, 0%, 10%)",
+							d3: "hsl(0, 0%, 15%)",
+							d4: "hsl(0, 0%, 20%)",
+							d5: "hsl(0, 0%, 25%)",
+							d6: "hsl(0, 0%, 30%)",
+							d7: "hsl(0, 0%, 35%)",
+							d8: "hsl(0, 0%, 40%)",
+							d9: "hsl(0, 0%, 45%)",
+
+							white: "hsl(0, 0%, 100%)",
+							gray: "hsl(0, 0%, 50%)",
+							black: "hsl(0, 0%, 0%)",
+							red: "hsl(15, 100%, 50%)",
+							orange: "hsl(30, 100%, 50%)",
+							yellow: "hsl(45, 100%, 50%)",
+							green: "hsl(135, 100%, 50%)",
+							blue: "hsl(195, 100%, 50%)",
+							indigo: "hsl(255, 100%, 50%)",
+							violet: "hsl(300, 100%, 50%)",
+						},
+					},
+				},
+			}}
+		>
+			<Body className="font-sans">
+				<Container className="select-none">
+					<Section className="w-full p-2">
 						<Img
-							src="https://www.focalrina.com/logos/dark.webp"
-							alt="Logo"
-							width="128"
-							className="mx-auto"
+							src="https://aiteacher.focalrina.com/images/logos/webp/Logo_FoCalrina_small_theme.webp"
+							alt="The FoCarina Logo"
+							width="120"
+							className=" p-2"
 						/>
-						<Text className="text-center font-black text-2xl text-sky-500">
+						
+						<Text className="p-2 text-left font-black text-xl text-blue m-0!">
 							アカウント認証コード
 						</Text>
+
+						<Hr className="border-blue" />
 					</Section>
-					<Section className="mb-3 w-full rounded-4xl bg-slate-100 text-center">
-						<Text className="m-4 font-medium text-base text-slate-950 text-left">
+
+					<Section className="w-full px-8 py-4">
+						<Text className="font-medium text-base text-d2 text-left">
 							親愛なるユーザー様へ
 							<br />
 							<br />
-							FoCalrinaへのご登録ありがとうございます！
+							FoCalrinaへの仮登録をありがとうございます！
 							<br />
-							登録画面にて以下の6桁の認証コードを入力して、アカウントの作成を完了してください。
+							登録画面にて，以下の6桁の認証コードを入力し，アカウントを作成してください。
 						</Text>
-						<Text className="my-6 font-black text-4xl text-sky-500 tracking-widest text-center">
+
+						<Text className="font-black text-4xl text-blue tracking-widest text-center select-all!">
 							{validationCode}
 						</Text>
-						<Text className="m-4 font-medium text-base text-slate-950 text-left">
-							今後ともよろしくお願いいたします。
+
+						<Text className="font-medium  text-base text-d2 text-left">
+							今後とも宜しくお願いします。
 							<br />
-							FoCalrina より
+							<br />
+							FoCalrina
 						</Text>
 					</Section>
-					<Section className="w-full">
-						<Text className="text-center text-slate-500 text-sm">
+
+					<Section className="w-full px-4 py-2">
+						<Text className="text-left text-d5 text-sm font-medium m-0!">
 							※このコードは
-							<span className="text-sky-500"> 10分間 </span>
+							<span className="text-blue"> 10分間 </span>
 							有効です。
 							<br />
 							※このメールへの返信はできません。

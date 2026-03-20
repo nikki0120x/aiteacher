@@ -31,13 +31,9 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
                 )}
             >
                 {label && (
-                    <motion.span
-                        layout
-                        transition={{ duration: 0.5, ease: "backOut" }}
-                        className="colors font-medium text-base text-d1 dark:text-l1"
-                    >
+                    <span className="colors font-medium text-base text-d1 dark:text-l1">
                         {label}
-                    </motion.span>
+                    </span>
                 )}
 
                 <div
