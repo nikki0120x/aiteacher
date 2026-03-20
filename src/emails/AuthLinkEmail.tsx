@@ -99,7 +99,7 @@ const AuthCodeEmail = ({
 						<Hr className="border-blue" />
 					</Section>
 
-					<Section className="w-full px-8 py-4">
+					<Section className="w-full p-2">
 						<Text className="font-medium text-base text-d2 text-left">
 							親愛なるユーザー様へ
 							<br />
@@ -110,11 +110,13 @@ const AuthCodeEmail = ({
 						</Text>
 
 						<Text className="font-black text-4xl text-blue tracking-widest text-center select-all!">
-							<span className="text-sm font-medium block select-none!">Verification Code:</span>
+							<span className="text-sm font-medium text-blue text-center block select-none! pb-2">
+								Verification Code:
+							</span>
 							{validationCode}
 						</Text>
 
-						<Text className="font-medium  text-base text-d2 text-left">
+						<Text className="font-medium text-base text-d2 text-left">
 							今後とも宜しくお願いします。
 							<br />
 							<br />
@@ -122,7 +124,7 @@ const AuthCodeEmail = ({
 						</Text>
 					</Section>
 
-					<Section className="w-full px-4 py-2">
+					<Section className="w-full p-2">
 						<Text className="text-left text-d5 text-sm font-medium m-0!">
 							※このコードは
 							<span className="text-blue"> 10分間 </span>
