@@ -86,7 +86,7 @@ const AuthCodeEmail = ({
 				<Container className="select-none">
 					<Section className="w-full p-2">
 						<Img
-							src="https://aiteacher.focalrina.com/images/logos/webp/Logo_FoCalrina_small_theme.webp"
+							src="https://aiteacher.focalrina.com/images/logos/png/Logo_FoCalrina_small_theme.png"
 							alt="The FoCarina Logo"
 							width="120"
 							className=" p-2"
