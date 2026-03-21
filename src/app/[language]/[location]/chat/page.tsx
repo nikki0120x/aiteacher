@@ -240,37 +240,44 @@ const MarkdownP = React.memo(({ children }: { children: React.ReactNode }) => (
 	</p>
 ));
 
-const MarkdownH3 = React.memo(({ children }: { children: React.ReactNode }) => {
+const MarkdownH3 = React.memo(({ children, showLabel = false }: { children: React.ReactNode, showLabel?: boolean }) => {
 	const rawText = String(children).replace(/["']/g, "").trim();
 	let parts = ["Unknown"];
 
 	if (rawText.startsWith("Curriculum:")) {
 		const cleanText = rawText.replace("Curriculum:", "").trim();
-
 		const extractedParts = cleanText.split("/").map(p => p.trim());
-
 		if (extractedParts.length === 3) {
 			const [subject, course, unit] = extractedParts;
-
 			type CurriculumStructure = Record<string, Record<string, string[]>>;
 			const data = curriculumData as CurriculumStructure;
-
 			const isValid = data[subject]?.[course]?.includes(unit);
-
 			if (isValid) {
 				parts = extractedParts;
 			}
 		}
 	}
 	return (
-		<div className="scale-100! flex flex-row gap-2 justify-end items-center w-full px-4 py-2">
-			{parts.map((part) => (
-				<div key={part} className="bg-l3 dark:bg-d3 group-hover:bg-l4 group-focus-visible:bg-l4 dark:group-focus-visible:bg-d4 dark:group-hover:bg-d4 px-2 py-1 rounded-lg colors shadow-lg">
-					<span className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap">
-						{part}
-					</span>
-				</div>
-			))}
+		<div className="scale-100! flex flex-row justify-between items-center w-full px-4 py-2">
+			<div className="flex flex-row justify-start items-center gap-1">
+				{showLabel && (
+					<>
+						<MousePointerClick className="colors size-4 text-d5 dark:text-l5" />
+						
+						<span className="colors text-left font-medium text-xs text-d5 dark:text-l5">選択して生成</span>
+					</>
+				)}
+			</div>
+
+			<div className="flex flex-row gap-2 justify-end items-center">
+				{parts.map((part) => (
+					<div key={part} className="bg-l3 dark:bg-d3 group-hover:bg-l4 group-focus-visible:bg-l4 dark:group-focus-visible:bg-d4 dark:group-hover:bg-d4 px-2 py-1 rounded-lg colors shadow-lg">
+						<span className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap">
+							{part}
+						</span>
+					</div>
+				))}
+			</div>
 		</div>
 	);
 });
@@ -403,7 +410,12 @@ const TurnItem = React.memo(
 									<ReactMarkdown
 										remarkPlugins={[remarkMath]}
 										rehypePlugins={[rehypeKatex, rehypeRaw]}
-										components={solveRequestComponents}
+										components={{
+											h1: ({ children }) => <MarkdownH1 problemIndex={problemItems[0]?.index + 1 || 1}>{children}</MarkdownH1>,
+											p: ({ children }) => <MarkdownP>{children}</MarkdownP>,
+											h3: ({ children }) => <MarkdownH3 showLabel={false}>{children}</MarkdownH3>, // 明示的にfalse
+											span: MarkdownSpan,
+										}}
 									>
 										{userContent}
 									</ReactMarkdown>
@@ -427,6 +439,7 @@ const TurnItem = React.memo(
 											rehypePlugins={[rehypeKatex, rehypeRaw]}
 											components={{
 												span: MarkdownSpan,
+												h3: ({ children }) => <MarkdownH3 showLabel={false}>{children}</MarkdownH3>,
 											}}
 										>
 											{sec.content}
@@ -450,7 +463,7 @@ const TurnItem = React.memo(
 						initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
 						animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 						transition={{ duration: 0.5, ease: "backOut" }}
-						className="flex w-full flex-col items-end justify-start mb-8"
+						className="flex w-full flex-col items-end justify-start"
 					>
 						{userMedia.length > 0 && (
 							<div className="flex w-full flex-row-reverse justify-start items-center gap-4 overflow-x-auto p-2">
@@ -531,7 +544,7 @@ const TurnItem = React.memo(
 					const itemComponents: Components = {
 						h1: ({ children }) => <MarkdownH1 problemIndex={item.index + 1}>{children}</MarkdownH1>,
 						p: ({ children }) => <MarkdownP>{children}</MarkdownP>,
-						h3: ({ children }) => <MarkdownH3>{children}</MarkdownH3>,
+						h3: ({ children }) => <MarkdownH3 showLabel={true}>{children}</MarkdownH3>,
 						span: MarkdownSpan,
 					};
 
@@ -545,7 +558,7 @@ const TurnItem = React.memo(
 						>
 							<Button
 								onClick={() => handleSolve(displayContent, turn.turnId)}
-								className="colors justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3 shadow-lg h-full overflow-hidden group"
+								className="hover:-translate-y-2 focus-visible:-translate-y-2 active:scale-90 all justify-start items-start flex w-full flex-col rounded-3xl bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3 shadow-lg h-full overflow-hidden group"
 							>
 								<ReactMarkdown
 									remarkPlugins={[remarkMath]}
@@ -703,7 +716,7 @@ export default function Chat() {
 									</span>
 
 									<div className="w-full mask-x-from-99% to-transparent">
-										<div className="flex w-full px-2 py-1 overflow-x-auto gap-2 scrollbar-hide">
+										<div className="flex w-full px-2 py-4 overflow-x-auto gap-2 scrollbar-hide">
 											{[
 												"国語",
 												"地理歴史",
@@ -722,17 +735,17 @@ export default function Chat() {
 															inputText: text,
 														}));
 													}}
-													className="flex justify-center items-center flex-none bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 rounded-2xl px-8 py-4 shadow-lg colors"
+													className="flex justify-center items-center flex-none bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 hover:-translate-y-2 focus-visible:-translate-y-2 active:scale-90 focus-visible:bg-l3 dark:focus-visible:bg-d3 rounded-2xl px-8 py-4 shadow-lg all"
 												>
-													<div className="all flex flex-col gap-2 justify-center items-start">
+													<div className="scale-100! flex flex-col gap-2 justify-center items-start">
 														<span className="colors text-left font-medium text-sm text-d2 dark:text-l2">
 															{text}
 														</span>
 
-														<div className="flex flex-row justify-start items-center">
+														<div className="flex flex-row justify-start items-center gap-1">
 															<MousePointerClick className="colors size-4 text-d5 dark:text-l5" />
 
-															<span className="colors text-left font-medium text-xs text-d5 dark:text-l5">タップして生成</span>
+															<span className="colors text-left font-medium text-xs text-d5 dark:text-l5">選択して生成</span>
 														</div>
 													</div>
 												</Button>
