@@ -18,7 +18,7 @@ export const useAppView = () => {
 	//  ================================================================
 
 	const {
-		states: { activeNotificationTab, theme, app, language, location },
+		states: { activeNotificationTab, theme, app, chat, language, location },
 		actions: {
 			router,
 			pathname,
@@ -39,6 +39,7 @@ export const useAppView = () => {
 			activeNotificationTab,
 			theme,
 			app,
+			chat,
 			language,
 			location,
 		},

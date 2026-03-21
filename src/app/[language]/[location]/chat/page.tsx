@@ -19,6 +19,8 @@ import {
 	BowArrow,
 	MousePointerClick
 } from "lucide-react";
+import { useAppView } from "@/app/[language]/[location]/views/viewApp";
+import { useParams } from "next/navigation";
 import rehypeRaw from "rehype-raw";
 import type { ExtraProps, Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
@@ -32,6 +34,7 @@ import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Button, Input, Label } from "@/components/ui";
 import type { VirtuosoHandle } from "react-virtuoso";
 import type { Turn, Medium } from "@/models/modelChat";
+import { Logos } from "@/components/parts/logos";
 import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -569,9 +572,14 @@ const TurnItem = React.memo(
 
 export default function Chat() {
 	const { refs, states, actions } = useChatView();
+	const { states: { chat } } = useAppView();
+
+	const params = useParams();
+	const lang = (params?.language as string) || "en-US";
+	const logoId = `Question_${lang}` as keyof typeof Logos;
+	const TitleComponent = Logos[logoId] || Logos["Question_en-US"];
 
 	const [isThinkModeMenuOpen, setIsThinkModeMenuOpen] = useState(false);
-
 	const virtuosoRef = useRef<VirtuosoHandle>(null);
 
 	useEffect(() => {
@@ -616,7 +624,7 @@ export default function Chat() {
 								ref={refs.dragAndDropTextRef}
 								className="colors text-center font-black text-2xl text-blue"
 							>
-								{states.dragInfo.count}ファイルをドロップ
+								{chat("container.draganddrop", { count: states.dragInfo.count })}
 							</span>
 						</div>
 					</motion.div>
@@ -670,7 +678,7 @@ export default function Chat() {
 							</motion.div>
 						) : !states.isFullTextarea ? (
 							<motion.div
-								key="question-title"
+								key="question-flow"
 								layout
 								initial={{ height: 0, opacity: 0 }}
 								animate={{
@@ -684,16 +692,14 @@ export default function Chat() {
 								<div className="colors flex w-full flex-row items-center justify-center gap-8">
 									<div className="colors h-px w-full rounded-full bg-blue" />
 
-									<span className="colors text-center flex-none font-black text-2xl text-blue">
-										質問
-									</span>
+									<TitleComponent className="flex-none" />
 
 									<div className="colors h-px w-full rounded-full bg-blue" />
 								</div>
 
 								<div className="colors flex w-full gap-2 flex-col items-center justify-center">
-									<span ref={refs.pageTitleTextRef} className="colors text-center font-bold text-base text-d5 italic dark:text-l5">
-										分からない問題がある？何でも訊いてみてね！
+									<span ref={refs.pageTitleTextRef} className="colors font-subtitle text-center font-medium text-base text-d5 italic dark:text-l5">
+										{chat("question.message")}
 									</span>
 
 									<div className="w-full mask-x-from-99% to-transparent">
@@ -759,8 +765,8 @@ export default function Chat() {
 									rows={1}
 									placeholder={
 										states.isListening
-											? "訊きたい質問を音声入力"
-											: "訊きたい質問を入力"
+											? chat("container.listening-placeholder")
+											: chat("container.placeholder")
 									}
 									value={states.displayText}
 									ref={refs.textareaRef}
@@ -1128,7 +1134,7 @@ export default function Chat() {
 																			className="all flex justify-center items-center size-full px-4 py-2"
 																		>
 																			<span className="colors whitespace-nowrap text-center font-bold text-lg text-l1">
-																				アップロード
+																				{chat("container.upload.upload")}
 																			</span>
 																		</Label>
 																	</Button>
@@ -1141,7 +1147,7 @@ export default function Chat() {
 																			<Trash2 className="text-red all" />
 
 																			<span className="colors whitespace-nowrap text-center font-bold text-lg text-red">
-																				全削除
+																				{chat("container.upload.clear-all")}
 																			</span>
 																		</div>
 																	</Button>
@@ -1163,7 +1169,7 @@ export default function Chat() {
 																		className="all flex justify-center items-center size-full px-4 py-2"
 																	>
 																		<span className="colors whitespace-nowrap text-center font-bold text-lg text-l1">
-																			アップロード
+																			{chat("container.upload.upload")}
 																		</span>
 																	</Label>
 																</Button>

@@ -1,5 +1,4 @@
 "use server";
-
 import { db } from "@/lib/db";
 import { user, verification } from "@/lib/schema";
 import { eq, and, gt } from "drizzle-orm";
@@ -8,18 +7,15 @@ import AuthCodeEmail from "@/emails/AuthLinkEmail";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-// 1. 認証コードを生成してメール送信
 export async function sendOtpCode(email: string) {
     if (!email || !email.includes("@")) return { error: "有効なメールアドレスを入力してください。" };
 
-    // 既に登録されているか確認
     const existingUser = await db.query.user.findFirst({ where: eq(user.email, email) });
     if (existingUser) return { error: "このメールアドレスは既に登録されています。" };
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // 古いコードを削除して新規挿入
     await db.delete(verification).where(eq(verification.identifier, email));
     await db.insert(verification).values({
         id: crypto.randomUUID(),
@@ -30,18 +26,17 @@ export async function sendOtpCode(email: string) {
 
     try {
         await resend.emails.send({
-            from: "FoCalrina <onboarding@focalrina.com>",
+            from: "FoCalrina <noreply@focalrina.com>",
             to: email,
-            subject: "アカウント認証コード",
+            subject: `${code}`,
             react: AuthCodeEmail({ validationCode: code }),
         });
         return { success: true };
-    } catch (e) {
+    } catch {
         return { error: "メールの送信に失敗しました。" };
     }
 }
 
-// 2. 認証コードの照合
 export async function verifyOtpCode(email: string, code: string) {
     const record = await db.query.verification.findFirst({
         where: and(
@@ -56,7 +51,6 @@ export async function verifyOtpCode(email: string, code: string) {
     return { success: true };
 }
 
-// 3. 認証済みフラグを更新
 export async function markEmailAsVerified(email: string) {
     await db.update(user).set({ emailVerified: true }).where(eq(user.email, email));
 }

@@ -10,8 +10,7 @@ import { useRouter } from "@/i18n/routing";
 export default function SignModal() {
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(true);
-
-    //  モーダルを閉じる
+    
     const handleModalClose = () => {
         setIsModalOpen(false);
     };

@@ -8,6 +8,7 @@ import {
 	Font,
 	Text,
 	Hr,
+	Preview,
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 
@@ -39,6 +40,8 @@ const AuthCodeEmail = ({
 				fontStyle="normal"
 			/>
 		</Head>
+
+		<Preview>アカウント認証コード | FoCalrina</Preview>
 
 		<Tailwind
 			config={{
@@ -89,6 +92,7 @@ const AuthCodeEmail = ({
 							src="https://aiteacher.focalrina.com/images/logos/png/Logo_FoCalrina_small_theme.png"
 							alt="The FoCarina Logo"
 							width="120"
+							height="auto"
 							className=" p-2"
 						/>
 

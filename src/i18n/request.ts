@@ -10,11 +10,13 @@ export default getRequestConfig(async ({ requestLocale }) => {
 		: routing.defaultLocale;
 
 	const messageApp = (await import(`@/messages/app/${locale}.json`)).default;
+	const messageChat = (await import(`@/messages/chat/${locale}.json`)).default;
 
 	return {
 		locale,
 		messages: {
 			app: messageApp,
+			chat: messageChat,
 		},
 	};
 });

@@ -117,6 +117,7 @@ export const useSidebar = () => {
 	);
 
 	const app = useTranslations("app");
+	const chat = useTranslations("chat");
 	const language = useLocale();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -193,6 +194,7 @@ export const useSidebar = () => {
 			activeNotificationTab,
 			theme,
 			app,
+			chat,
 			language,
 			location,
 		},

@@ -1,0 +1,14 @@
+{
+	"question": {
+		"message": "Got a question? Just ask!"
+	},
+	"container": {
+		"draganddrop": "{count, plural, =1 {# FILE} other {# FILES}} DROP",
+		"placeholder": "TYPE YOUR QUESTION",
+		"listening-placeholder": "SPEAK YOUR QUESTION",
+		"upload": {
+			"upload": "UPLOAD",
+			"clear-all": "CLEAR ALL"
+		}
+	}
+}

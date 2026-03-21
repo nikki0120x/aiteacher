@@ -7,6 +7,8 @@
 
 @theme {
   --default-font: "Zen Maru Gothic", system-ui;
+  --font-title: var(--font-title);
+  --font-subtitle: var(--font-subtitle);
 
   --color-l1: hsl(0, 0%, 95%);
   --color-l2: hsl(0, 0%, 90%);
