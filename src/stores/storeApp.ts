@@ -22,7 +22,8 @@ export const useAppStore = create<AppState>((set) => ({
 	menuDirection: 0,
 	setActiveMenu: (activeMenu, menuDirection = 0) =>
 		set({ activeMenu, menuDirection }),
-	
+
 	chatResetSignal: 0,
-	triggerChatReset: () => set((state) => ({ chatResetSignal: state.chatResetSignal + 1 })), // ★追加
+	triggerChatReset: () =>
+		set((state) => ({ chatResetSignal: state.chatResetSignal + 1 })), // ★追加
 }));

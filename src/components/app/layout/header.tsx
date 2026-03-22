@@ -1,5 +1,14 @@
 "use client";
-import { Bell, Globe, Languages, Menu, SunMoon, UserRound, SquarePen, TextAlignStart } from "lucide-react";
+import {
+	Bell,
+	Globe,
+	Languages,
+	Menu,
+	SquarePen,
+	SunMoon,
+	TextAlignStart,
+	UserRound,
+} from "lucide-react";
 import { useAppView } from "@/app/[language]/[location]/views/viewApp";
 import { Button } from "@/components/ui";
 import { usePathname } from "@/i18n/routing";
@@ -23,9 +32,7 @@ export default function Header() {
 					<div className="flex flex-row gap-2 justify-start items-center">
 						<div className="h-8 w-px bg-l5 dark:bg-d5 colors" />
 
-						<Button
-							className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-						>
+						<Button className="colors flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2">
 							<TextAlignStart className="all text-blue" />
 						</Button>
 					</div>

@@ -3,13 +3,13 @@
 import { useRef } from "react";
 import {
 	useChat,
+	useChatAreaHeight,
 	useDragAndDrop,
+	useExtensionContent,
 	useInputTextClear,
 	usePageTitle,
 	useTextarea,
 	useVoiceInput,
-	useExtensionContent,
-	useChatAreaHeight,
 } from "@/app/[language]/[location]/hooks/hookChat";
 
 export const useChatView = () => {
@@ -65,7 +65,11 @@ export const useChatView = () => {
 	const {
 		states: { dragInfo },
 		actions: { handleDragOver, handleDragEnter, handleDragLeave, handleDrop },
-	} = useDragAndDrop(handleUploadAndConvert, dragAndDropTextRef, setActiveContent);
+	} = useDragAndDrop(
+		handleUploadAndConvert,
+		dragAndDropTextRef,
+		setActiveContent,
+	);
 
 	//  ページタイトル
 	usePageTitle(pageTitleTextRef);
@@ -99,7 +103,11 @@ export const useChatView = () => {
 			setIsOverLimit,
 			setIsFullTextarea,
 		},
-	} = useTextarea(displayText, textareaRef, activeContent === "none" ? 0 : extensionHeight);
+	} = useTextarea(
+		displayText,
+		textareaRef,
+		activeContent === "none" ? 0 : extensionHeight,
+	);
 
 	//  入力テキスト削除
 	const {
@@ -115,11 +123,8 @@ export const useChatView = () => {
 		setIsFullTextarea,
 	);
 
-	const {
-		mainContainerRef,
-		inputContainerRef,
-		chatAreaHeight,
-	} = useChatAreaHeight();
+	const { mainContainerRef, inputContainerRef, chatAreaHeight } =
+		useChatAreaHeight();
 
 	return {
 		refs: {

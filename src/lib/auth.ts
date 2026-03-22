@@ -1,8 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { eq, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/schema";
-import { eq, or } from "drizzle-orm";
 
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
@@ -29,14 +29,16 @@ export const auth = betterAuth({
 			const path = (ctx as { path?: string }).path;
 
 			if (path === "/sign-in/email") {
-				const body = ctx.body as { email?: string; password?: string } | undefined;
+				const body = ctx.body as
+					| { email?: string; password?: string }
+					| undefined;
 
 				if (body?.email) {
 					const foundUser = await db.query.user.findFirst({
 						where: or(
 							eq(schema.user.email, body.email),
-							eq(schema.user.name, body.email)
-						)
+							eq(schema.user.name, body.email),
+						),
 					});
 
 					if (foundUser) {
@@ -45,13 +47,13 @@ export const auth = betterAuth({
 				}
 			}
 			return ctx;
-		}
+		},
 	},
 
 	socialProviders: {
 		google: {
-			clientId: process.env.GOOGLE_CLIENT_ID!,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+			clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
 			mapProfileToUser: async (profile) => {
 				return {
 					email: profile.email,

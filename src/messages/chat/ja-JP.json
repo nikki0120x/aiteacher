@@ -3,7 +3,7 @@
 		"message": "分からない問題がある？何でも訊いてみてね！"
 	},
 	"container": {
-	"draganddrop": "{count}ファイルをドロップ",
+		"draganddrop": "{count}ファイルをドロップ",
 		"placeholder": "訊きたい質問を入力",
 		"listening-placeholder": "訊きたい質問を音声入力",
 		"upload": {

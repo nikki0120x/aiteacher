@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import {
 	BellRing,
 	BrickWallShield,
@@ -7,22 +6,23 @@ import {
 	CircleUserRound,
 	Info,
 	LogIn,
+	LogOut,
 	MessageCircleMore,
 	MessageSquareWarning,
 	MonitorCog,
 	Settings,
-	LogOut,
 	SquareUserRound,
 	UserRoundPlus,
 	WalletCards,
 	X,
 } from "lucide-react";
 import { AnimatePresence, type HTMLMotionProps, motion } from "motion/react";
+import Image from "next/image";
 import { useAppView } from "@/app/[language]/[location]/views/viewApp";
 import { Icons } from "@/components/parts/icons";
 import { Button, Input, Label } from "@/components/ui";
-import { useSession } from "@/lib/auth-client";
 import { Link } from "@/i18n/routing";
+import { useSession } from "@/lib/auth-client";
 import {
 	APP_LANGUAGE_MAP,
 	APP_LOCATION_MAP,
@@ -69,7 +69,6 @@ export default function Sidebar() {
 				className="colors max-lg:border-r-(length:--sidebar-border-mobile) z-10000 flex h-full flex-none flex-col items-center justify-between overflow-hidden border-l5 max-lg:absolute max-lg:inset-0 max-lg:w-(--sidebar-w-mobile) max-lg:bg-l1/50 max-lg:opacity-(--sidebar-opacity-mobile) max-lg:shadow-lg max-lg:backdrop-blur-lg lg:relative lg:w-(--sidebar-w-desktop) lg:border-r lg:bg-l1 lg:opacity-100 lg:shadow-none lg:backdrop-blur-none dark:border-d5 dark:lg:bg-d1 dark:max-lg:bg-d1/50"
 			>
 				<div className="flex size-full flex-1 flex-col items-start justify-start gap-2 p-2">
-
 					<Button
 						onClick={() => actions.router.push("/")}
 						className="flex h-10 w-full px-2 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors"
@@ -115,8 +114,9 @@ export default function Sidebar() {
 					<Link href="/chat" className="contents">
 						<Button
 							onClick={actions.handleSidebarLinkClick}
-							className={`flex h-10 w-full px-2 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${actions.isPathActive("/chat") && "bg-l5! dark:bg-d5!"
-								}`}
+							className={`flex h-10 w-full px-2 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${
+								actions.isPathActive("/chat") && "bg-l5! dark:bg-d5!"
+							}`}
 						>
 							<div
 								className={`flex size-full transform flex-row items-center justify-start gap-8 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
@@ -147,8 +147,9 @@ export default function Sidebar() {
 					<Link href="/settings" className="contents">
 						<Button
 							onClick={actions.handleSidebarLinkClick}
-							className={`flex h-10 w-full px-2 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${actions.isPathActive("/settings") && "bg-l5! dark:bg-d5!"
-								}`}
+							className={`flex h-10 w-full px-2 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${
+								actions.isPathActive("/settings") && "bg-l5! dark:bg-d5!"
+							}`}
 						>
 							<div
 								className={`flex size-full transform flex-row items-center justify-start gap-8 ${states.isSidebarOpen ? "origin-left" : "origin-center"}`}
@@ -307,10 +308,13 @@ export default function Sidebar() {
 															/>
 														)}
 
-														<span className={`colors relative z-10 whitespace-nowrap text-center font-medium text-base ${states.activeNotificationTab === tabId
-															? "text-d1 dark:text-l1"
-															: "text-l5 group-hover:text-d1 dark:text-d5 dark:group-hover:text-l1"
-															}`}>
+														<span
+															className={`colors relative z-10 whitespace-nowrap text-center font-medium text-base ${
+																states.activeNotificationTab === tabId
+																	? "text-d1 dark:text-l1"
+																	: "text-l5 group-hover:text-d1 dark:text-d5 dark:group-hover:text-l1"
+															}`}
+														>
 															{states.app(
 																`options.${APP_NOTIFICATION_MAP[tabId]}`,
 															)}
@@ -398,9 +402,7 @@ export default function Sidebar() {
 														)}
 
 														<span className="colors whitespace-nowrap text-center font-medium text-base text-d1 dark:text-l1">
-															{states.app(
-																`options.${APP_THEME_MAP[themeId]}`,
-															)}
+															{states.app(`options.${APP_THEME_MAP[themeId]}`)}
 														</span>
 
 														<Input
@@ -613,13 +615,20 @@ export default function Sidebar() {
 														<motion.div
 															key="signin-up"
 															layout
-															initial={{ y: 32, opacity: 0, filter: "blur(1rem)" }}
+															initial={{
+																y: 32,
+																opacity: 0,
+																filter: "blur(1rem)",
+															}}
 															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 															exit={{ y: 32, opacity: 0, filter: "blur(1rem)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
 															className="flex w-full flex-none flex-row items-center justify-center gap-2"
 														>
-															<Link href="/sign?mode=signout" className="contents">
+															<Link
+																href="/sign?mode=signout"
+																className="contents"
+															>
 																<Button className="colors flex w-full h-15 items-center justify-center rounded-full px-4 bg-red">
 																	<div className="flex size-full transform flex-row items-center justify-center gap-4">
 																		<LogOut className="colors flex-none text-l1" />
@@ -635,13 +644,20 @@ export default function Sidebar() {
 														<motion.div
 															key="signout"
 															layout
-															initial={{ y: 32, opacity: 0, filter: "blur(1rem)" }}
+															initial={{
+																y: 32,
+																opacity: 0,
+																filter: "blur(1rem)",
+															}}
 															animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 															exit={{ y: 32, opacity: 0, filter: "blur(1rem)" }}
 															transition={{ duration: 0.5, ease: "backOut" }}
 															className="flex w-full flex-none flex-row items-center justify-center gap-2"
 														>
-															<Link href="/sign?mode=signin" className="contents">
+															<Link
+																href="/sign?mode=signin"
+																className="contents"
+															>
 																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full px-4 hover:bg-l2/50 dark:hover:bg-d2/50">
 																	<div className="flex size-full transform flex-row items-center justify-center gap-4">
 																		<LogIn className="flex-none colors text-d1 dark:text-l1" />
@@ -653,7 +669,10 @@ export default function Sidebar() {
 																</Button>
 															</Link>
 
-															<Link href="/sign?mode=signup" className="contents">
+															<Link
+																href="/sign?mode=signup"
+																className="contents"
+															>
 																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full bg-blue px-4">
 																	<div className="flex size-full transform flex-row items-center justify-center gap-4">
 																		<UserRoundPlus className="flex-none colors text-l1" />

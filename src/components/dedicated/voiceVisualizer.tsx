@@ -205,10 +205,7 @@ export const VoiceVisualizer = ({ isListening }: { isListening: boolean }) => {
 	}, [isListening, SPAWN_INTERVAL]);
 
 	return (
-		<div
-			ref={containerRef}
-			className="size-full overflow-hidden text-red"
-		>
+		<div ref={containerRef} className="size-full overflow-hidden text-red">
 			<canvas
 				ref={canvasRef}
 				className="mask-x-from-90% mask-x-to-transparent size-full"

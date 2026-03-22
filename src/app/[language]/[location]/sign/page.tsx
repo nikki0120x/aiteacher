@@ -1,7 +1,7 @@
 "use client";
-import { Sign } from "@/components/app/auth/sign";
-import { motion, LayoutGroup } from "motion/react";
+import { LayoutGroup, motion } from "motion/react";
 import Image from "next/image";
+import { Sign } from "@/components/app/auth/sign";
 
 export default function SignPage() {
 	return (

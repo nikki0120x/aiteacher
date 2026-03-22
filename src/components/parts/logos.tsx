@@ -1,5 +1,5 @@
-import QuestionJa_JP from "@/assets/logos/question-ja-JP.svg";
 import QuestionEn_Us from "@/assets/logos/question-en-US.svg";
+import QuestionJa_JP from "@/assets/logos/question-ja-JP.svg";
 
 export const Logos = {
 	"Question_ja-JP": (props: React.SVGProps<SVGSVGElement>) => (

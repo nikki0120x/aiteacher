@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
-import localFont from "next/font/local";
 import Client from "@/app/client";
 import Server from "@/app/server";
 import "@/app/globals.css";
-import { Providers } from "@/app/provider"
+import { Providers } from "@/app/provider";
 
 const titleFont = localFont({
 	src: "../../public/fonts/nagino.otf",
@@ -45,7 +45,12 @@ export default async function RootLayout({
 	const messages = await getMessages();
 
 	return (
-		<html lang={locale} data-scroll-behavior="smooth" suppressHydrationWarning className={`${titleFont.variable} ${subtitleFont.variable}`}>
+		<html
+			lang={locale}
+			data-scroll-behavior="smooth"
+			suppressHydrationWarning
+			className={`${titleFont.variable} ${subtitleFont.variable}`}
+		>
 			<head>
 				<Server />
 			</head>

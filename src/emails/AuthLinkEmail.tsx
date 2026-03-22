@@ -1,14 +1,14 @@
 import {
 	Body,
 	Container,
+	Font,
 	Head,
+	Hr,
 	Html,
 	Img,
-	Section,
-	Font,
-	Text,
-	Hr,
 	Preview,
+	Section,
+	Text,
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 
@@ -48,7 +48,12 @@ const AuthCodeEmail = ({
 				theme: {
 					extend: {
 						fontFamily: {
-							sans: ["Zen Maru Gothic", "ui-sans-serif", "system-ui", "sans-serif"],
+							sans: [
+								"Zen Maru Gothic",
+								"ui-sans-serif",
+								"system-ui",
+								"sans-serif",
+							],
 						},
 						colors: {
 							l1: "hsl(0, 0%, 95%)",

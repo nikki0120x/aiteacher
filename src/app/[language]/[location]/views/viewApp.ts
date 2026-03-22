@@ -10,7 +10,12 @@ export const useAppView = () => {
 
 	const {
 		states: { activeMenu, isSidebarOpen, menuDirection },
-		actions: { setSidebarOpen, setActiveMenu, handleMenuToggle, triggerChatReset },
+		actions: {
+			setSidebarOpen,
+			setActiveMenu,
+			handleMenuToggle,
+			triggerChatReset,
+		},
 	} = useHeader();
 
 	//  ================================================================

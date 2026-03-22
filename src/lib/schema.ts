@@ -1,11 +1,12 @@
+import { relations } from "drizzle-orm";
 import {
 	boolean,
+	integer,
 	pgTable,
 	text,
 	timestamp,
-	unique
+	unique,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -104,20 +105,24 @@ export const appConfig = pgTable("app_config", {
 	location: text("location").notNull().default("location.US"),
 });
 
-export const profile = pgTable("profile", {
-	id: text("id").primaryKey(),
+export const profile = pgTable(
+	"profile",
+	{
+		id: text("id").primaryKey(),
 
-	serviceId: text("serviceId").notNull(),
+		serviceId: text("serviceId").notNull(),
 
-	userId: text("userId")
-		.notNull()
-		.references(() => user.id, { onDelete: "cascade" }),
+		userId: text("userId")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
 
-	role: text("role").notNull().default("role.user"),
-	nickname: text("nickname").notNull().default(""),
-}, (table) => [
-	unique("profile_user_service_unique").on(table.userId, table.serviceId),
-]);
+		role: text("role").notNull().default("role.user"),
+		nickname: text("nickname").notNull().default(""),
+	},
+	(table) => [
+		unique("profile_user_service_unique").on(table.userId, table.serviceId),
+	],
+);
 
 export const subscriptionStatus = pgTable("subscription_status", {
 	profileId: text("profileId")
@@ -139,3 +144,13 @@ export const userRelations = relations(user, ({ many }) => ({
 	profiles: many(profile),
 	devices: many(device),
 }));
+
+export const rateLimit = pgTable("rate_limit", {
+	id: text("id").primaryKey(),
+	ip: text("ip").notNull(),
+	action: text("action").notNull(),
+	attempts: integer("attempts").notNull().default(0),
+	lockoutUntil: timestamp("lockoutUntil"),
+	createdAt: timestamp("createdAt").defaultNow(),
+	updatedAt: timestamp("updatedAt").defaultNow(),
+});

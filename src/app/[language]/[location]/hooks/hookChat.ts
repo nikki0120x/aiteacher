@@ -1,3 +1,4 @@
+import { useLocale } from "next-intl";
 import {
 	useCallback,
 	useEffect,
@@ -9,13 +10,13 @@ import {
 import { v7 as uuidv7 } from "uuid";
 import { useTextSplit } from "@/app/[language]/[location]/hooks/hookAnimation";
 import {
+	type ChatFlow,
+	ChatFlowSchema,
 	type InputText,
 	InputTextSchema,
 	type MediumList,
 	MediumListSchema,
 	MediumSchema,
-	ChatFlowSchema,
-	type ChatFlow,
 	type MODEL_STATUS_MAP,
 	ModelMessageSchema,
 	PageSchema,
@@ -24,7 +25,6 @@ import {
 	UserMessageSchema,
 } from "@/models/modelChat";
 import { useAppStore } from "@/stores/storeApp";
-import { useLocale } from "next-intl";
 
 //  ================================================================
 //      拡張コンテンツ
@@ -60,24 +60,27 @@ export const useExtensionContent = () => {
 
 	const MENU_ORDER = useMemo(() => ["upload"], []);
 
-	const toggleContent = useCallback((menu: "upload") => {
-		setActiveContent((prev) => {
-			if (prev === menu) {
-				setContentDirection(0);
-				return "none";
-			}
+	const toggleContent = useCallback(
+		(menu: "upload") => {
+			setActiveContent((prev) => {
+				if (prev === menu) {
+					setContentDirection(0);
+					return "none";
+				}
 
-			let newDirection = 0;
-			if (prev !== "none") {
-				const prevIndex = MENU_ORDER.indexOf(prev);
-				const nextIndex = MENU_ORDER.indexOf(menu);
-				newDirection = nextIndex > prevIndex ? 1 : -1;
-			}
+				let newDirection = 0;
+				if (prev !== "none") {
+					const prevIndex = MENU_ORDER.indexOf(prev);
+					const nextIndex = MENU_ORDER.indexOf(menu);
+					newDirection = nextIndex > prevIndex ? 1 : -1;
+				}
 
-			setContentDirection(newDirection);
-			return menu;
-		});
-	}, [MENU_ORDER]);
+				setContentDirection(newDirection);
+				return menu;
+			});
+		},
+		[MENU_ORDER],
+	);
 
 	return {
 		refs: { extensionRefCallback },
@@ -93,7 +96,7 @@ export const useExtensionContent = () => {
 export const useDragAndDrop = (
 	onDropCallback: (files: FileList) => void,
 	ref: React.RefObject<HTMLElement | null>,
-	setActiveMenu?: React.Dispatch<React.SetStateAction<"none" | "upload">>
+	setActiveMenu?: React.Dispatch<React.SetStateAction<"none" | "upload">>,
 ) => {
 	const [dragInfo, setDragInfo] = useState<{
 		count: number;
@@ -374,7 +377,7 @@ export const useVoiceInput = (
 export const useTextarea = (
 	displayText: string,
 	ref: React.RefObject<HTMLTextAreaElement | null>,
-	extensionHeight: number
+	extensionHeight: number,
 ) => {
 	const [textareaHeight, setTextareaHeight] = useState<number | string>("auto");
 	const [singleLineHeight, setSingleLineHeight] = useState<number>(0);
@@ -552,7 +555,7 @@ export const useChatAreaHeight = () => {
 //  ================================================================
 
 export const useChat = (
-	setActiveContent?: React.Dispatch<React.SetStateAction<"none" | "upload">>
+	setActiveContent?: React.Dispatch<React.SetStateAction<"none" | "upload">>,
 ) => {
 	const chatResetSignal = useAppStore((state) => state.chatResetSignal);
 
@@ -569,17 +572,29 @@ export const useChat = (
 			}
 		}
 	}, [chatResetSignal, setActiveContent]);
-	
-	const [userStatus, setUserStatus] = useState<keyof typeof USER_STATUS_MAP>("pending");
-	const [modelStatus, setModelStatus] = useState<keyof typeof MODEL_STATUS_MAP>("pending");
 
-	const [chatFlow, setChatFlow] = useState<ChatFlow>(ChatFlowSchema.createDefault());
+	const [userStatus, setUserStatus] =
+		useState<keyof typeof USER_STATUS_MAP>("pending");
+	const [modelStatus, setModelStatus] =
+		useState<keyof typeof MODEL_STATUS_MAP>("pending");
 
-	const [inputText, setInputText] = useState<InputText>(InputTextSchema.createDefault());
-	const [inputMedia, setInputMedia] = useState<MediumList>(MediumListSchema.createDefault());
+	const [chatFlow, setChatFlow] = useState<ChatFlow>(
+		ChatFlowSchema.createDefault(),
+	);
 
-	const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-	const [thinkMode, setThinkMode] = useState<"fast" | "standard" | "think">("fast");
+	const [inputText, setInputText] = useState<InputText>(
+		InputTextSchema.createDefault(),
+	);
+	const [inputMedia, setInputMedia] = useState<MediumList>(
+		MediumListSchema.createDefault(),
+	);
+
+	const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
+		{},
+	);
+	const [thinkMode, setThinkMode] = useState<"fast" | "standard" | "think">(
+		"fast",
+	);
 
 	const updateThinkMode = useCallback((mode: "fast" | "standard" | "think") => {
 		setThinkMode(mode);
@@ -589,7 +604,8 @@ export const useChat = (
 		return inputMedia.some(
 			(m) =>
 				m.src.startsWith("blob:") ||
-				(uploadProgress[m.mediumId] !== undefined && uploadProgress[m.mediumId] < 100)
+				(uploadProgress[m.mediumId] !== undefined &&
+					uploadProgress[m.mediumId] < 100),
 		);
 	}, [inputMedia, uploadProgress]);
 
@@ -627,12 +643,18 @@ export const useChat = (
 				const uploadWithXHR = () =>
 					new Promise<{ url: string }>((resolve, reject) => {
 						const xhr = new XMLHttpRequest();
-						xhr.open("POST", `/api/upload?filename=${encodeURIComponent(file.name)}`);
+						xhr.open(
+							"POST",
+							`/api/upload?filename=${encodeURIComponent(file.name)}`,
+						);
 
 						xhr.upload.onprogress = (event) => {
 							if (event.lengthComputable) {
 								const percentComplete = (event.loaded / event.total) * 100;
-								setUploadProgress((prev) => ({ ...prev, [id]: percentComplete }));
+								setUploadProgress((prev) => ({
+									...prev,
+									[id]: percentComplete,
+								}));
 							}
 						};
 
@@ -652,7 +674,9 @@ export const useChat = (
 					const newBlob = await uploadWithXHR();
 
 					setInputMedia((prev) =>
-						prev.map((m) => (m.mediumId === id ? { ...m, src: newBlob.url } : m))
+						prev.map((m) =>
+							m.mediumId === id ? { ...m, src: newBlob.url } : m,
+						),
 					);
 					setUploadProgress((prev) => ({ ...prev, [id]: 100 }));
 					URL.revokeObjectURL(localUrl);
@@ -666,7 +690,7 @@ export const useChat = (
 					});
 					URL.revokeObjectURL(localUrl);
 				}
-			})
+			}),
 		);
 	}, []);
 
@@ -716,28 +740,33 @@ export const useChat = (
 		setModelStatus("thinking");
 
 		const currentText = inputText.inputText;
-		const currentMedia = inputMedia.map(m => ({ url: m.src, mimeType: m.mimeType }));
+		const currentMedia = inputMedia.map((m) => ({
+			url: m.src,
+			mimeType: m.mimeType,
+		}));
 
 		const initialUserMessage = {
 			...UserMessageSchema.createDefault(),
 			blocks: [{ type: "text" as const, content: currentText }],
 			media: inputMedia,
 			status: "completed" as const,
-			timestampAt: Date.now()
+			timestampAt: Date.now(),
 		};
 
 		const newTurn = {
 			...TurnSchema.createDefault(),
 			title: currentText.slice(0, 20) || "新しい会話",
-			pages: [{
-				...PageSchema.createDefault(),
-				pageIndex: 0,
-				messages: {
-					user: initialUserMessage,
-					model: []
+			pages: [
+				{
+					...PageSchema.createDefault(),
+					pageIndex: 0,
+					messages: {
+						user: initialUserMessage,
+						model: [],
+					},
+					timestampAt: Date.now(),
 				},
-				timestampAt: Date.now()
-			}]
+			],
 		};
 
 		setChatFlow((prev) => ({
@@ -758,7 +787,7 @@ export const useChat = (
 					mode: thinkMode,
 					text: currentText,
 					media: currentMedia,
-					turnId: newTurn.turnId
+					turnId: newTurn.turnId,
 				}),
 			});
 
@@ -778,7 +807,10 @@ export const useChat = (
 
 				const splitTexts = accumulatedText.split(/(?=# Problem|# Error)/g);
 
-				let validTexts = splitTexts.filter(t => t.trim().startsWith("# Problem") || t.trim().startsWith("# Error"));
+				let validTexts = splitTexts.filter(
+					(t) =>
+						t.trim().startsWith("# Problem") || t.trim().startsWith("# Error"),
+				);
 
 				if (done && validTexts.length === 0 && accumulatedText.trim() !== "") {
 					validTexts = [`# Error\n${accumulatedText.trim()}`];
@@ -791,34 +823,39 @@ export const useChat = (
 				if (completedTexts.length > lastCompletedCount || done) {
 					lastCompletedCount = completedTexts.length;
 
-					const newPages = completedTexts.length === 0
-						? [{
-							...PageSchema.createDefault(),
-							pageIndex: 0,
-							messages: {
-								user: initialUserMessage,
-								model: []
-							},
-							timestampAt: Date.now()
-						}]
-						: completedTexts.map((text, index) => {
-							return {
-								...PageSchema.createDefault(),
-								pageIndex: index,
-								messages: {
-									user: initialUserMessage,
-									model: [
-										{
-											...ModelMessageSchema.createDefault(),
-											blocks: [{ type: "text" as const, content: text.trim() }],
-											status: "completed" as const,
-											timestampAt: Date.now()
-										}
-									]
-								},
-								timestampAt: Date.now()
-							};
-						});
+					const newPages =
+						completedTexts.length === 0
+							? [
+									{
+										...PageSchema.createDefault(),
+										pageIndex: 0,
+										messages: {
+											user: initialUserMessage,
+											model: [],
+										},
+										timestampAt: Date.now(),
+									},
+								]
+							: completedTexts.map((text, index) => {
+									return {
+										...PageSchema.createDefault(),
+										pageIndex: index,
+										messages: {
+											user: initialUserMessage,
+											model: [
+												{
+													...ModelMessageSchema.createDefault(),
+													blocks: [
+														{ type: "text" as const, content: text.trim() },
+													],
+													status: "completed" as const,
+													timestampAt: Date.now(),
+												},
+											],
+										},
+										timestampAt: Date.now(),
+									};
+								});
 
 					setChatFlow((prev) => {
 						const updatedTurns = prev.turns.map((turn) => {
@@ -827,7 +864,7 @@ export const useChat = (
 									...turn,
 									pages: newPages,
 									activePageIndex: 0,
-									modifiedAt: Date.now()
+									modifiedAt: Date.now(),
 								};
 							}
 							return turn;
@@ -836,7 +873,7 @@ export const useChat = (
 						return {
 							...prev,
 							turns: updatedTurns,
-							modifiedAt: Date.now()
+							modifiedAt: Date.now(),
 						};
 					});
 				}
@@ -846,129 +883,165 @@ export const useChat = (
 
 			setModelStatus("completed");
 			setUserStatus("completed");
-
 		} catch (error) {
 			console.error("Chat error:", error);
 			setModelStatus("failed");
 			setUserStatus("failed");
 		}
+	}, [inputText, inputMedia, isUploading, thinkMode, setActiveContent]);
 
-	}, [
-		inputText,
-		inputMedia,
-		isUploading,
-		thinkMode,
-		setActiveContent
-	]);
+	const handleSolve = useCallback(
+		async (problemText: string, turnId: string) => {
+			setUserStatus("sending");
+			setModelStatus("thinking");
 
-	const handleSolve = useCallback(async (problemText: string, turnId: string) => {
-		setUserStatus("sending");
-		setModelStatus("thinking");
+			// 元のターンから画像（media）を取得する
+			const targetTurn = chatFlow.turns.find((t) => t.turnId === turnId);
+			const originalMedia = targetTurn?.pages[0]?.messages.user?.media || [];
+			const mediaToSend = originalMedia.map((m) => ({
+				url: m.src,
+				mimeType: m.mimeType,
+			}));
 
-		// 元のターンから画像（media）を取得する
-		const targetTurn = chatFlow.turns.find(t => t.turnId === turnId);
-		const originalMedia = targetTurn?.pages[0]?.messages.user?.media || [];
-		const mediaToSend = originalMedia.map(m => ({ url: m.src, mimeType: m.mimeType }));
+			// 新しいターンとしてチャットを追加
+			const initialUserMessage = {
+				...UserMessageSchema.createDefault(),
+				blocks: [{ type: "text" as const, content: problemText }], // ユーザーの入力は選択した問題文
+				media: originalMedia, // UI表示用に画像も引き継ぐ
+				status: "completed" as const,
+				timestampAt: Date.now(),
+			};
 
-		// 新しいターンとしてチャットを追加
-		const initialUserMessage = {
-			...UserMessageSchema.createDefault(),
-			blocks: [{ type: "text" as const, content: problemText }], // ユーザーの入力は選択した問題文
-			media: originalMedia, // UI表示用に画像も引き継ぐ
-			status: "completed" as const,
-			timestampAt: Date.now()
-		};
+			const newTurn = {
+				...TurnSchema.createDefault(),
+				title: "solve_request", // 解答ターンの目印
+				pages: [
+					{
+						...PageSchema.createDefault(),
+						pageIndex: 0,
+						messages: { user: initialUserMessage, model: [] },
+						timestampAt: Date.now(),
+					},
+				],
+			};
 
-		const newTurn = {
-			...TurnSchema.createDefault(),
-			title: "solve_request", // 解答ターンの目印
-			pages: [{
-				...PageSchema.createDefault(),
-				pageIndex: 0,
-				messages: { user: initialUserMessage, model: [] },
-				timestampAt: Date.now()
-			}]
-		};
+			setChatFlow((prev) => ({
+				...prev,
+				turns: [...prev.turns, newTurn],
+				activeTurnId: newTurn.turnId,
+				modifiedAt: Date.now(),
+			}));
 
-		setChatFlow((prev) => ({
-			...prev,
-			turns: [...prev.turns, newTurn],
-			activeTurnId: newTurn.turnId,
-			modifiedAt: Date.now(),
-		}));
+			if (setActiveContent) setActiveContent("none");
 
-		if (setActiveContent) setActiveContent("none");
+			try {
+				const response = await fetch("/api/chat", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						mode: thinkMode,
+						text: problemText,
+						media: mediaToSend, // ここで元の画像をAPIに送る！
+						action: "solve",
+						turnId: newTurn.turnId,
+					}),
+				});
 
-		try {
-			const response = await fetch("/api/chat", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					mode: thinkMode,
-					text: problemText,
-					media: mediaToSend, // ここで元の画像をAPIに送る！
-					action: "solve",
-					turnId: newTurn.turnId
-				}),
-			});
+				if (!response.body) throw new Error("No response body");
 
-			if (!response.body) throw new Error("No response body");
+				const reader = response.body.getReader();
+				const decoder = new TextDecoder();
+				let accumulatedText = "";
 
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
-			let accumulatedText = "";
+				while (true) {
+					const { done, value } = await reader.read();
+					if (value) {
+						accumulatedText += decoder.decode(value, { stream: true });
 
-			while (true) {
-				const { done, value } = await reader.read();
-				if (value) {
-					accumulatedText += decoder.decode(value, { stream: true });
-
-					// 解答は分割せず、そのまま1つのテキストブロックとしてストリーミング
-					setChatFlow((prev) => {
-						const updatedTurns = prev.turns.map((turn) => {
-							if (turn.turnId === newTurn.turnId) {
-								return {
-									...turn,
-									pages: [{
-										...turn.pages[0],
-										messages: {
-											...turn.pages[0].messages,
-											model: [{
-												...ModelMessageSchema.createDefault(),
-												blocks: [{ type: "text" as const, content: accumulatedText }],
-												status: "completed" as const,
-												timestampAt: Date.now()
-											}]
-										}
-									}],
-									modifiedAt: Date.now()
-								};
-							}
-							return turn;
+						// 解答は分割せず、そのまま1つのテキストブロックとしてストリーミング
+						setChatFlow((prev) => {
+							const updatedTurns = prev.turns.map((turn) => {
+								if (turn.turnId === newTurn.turnId) {
+									return {
+										...turn,
+										pages: [
+											{
+												...turn.pages[0],
+												messages: {
+													...turn.pages[0].messages,
+													model: [
+														{
+															...ModelMessageSchema.createDefault(),
+															blocks: [
+																{
+																	type: "text" as const,
+																	content: accumulatedText,
+																},
+															],
+															status: "completed" as const,
+															timestampAt: Date.now(),
+														},
+													],
+												},
+											},
+										],
+										modifiedAt: Date.now(),
+									};
+								}
+								return turn;
+							});
+							return { ...prev, turns: updatedTurns, modifiedAt: Date.now() };
 						});
-						return { ...prev, turns: updatedTurns, modifiedAt: Date.now() };
-					});
+					}
+					if (done) break;
 				}
-				if (done) break;
+
+				setModelStatus("completed");
+				setUserStatus("completed");
+			} catch (error) {
+				console.error("Chat error:", error);
+				setModelStatus("failed");
+				setUserStatus("failed");
 			}
+		},
+		[chatFlow.turns, thinkMode, setActiveContent],
+	);
 
-			setModelStatus("completed");
-			setUserStatus("completed");
-
-		} catch (error) {
-			console.error("Chat error:", error);
-			setModelStatus("failed");
-			setUserStatus("failed");
-		}
-	}, [chatFlow.turns, thinkMode, setActiveContent]);
-
-	const actions = useMemo(() => ({
-		setUserStatus, setModelStatus, setInputText, setInputMedia, setChatFlow,
-		handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, handleSolve, updateThinkMode,
-	}), [handleUploadAndConvert, handleRemoveMedia, handleRemoveAllMedia, handleSend, handleSolve, updateThinkMode]);
+	const actions = useMemo(
+		() => ({
+			setUserStatus,
+			setModelStatus,
+			setInputText,
+			setInputMedia,
+			setChatFlow,
+			handleUploadAndConvert,
+			handleRemoveMedia,
+			handleRemoveAllMedia,
+			handleSend,
+			handleSolve,
+			updateThinkMode,
+		}),
+		[
+			handleUploadAndConvert,
+			handleRemoveMedia,
+			handleRemoveAllMedia,
+			handleSend,
+			handleSolve,
+			updateThinkMode,
+		],
+	);
 
 	return {
-		states: { userStatus, modelStatus, inputText, inputMedia, chatFlow, uploadProgress, isUploading, thinkMode },
+		states: {
+			userStatus,
+			modelStatus,
+			inputText,
+			inputMedia,
+			chatFlow,
+			uploadProgress,
+			isUploading,
+			thinkMode,
+		},
 		actions,
 	};
 };

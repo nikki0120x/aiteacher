@@ -108,10 +108,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 							</div>
 						)}
 
-						<div className={cn(
-							"relative flex flex-1 items-center justify-center",
-							!leftContent && "ml-4"
-						)}>
+						<div
+							className={cn(
+								"relative flex flex-1 items-center justify-center",
+								!leftContent && "ml-4",
+							)}
+						>
 							<input
 								{...props}
 								ref={innerRef}
