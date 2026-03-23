@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { z } from "zod";
 import {
 	checkActionRateLimit,
@@ -135,6 +136,8 @@ type AuthMode = "signin" | "signup" | "signout";
 export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+
+	const { executeRecaptcha } = useGoogleReCaptcha();
 
 	const [mode, setMode] = useState<AuthMode>(() => {
 		return (searchParams.get("mode") as AuthMode) || "signin";
@@ -324,7 +327,16 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 		setIsLoading(true);
 
 		try {
-			const check = await checkActionRateLimit("signin");
+			// reCAPTCHA トークンの取得
+			if (!executeRecaptcha) {
+				setErrors({ root: "システムエラー：reCAPTCHAが準備できていません。" });
+				setIsLoading(false);
+				return;
+			}
+			const recaptchaToken = await executeRecaptcha("signin");
+
+			// トークンを検証へ渡す
+			const check = await checkActionRateLimit("signin", recaptchaToken);
 			if (check.locked) {
 				applyLockout("signin", check.lockoutUntil ?? new Date().toISOString());
 				setIsLoading(false);
@@ -390,7 +402,14 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 		setIsLoading(true);
 
 		try {
-			const check = await checkActionRateLimit("signup");
+			if (!executeRecaptcha) {
+				setErrors({ root: "システムエラー：reCAPTCHAが準備できていません。" });
+				setIsLoading(false);
+				return;
+			}
+			const recaptchaToken = await executeRecaptcha("signup");
+
+			const check = await checkActionRateLimit("signup", recaptchaToken);
 			if (check.locked) {
 				applyLockout("signup", check.lockoutUntil ?? new Date().toISOString());
 				setIsLoading(false);
@@ -453,7 +472,14 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 		setIsSendingCode(true);
 
 		try {
-			const check = await checkActionRateLimit("otp");
+			if (!executeRecaptcha) {
+				setErrors({ root: "システムエラー：reCAPTCHAが準備できていません。" });
+				setIsSendingCode(false);
+				return;
+			}
+			const recaptchaToken = await executeRecaptcha("otp");
+
+			const check = await checkActionRateLimit("otp", recaptchaToken);
 			if (check.locked) {
 				applyLockout("otp", check.lockoutUntil ?? new Date().toISOString());
 				setIsSendingCode(false);
@@ -605,17 +631,15 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 									disabled={isSigninInvalid}
 									type="submit"
 									className={`colors flex-none flex h-15 w-full items-center justify-center rounded-full bg-blue p-2
-                                        ${
-																					isSigninInvalid &&
-																					"bg-l5 dark:bg-d5 cursor-not-allowed"
-																				}`}
+                                        ${isSigninInvalid &&
+										"bg-l5 dark:bg-d5 cursor-not-allowed"
+										}`}
 								>
 									<span
 										className={`all whitespace-nowrap text-center font-bold text-xl text-l1
-                                        ${
-																					isSigninInvalid &&
-																					"text-d5 dark:text-l5 scale-100!"
-																				}`}
+                                        ${isSigninInvalid &&
+											"text-d5 dark:text-l5 scale-100!"
+											}`}
 									>
 										{lockouts.signin > 0
 											? `ロック中 (${formatTime(lockouts.signin)})`
@@ -740,13 +764,12 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 													lockouts.otp > 0
 												}
 												className={`colors flex-none flex h-10 items-center justify-center rounded-full p-2 bg-blue
-                                                    ${
-																											(isEmailInvalid ||
-																												countdown > 0 ||
-																												lockouts.otp > 0 ||
-																												isSendingCode) &&
-																											"bg-l5 dark:bg-d5 cursor-not-allowed"
-																										}`}
+                                                    ${(isEmailInvalid ||
+														countdown > 0 ||
+														lockouts.otp > 0 ||
+														isSendingCode) &&
+													"bg-l5 dark:bg-d5 cursor-not-allowed"
+													}`}
 											>
 												<AnimatePresence mode="wait">
 													{isSendingCode ? (
@@ -755,7 +778,7 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 															initial={{ opacity: 0 }}
 															animate={{ opacity: 1 }}
 															exit={{ opacity: 0 }}
-															className="all flex justify-center items-center"
+															className="scale-100! flex justify-center items-center"
 														>
 															<ActivityIndicator className="size-6 text-d5 dark:text-l5 colors" />
 														</motion.div>
@@ -766,7 +789,7 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 															animate={{ opacity: 1 }}
 															exit={{ opacity: 0 }}
 															className={`all whitespace-nowrap text-center font-medium text-base text-l1
-                                                                ${(isEmailInvalid || countdown > 0 || lockouts.otp > 0) && "text-d5 dark:text-l5"}`}
+                                                                ${(isEmailInvalid || countdown > 0 || lockouts.otp > 0) && "text-d5 dark:text-l5 scale-100!"}`}
 														>
 															{lockouts.otp > 0
 																? formatTime(lockouts.otp)
@@ -904,17 +927,15 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 									disabled={isSignupInvalid}
 									type="submit"
 									className={`colors flex-none flex h-15 w-full items-center justify-center rounded-full bg-blue p-2
-                                        ${
-																					isSignupInvalid &&
-																					"bg-l5 dark:bg-d5 cursor-not-allowed"
-																				}`}
+                                        ${isSignupInvalid &&
+										"bg-l5 dark:bg-d5 cursor-not-allowed"
+										}`}
 								>
 									<span
 										className={`all whitespace-nowrap text-center font-bold text-d1 text-xl dark:text-l1
-                                        ${
-																					isSignupInvalid &&
-																					"text-d5 dark:text-l5 scale-100!"
-																				}`}
+                                        ${isSignupInvalid &&
+											"text-d5 dark:text-l5 scale-100!"
+											}`}
 									>
 										{lockouts.signup > 0
 											? `ロック中 (${formatTime(lockouts.signup)})`

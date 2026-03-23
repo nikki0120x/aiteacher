@@ -153,3 +153,8 @@ html[data-scroll-behavior="smooth"] {
     caret-color: var(--color-violet);
   }
 }
+
+.grecaptcha-badge {
+  position: fixed;
+  z-index: 1000000;
+}
