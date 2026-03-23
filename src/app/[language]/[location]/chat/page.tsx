@@ -426,13 +426,11 @@ const TurnItem = React.memo(
 			return turn.pages
 				.filter((page) => page.messages.model && page.messages.model.length > 0)
 				.map((page) => ({
-					id:
-						page.messages.model?.[0]?.modelMessageId ||
-						`prob-${page.pageIndex}`,
+					id: `prob-${turn.turnId}-${page.pageIndex}`,
 					content: page.messages.model?.[0]?.blocks[0]?.content ?? "",
 					index: page.pageIndex,
 				}));
-		}, [turn.pages]);
+		}, [turn.pages, turn.turnId]);
 
 		const firstPage = turn.pages[0];
 		const userContent =
@@ -631,9 +629,7 @@ const TurnItem = React.memo(
 					</motion.div>
 				)}
 
-				{problemItems.map((item, pIndex) => {
-					const isNewElement =
-						isLatestTurn && pIndex === problemItems.length - 1;
+				{problemItems.map((item) => {
 					const isError = item.content.trim().startsWith("# Error");
 
 					if (isError) {
@@ -642,7 +638,7 @@ const TurnItem = React.memo(
 								key={item.id}
 								layout
 								initial={
-									isNewElement
+									isLatestTurn
 										? { y: 16, opacity: 0, filter: "blur(1rem)" }
 										: false
 								}
@@ -677,7 +673,7 @@ const TurnItem = React.memo(
 						<motion.div
 							key={item.id}
 							initial={
-								isNewElement
+								isLatestTurn
 									? { y: 16, opacity: 0, filter: "blur(1rem)" }
 									: false
 							}
@@ -808,7 +804,7 @@ export default function Chat() {
 							>
 								<Virtuoso
 									ref={virtuosoRef}
-									className="size-full"
+									className="size-full scrollbar-hide"
 									followOutput={false}
 									data={states.chatFlow.turns}
 									itemContent={(index, turn) => {
@@ -913,10 +909,8 @@ export default function Chat() {
 						className="colors flex shadow-lg w-full flex-col items-center justify-center rounded-4xl border border-l5 dark:border-d5"
 					>
 						<div className="colors flex size-full flex-col items-center justify-center p-4">
-							<div className="colors flex w-full min-h-10 flex-row items-start justify-center gap-1 mb-2">
+							<div className="colors flex size-full min-h-10 flex-row items-start justify-center gap-1 mb-2">
 								<motion.textarea
-									style={{ height: states.textareaHeight }}
-									transition={{ duration: 0.5, ease: "backOut" }}
 									name="prompt"
 									rows={1}
 									placeholder={
@@ -960,6 +954,8 @@ export default function Chat() {
 											inputText: e.target.value,
 										}));
 									}}
+									style={{ height: states.textareaHeight }}
+									transition={{ duration: 0.5, ease: "backOut" }}
 									className={`colors my-2 ml-2 w-full animate-caret resize-none text-left font-medium text-base text-d1 outline-none placeholder:text-l5 placeholder:colors dark:text-l1 dark:placeholder:text-d5 ${states.isListening ? "cursor-not-allowed" : ""}`}
 								/>
 
@@ -1064,10 +1060,9 @@ export default function Chat() {
 														<Button
 															onClick={() => actions.toggleContent("upload")}
 															className={`colors flex size-10 items-center justify-center rounded-full
-																${
-																	states.activeContent === "upload"
-																		? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
-																		: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																${states.activeContent === "upload"
+																	? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
+																	: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 																}`}
 														>
 															<Plus className="text-d1 dark:text-l1 all" />
@@ -1091,11 +1086,10 @@ export default function Chat() {
 																setIsThinkModeMenuOpen(!isThinkModeMenuOpen)
 															}
 															className={`colors flex size-10 items-center justify-center rounded-full
-																	${
-																		isThinkModeMenuOpen
-																			? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
-																			: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-																	}`}
+																	${isThinkModeMenuOpen
+																	? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
+																	: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																}`}
 														>
 															{states.thinkMode === "fast" && (
 																<Zap className="all text-blue" />
@@ -1145,10 +1139,9 @@ export default function Chat() {
 																		<Label
 																			key={mode.id}
 																			className={`colors flex items-center w-full justify-center rounded-full px-4 py-2
-																				${
-																					states.thinkMode === mode.id
-																						? "bg-l5/50 dark:bg-d5/50"
-																						: "hover:bg-l2/50 dark:hover:bg-d2/50"
+																				${states.thinkMode === mode.id
+																					? "bg-l5/50 dark:bg-d5/50"
+																					: "hover:bg-l2/50 dark:hover:bg-d2/50"
 																				}`}
 																		>
 																			<Input
@@ -1160,9 +1153,9 @@ export default function Chat() {
 																				onChange={() => {
 																					actions.updateThinkMode(
 																						mode.id as
-																							| "fast"
-																							| "standard"
-																							| "think",
+																						| "fast"
+																						| "standard"
+																						| "think",
 																					);
 																					setIsThinkModeMenuOpen(false);
 																				}}
@@ -1209,7 +1202,7 @@ export default function Chat() {
 												<AnimatePresence mode="popLayout">
 													{(!states.inputText.inputText.trim() &&
 														states.inputMedia.length === 0) ||
-													states.isUploading ? (
+														states.isUploading ? (
 														<motion.div
 															key="audio"
 															layout
@@ -1347,7 +1340,7 @@ export default function Chat() {
 																					media={media}
 																					progress={
 																						states.uploadProgress[
-																							media.mediumId
+																						media.mediumId
 																						]
 																					}
 																				/>
