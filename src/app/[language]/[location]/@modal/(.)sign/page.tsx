@@ -3,10 +3,10 @@ import { X } from "lucide-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import Image from "next/image";
 import { useState } from "react";
+import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 import { Sign } from "@/components/app/auth/sign";
 import { Button } from "@/components/ui";
 import { useRouter } from "@/i18n/routing";
-import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 
 export default function SignModal() {
 	const router = useRouter();
@@ -34,7 +34,10 @@ export default function SignModal() {
 				</AnimatePresence>
 
 				<LayoutGroup>
-					<AnimatePresence mode="popLayout" onExitComplete={() => router.back()}>
+					<AnimatePresence
+						mode="popLayout"
+						onExitComplete={() => router.back()}
+					>
 						{isModalOpen && (
 							<motion.div
 								layout

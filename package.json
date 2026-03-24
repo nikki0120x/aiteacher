@@ -108,7 +108,7 @@
 		"react-email": "^5.2.10",
 		"tailwindcss": "^4.2.2",
 		"typescript": "^5.9.3",
-		"vitest": "^4.1.0",
+		"vitest": "^4.1.1",
 		"wait-on": "^9.0.4"
 	},
 	"overrides": {

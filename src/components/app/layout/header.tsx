@@ -55,7 +55,7 @@ export default function Header() {
 
 				<Button
 					onClick={() => actions.handleMenuToggle("notifications")}
-					className={`max-lg:hidden lg:flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "notifications" && "bg-l5! dark:bg-d5!"}`}
+					className={`flex size-10 items-center justify-center rounded-full hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2 colors ${states.activeMenu === "notifications" && "bg-l5! dark:bg-d5!"}`}
 				>
 					<Bell className="all text-d1 dark:text-l1" />
 				</Button>

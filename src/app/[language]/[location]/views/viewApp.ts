@@ -23,7 +23,15 @@ export const useAppView = () => {
 	//  ================================================================
 
 	const {
-		states: { activeNotificationTab, theme, app, chat, language, location },
+		states: {
+			activeNotificationTab,
+			theme,
+			app,
+			chat,
+			language,
+			location,
+			chatNotifications,
+		},
 		actions: {
 			router,
 			pathname,
@@ -33,6 +41,7 @@ export const useAppView = () => {
 			handleLanguageChange,
 			handleLocationChange,
 			isPathActive,
+			markChatNotificationAsRead,
 		},
 	} = useSidebar();
 
@@ -47,6 +56,7 @@ export const useAppView = () => {
 			chat,
 			language,
 			location,
+			chatNotifications,
 		},
 		actions: {
 			setSidebarOpen,
@@ -61,6 +71,7 @@ export const useAppView = () => {
 			handleLanguageChange,
 			handleLocationChange,
 			isPathActive,
+			markChatNotificationAsRead,
 		},
 	};
 };

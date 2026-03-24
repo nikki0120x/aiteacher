@@ -35,7 +35,7 @@
   --color-red: hsl(15, 100%, 50%);
   --color-orange: hsl(30, 100%, 50%);
   --color-yellow: hsl(45, 100%, 50%);
-  --color-green: hsl(135, 100%, 50%);
+  --color-green: hsl(135, 100%, 25%);
   --color-blue: hsl(195, 100%, 50%);
   --color-indigo: hsl(255, 100%, 50%);
   --color-violet: hsl(300, 100%, 50%);

@@ -1,8 +1,8 @@
 "use client";
 import { LayoutGroup, motion } from "motion/react";
 import Image from "next/image";
-import { Sign } from "@/components/app/auth/sign";
 import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
+import { Sign } from "@/components/app/auth/sign";
 
 export default function SignPage() {
 	const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";

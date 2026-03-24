@@ -14,11 +14,7 @@ import {
 	usePathname,
 	useRouter,
 } from "@/i18n/routing";
-import {
-	APP_MENU_MAP,
-	type APP_NOTIFICATION_MAP,
-	type AppLocation,
-} from "@/models/modelApp";
+import { APP_MENU_MAP, type AppLocation } from "@/models/modelApp";
 import { useAppStore } from "@/stores/storeApp";
 
 //  ================================================================
@@ -104,7 +100,12 @@ export const useSidebar = () => {
 	}, [isSidebarOpen, setSidebarOpen]);
 
 	const [activeNotificationTab, setActiveNotificationTab] =
-		useState<keyof typeof APP_NOTIFICATION_MAP>("all");
+		useState<string>("all");
+
+	const chatNotifications = useAppStore((state) => state.chatNotifications);
+	const markChatNotificationAsRead = useAppStore(
+		(state) => state.markChatNotificationAsRead,
+	);
 
 	const { theme, setTheme } = useTheme();
 
@@ -178,6 +179,7 @@ export const useSidebar = () => {
 			handleLanguageChange,
 			handleLocationChange,
 			isPathActive,
+			markChatNotificationAsRead,
 		}),
 		[
 			handleSidebarLinkClick,
@@ -186,6 +188,7 @@ export const useSidebar = () => {
 			handleLanguageChange,
 			handleLocationChange,
 			isPathActive,
+			markChatNotificationAsRead,
 		],
 	);
 
@@ -197,6 +200,7 @@ export const useSidebar = () => {
 			chat,
 			language,
 			location,
+			chatNotifications,
 		},
 		actions,
 	};

@@ -1,11 +1,15 @@
 "use client";
 import {
+	AlertCircle,
+	ArrowLeft,
 	AudioLines,
+	Ban,
 	BookCheck,
 	BookText,
 	BowArrow,
-	Brain,
+	CheckCircle2,
 	ChevronDown,
+	Clock,
 	Maximize2,
 	Mic,
 	Minimize2,
@@ -13,8 +17,9 @@ import {
 	Paperclip,
 	Plus,
 	ScrollText,
-	ArrowLeft,
 	SendHorizontal,
+	Snowflake,
+	Sparkle,
 	Sparkles,
 	Square,
 	Trash2,
@@ -23,7 +28,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import type { Components, ExtraProps } from "react-markdown";
+import type { ExtraProps } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import type { VirtuosoHandle } from "react-virtuoso";
 import { Virtuoso } from "react-virtuoso";
@@ -35,8 +40,9 @@ import { useChatView } from "@/app/[language]/[location]/views/viewChat";
 import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Logos } from "@/components/parts/logos";
-import { Button, Input, Label } from "@/components/ui";
+import { ActivityIndicator, Button, Input, Label } from "@/components/ui";
 import type { Medium, Turn } from "@/models/modelChat";
+import { type LEVEL_MAP, MODEL_MAP } from "@/models/modelChat";
 
 const ICON_MAP: Record<string, React.ElementType> = {
 	要約: ScrollText,
@@ -49,76 +55,19 @@ const COLOR_MAP: Record<string, string> = {
 	要約: "text-blue",
 	指針: "text-orange",
 	解説: "text-red",
-	解答: "text-violet",
+	解答: "text-green",
 };
 
-const CustomAccordion = ({
-	title,
-	children,
-	defaultOpen,
-}: {
-	title: string;
-	children: React.ReactNode;
-	defaultOpen: boolean;
-}) => {
-	const [isOpen, setIsOpen] = useState(defaultOpen);
-	const matchKey = Object.keys(ICON_MAP).find((key) => title.includes(key));
-	const IconComponent = matchKey ? ICON_MAP[matchKey] : null;
-	const colorClass = matchKey ? COLOR_MAP[matchKey] : "text-blue";
-
-	const toggleAccordion = (e: React.MouseEvent | React.KeyboardEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-		setIsOpen((prev) => !prev);
-	};
-
-	return (
-		<div className="w-full colors overflow-hidden">
-			<Button
-				onClick={toggleAccordion}
-				className="w-full flex justify-center items-center px-6 py-4 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 colors"
-			>
-				<div className="scale-100! w-full flex flex-row justify-between items-center select-none">
-					<div className="flex flex-row justify-start items-center gap-4">
-						{IconComponent && (
-							<IconComponent className={`${colorClass} colors`} />
-						)}
-
-						<span
-							className={`text-center text-lg font-bold ${colorClass} colors`}
-						>
-							{title}
-						</span>
-					</div>
-
-					<motion.div
-						animate={{ rotate: isOpen ? 180 : 0 }}
-						transition={{ duration: 0.5, ease: "backOut" }}
-						className="flex items-center justify-center"
-					>
-						<ChevronDown className="text-blue colors" />
-					</motion.div>
-				</div>
-			</Button>
-
-			<AnimatePresence initial={false}>
-				{isOpen && (
-					<motion.div
-						key="content"
-						initial={{ height: 0, opacity: 0 }}
-						animate={{ height: "auto", opacity: 1 }}
-						exit={{ height: 0, opacity: 0 }}
-						transition={{ duration: 0.25, ease: "easeOut" }}
-						className="overflow-hidden select-text"
-					>
-						<div className="px-8 py-4 prose dark:prose-invert max-w-none font-medium text-base text-d1 dark:text-l1 prose-p:leading-relaxed">
-							{children}
-						</div>
-					</motion.div>
-				)}
-			</AnimatePresence>
-		</div>
-	);
+const SUBJECT_QUESTIONS: Record<string, string> = {
+	国語: "芥川龍之介の小説『羅生門』の題材となった、平安時代後期に成立したとされる説話集は何ですか。",
+	地理歴史:
+		"1914年、オーストリアの皇太子夫妻が暗殺され、第一次世界大戦が勃発するきっかけとなった出来事を何事件と言いますか。",
+	公民: "市場経済において、商品の「需要量」と「供給量」が一致したときに決まる価格を何と言いますか。",
+	数学: "三角比の相互関係において、$\\sin^2\\theta + \\cos^2\\theta$ の値は常にいくつになりますか。",
+	理科: "酸化還元反応において、物質が電子を「受け取る」化学変化のことを何と言いますか。",
+	外国語:
+		"次の2つの文がほぼ同じ意味になるように、（　）に適切な1語を入れなさい。\nI don't know what I should do.\nI don't know what (　) do.",
+	情報: "コンピュータネットワークにおいて、異なる機器同士がデータをやり取りするために定められた「通信のルール（約束事）」を何と言いますか。",
 };
 
 const MediaPreviewItem = ({
@@ -278,66 +227,79 @@ const MediaPreviewItem = ({
 	);
 };
 
-const MarkdownP = React.memo(({ children }: { children: React.ReactNode }) => (
-	<p className="select-text scale-100! colors px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1">
-		{children}
-	</p>
-));
+const CustomAccordion = ({
+	title,
+	children,
+	isOpen,
+	onToggle,
+	isLoading = false,
+}: {
+	title: string;
+	children: React.ReactNode;
+	isOpen: boolean;
+	onToggle: () => void;
+	isLoading?: boolean;
+}) => {
+	const matchKey = Object.keys(ICON_MAP).find((key) => title.includes(key));
+	const IconComponent = matchKey ? ICON_MAP[matchKey] : null;
+	const colorClass = matchKey ? COLOR_MAP[matchKey] : "text-blue";
 
-const MarkdownH3 = React.memo(
-	({
-		children,
-		showLabel = false,
-	}: {
-		children: React.ReactNode;
-		showLabel?: boolean;
-	}) => {
-		const rawText = String(children).replace(/["']/g, "").trim();
-		let parts = ["Unknown"];
+	const toggleAccordion = (e: React.MouseEvent | React.KeyboardEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		onToggle();
+	};
 
-		if (rawText.startsWith("Curriculum:")) {
-			const cleanText = rawText.replace("Curriculum:", "").trim();
-			const extractedParts = cleanText.split("/").map((p) => p.trim());
-			if (extractedParts.length === 3) {
-				const [subject, course, unit] = extractedParts;
-				type CurriculumStructure = Record<string, Record<string, string[]>>;
-				const data = curriculumData as CurriculumStructure;
-				const isValid = data[subject]?.[course]?.includes(unit);
-				if (isValid) {
-					parts = extractedParts;
-				}
-			}
-		}
-		return (
-			<div className="scale-100! flex flex-row justify-between items-center w-full px-4 py-2">
-				<div className="flex flex-row justify-start items-center gap-1">
-					{showLabel && (
-						<>
-							<MousePointerClick className="colors size-4 text-d5 dark:text-l5" />
+	return (
+		<div className="w-full colors overflow-hidden">
+			<Button
+				onClick={toggleAccordion}
+				className="w-full flex justify-center items-center px-6 py-4 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 colors"
+			>
+				<div className="scale-100! w-full flex flex-row justify-between items-center select-none">
+					<div className="flex flex-row justify-start items-center gap-4">
+						{isLoading ? (
+							<ActivityIndicator className={`${colorClass} colors`} />
+						) : IconComponent ? (
+							<IconComponent className={`${colorClass} colors`} />
+						) : null}
 
-							<span className="colors text-left font-medium text-xs text-d5 dark:text-l5">
-								選択して生成
-							</span>
-						</>
-					)}
-				</div>
-
-				<div className="flex flex-row gap-2 justify-end items-center">
-					{parts.map((part) => (
-						<div
-							key={part}
-							className="bg-l3 dark:bg-d3 group-hover:bg-l4 group-focus-visible:bg-l4 dark:group-focus-visible:bg-d4 dark:group-hover:bg-d4 px-2 py-1 rounded-lg colors shadow-lg"
+						<span
+							className={`text-center text-lg font-bold ${colorClass} colors`}
 						>
-							<span className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap">
-								{part}
-							</span>
-						</div>
-					))}
+							{title}
+						</span>
+					</div>
+
+					<motion.div
+						animate={{ rotate: isOpen ? 180 : 0 }}
+						transition={{ duration: 0.5, ease: "backOut" }}
+						className="flex items-center justify-center"
+					>
+						<ChevronDown className="text-blue colors" />
+					</motion.div>
 				</div>
-			</div>
-		);
-	},
-);
+			</Button>
+
+			<AnimatePresence initial={false}>
+				{isOpen && (
+					<motion.div
+						key="content"
+						initial={{ height: 0, opacity: 0 }}
+						animate={{ height: "auto", opacity: 1 }}
+						exit={{ height: 0, opacity: 0 }}
+						transition={{ duration: 0.25, ease: "easeOut" }}
+						className="overflow-hidden select-text"
+					>
+						<div className="px-8 py-4 prose dark:prose-invert max-w-none font-medium text-base text-d1 dark:text-l1 prose-p:leading-relaxed">
+							{children}
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+		</div>
+	);
+};
 
 const MarkdownH1 = React.memo(
 	({
@@ -385,6 +347,69 @@ const MarkdownH1 = React.memo(
 	},
 );
 
+const MarkdownP = React.memo(({ children }: { children: React.ReactNode }) => (
+	<p className="select-text scale-100! colors px-8 py-4 font-medium text-base text-left text-d1 dark:text-l1">
+		{children}
+	</p>
+));
+
+const MarkdownH3 = React.memo(
+	({
+		children,
+		showLabel = false,
+	}: {
+		children: React.ReactNode;
+		showLabel?: boolean;
+	}) => {
+		const rawText = String(children).replace(/["']/g, "").trim();
+		let parts = ["Unknown"];
+
+		if (rawText.startsWith("Curriculum:")) {
+			const cleanText = rawText.replace("Curriculum:", "").trim();
+			const extractedParts = cleanText.split("/").map((p) => p.trim());
+
+			if (extractedParts.length === 3) {
+				const [subject, course, unit] = extractedParts;
+				type CurriculumStructure = Record<string, Record<string, string[]>>;
+				const data = curriculumData as CurriculumStructure;
+				const isValid = data[subject]?.[course]?.includes(unit);
+				if (isValid) {
+					parts = extractedParts;
+				}
+			}
+		}
+
+		return (
+			<div className="scale-100! flex flex-row justify-between items-center w-full px-4 py-2">
+				<div className="flex flex-row justify-start items-center gap-1">
+					{showLabel && (
+						<>
+							<MousePointerClick className="colors size-4 text-d5 dark:text-l5" />
+
+							<span className="colors text-left font-medium text-xs text-d5 dark:text-l5">
+								選択して生成
+							</span>
+						</>
+					)}
+				</div>
+
+				<div className="flex flex-row gap-2 justify-end items-center">
+					{parts.map((part) => (
+						<div
+							key={part}
+							className="bg-l3 dark:bg-d3 group-hover:bg-l4 group-focus-visible:bg-l4 dark:group-focus-visible:bg-d4 dark:group-hover:bg-d4 px-2 py-1 rounded-lg colors shadow-lg"
+						>
+							<span className="text-sm font-medium text-d3 dark:text-l3 text-center colors whitespace-nowrap">
+								{part}
+							</span>
+						</div>
+					))}
+				</div>
+			</div>
+		);
+	},
+);
+
 const MarkdownSpan = React.memo(
 	({
 		node,
@@ -423,8 +448,20 @@ interface TurnItemProps {
 
 const TurnItem = React.memo(
 	({ turn, isLatestTurn, chatAreaHeight, handleSolve }: TurnItemProps) => {
-		// 選択された問題のインデックスを管理 (null時はリスト表示)
-		const [selectedPageIndex, setSelectedPageIndex] = useState<number | null>(null);
+		const [selectedPageIndex, setSelectedPageIndex] = useState<number | null>(
+			null,
+		);
+		const [openSections, setOpenSections] = useState<Record<string, boolean>>(
+			{},
+		);
+
+		const toggleSection = (pageIndex: number, title: string) => {
+			const key = `${pageIndex}-${title}`;
+			setOpenSections((prev) => ({
+				...prev,
+				[key]: !prev[key],
+			}));
+		};
 
 		const problemItems = React.useMemo(() => {
 			return turn.pages
@@ -433,7 +470,6 @@ const TurnItem = React.memo(
 					id: `prob-${turn.turnId}-${page.pageIndex}`,
 					content: page.messages.model?.[0]?.blocks[0]?.content ?? "",
 					index: page.pageIndex,
-					// 解答データがあれば取得
 					answerContent: page.messages.model?.[1]?.blocks[0]?.content ?? "",
 				}));
 		}, [turn.pages, turn.turnId]);
@@ -449,6 +485,7 @@ const TurnItem = React.memo(
 		const parseSections = (
 			content: string,
 		): { title: string; content: string }[] => {
+			if (!content) return [];
 			const sections: { title: string; content: string }[] = [];
 			const regex = /\[SECTION:\s*(.+?)\]\n([\s\S]*?)(?=\n\[SECTION:|$)/g;
 			let hasSections = false;
@@ -469,26 +506,65 @@ const TurnItem = React.memo(
 			return sections;
 		};
 
-		// 過去のログ（もしあれば）のためのレガシー対応
-		if (turn.title === "solve_request") {
-			const modelContent = (firstPage?.messages?.model?.[0]?.blocks[0]?.content as string) || "";
-			const sections = parseSections(modelContent);
-			return (
-				// ... 既存の solve_request 時の return ブロックをここにそのまま残すか、省略しても動作します
-				<div style={{ minHeight: isLatestTurn ? chatAreaHeight : 0 }} className="flex w-full flex-col justify-start">
-					{/* レガシーのレンダリング（省略） */}
-				</div>
-			);
-		}
+		const getStatusInfo = (status: string) => {
+			switch (status) {
+				case "thinking":
+					return {
+						text: "思考中",
+						color: "text-indigo animate-pulse",
+						isActivity: true,
+						Icon: null,
+					};
+				case "streaming":
+					return {
+						text: "生成中",
+						color: "text-violet animate-pulse",
+						isActivity: true,
+						Icon: null,
+					};
+				case "completed":
+					return {
+						text: "完了",
+						color: "text-green",
+						isActivity: false,
+						Icon: CheckCircle2,
+					};
+				case "canceled":
+					return {
+						text: "中断",
+						color: "text-orange",
+						isActivity: false,
+						Icon: Ban,
+					};
+				case "aborted":
+					return {
+						text: "切断",
+						color: "text-red",
+						isActivity: false,
+						Icon: AlertCircle,
+					};
+				case "failed":
+					return {
+						text: "失敗",
+						color: "text-red",
+						isActivity: false,
+						Icon: AlertCircle,
+					};
+				default:
+					return {
+						text: "待機中",
+						color: "text-l5 dark:text-d5",
+						isActivity: false,
+						Icon: Clock,
+					};
+			}
+		};
 
 		return (
 			<div
 				style={{ minHeight: isLatestTurn ? chatAreaHeight : 0 }}
 				className="flex w-full flex-col justify-start"
 			>
-				{/* ========================================================= */}
-				{/* ユーザー入力の表示 (画像・テキスト) */}
-				{/* ========================================================= */}
 				{hasUserInput && (
 					<motion.div
 						initial={
@@ -500,14 +576,17 @@ const TurnItem = React.memo(
 					>
 						{userMedia.length > 0 && (
 							<div className="flex w-full flex-row-reverse justify-start items-center gap-4 overflow-x-auto p-2">
-								{/* (既存のメディアレンダリング処理そのまま) */}
 								{userMedia.map((m: Medium) => (
 									<div
 										key={m.mediumId}
 										className="size-32 flex-none rounded-3xl overflow-hidden bg-l2 dark:bg-d2 border border-l5 dark:border-d5 shadow-lg"
 									>
 										{m.mimeType.startsWith("image/") ? (
-											<img src={m.src} alt={m.fileName} className="size-full object-cover" />
+											<img
+												src={m.src}
+												alt={m.fileName}
+												className="size-full object-cover"
+											/>
 										) : m.mimeType.startsWith("video/") ? (
 											<video src={m.src} className="size-full object-cover" />
 										) : (
@@ -525,14 +604,49 @@ const TurnItem = React.memo(
 						{userContent.trim() !== "" && (
 							<div className="flex w-full justify-end items-center p-2">
 								<div className="bg-l2 dark:bg-d2 px-4 py-3 rounded-3xl shadow-lg colors">
-									<p className="text-d1 dark:text-l1 font-medium text-base text-right colors select-text">
+									<ReactMarkdown
+										remarkPlugins={[remarkMath]}
+										rehypePlugins={[rehypeKatex, rehypeRaw]}
+										components={{
+											p: ({ children }) => (
+												<p className="text-d1 dark:text-l1 font-medium text-base text-left colors select-text wrap-break-word">
+													{children}
+												</p>
+											),
+											span: MarkdownSpan,
+										}}
+									>
 										{userContent}
-									</p>
+									</ReactMarkdown>
 								</div>
 							</div>
 						)}
 					</motion.div>
 				)}
+
+				{isLatestTurn &&
+					selectedPageIndex === null &&
+					(() => {
+						const info = getStatusInfo(
+							turn.pages[0]?.messages.model[0]?.status || "pending",
+						);
+						const Icon = info.Icon;
+
+						return (
+							<div className="flex flex-row w-full justify-start items-center px-4 gap-2">
+								{info.isActivity ? (
+									<ActivityIndicator className={`${info.color} colors`} />
+								) : (
+									Icon && <Icon className={`${info.color} colors`} />
+								)}
+								<span
+									className={`text-left text-base font-bold colors ${info.color}`}
+								>
+									{info.text}
+								</span>
+							</div>
+						);
+					})()}
 
 				{selectedPageIndex !== null && (
 					<motion.div
@@ -558,18 +672,23 @@ const TurnItem = React.memo(
 											handleSolve(item.content, turn.turnId, item.index);
 										}
 									}}
-									className={`flex-none flex items-center justify-center rounded-2xl size-10 shadow-lg colors ${selectedPageIndex === item.index
-										? "bg-blue text-l1"
-										: "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 text-d1 dark:text-l1"
-										}`}
+									className={`flex-none flex items-center justify-center rounded-2xl size-10 shadow-lg colors ${
+										selectedPageIndex === item.index
+											? "bg-blue text-l1"
+											: "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 text-d1 dark:text-l1"
+									}`}
 								>
-									<span className="font-bold text-lg text-center whitespace-nowrap all">{item.index + 1}</span>
+									<span className="font-bold text-lg text-center whitespace-nowrap all">
+										{item.index + 1}
+									</span>
 								</Button>
 							))}
 						</div>
 
 						{(() => {
-							const selectedItem = problemItems.find((i) => i.index === selectedPageIndex);
+							const selectedItem = problemItems.find(
+								(i) => i.index === selectedPageIndex,
+							);
 							if (!selectedItem) return null;
 
 							const isError = selectedItem.content.trim().startsWith("# Error");
@@ -592,10 +711,18 @@ const TurnItem = React.memo(
 												rehypePlugins={[rehypeKatex, rehypeRaw]}
 												components={{
 													h1: ({ children }) => (
-														<MarkdownH1 problemIndex={selectedItem.index + 1}>{children}</MarkdownH1>
+														<MarkdownH1 problemIndex={selectedItem.index + 1}>
+															{children}
+														</MarkdownH1>
 													),
-													p: ({ children }) => <MarkdownP>{children}</MarkdownP>,
-													h3: ({ children }) => <MarkdownH3 showLabel={false}>{children}</MarkdownH3>,
+													p: ({ children }) => (
+														<MarkdownP>{children}</MarkdownP>
+													),
+													h3: ({ children }) => (
+														<MarkdownH3 showLabel={false}>
+															{children}
+														</MarkdownH3>
+													),
 													span: MarkdownSpan,
 												}}
 											>
@@ -604,48 +731,116 @@ const TurnItem = React.memo(
 										</div>
 									</div>
 
-									{selectedItem.answerContent ? (
-										<div className="flex w-full justify-center items-center px-2">
-											<div className="colors flex w-full flex-col select-text bg-l2 dark:bg-d2 rounded-3xl shadow-lg overflow-hidden">
-												{parseSections(selectedItem.answerContent).map((sec, index, array) => (
-													<div
-														key={sec.title}
-														className="relative"
-													>
-														<CustomAccordion title={sec.title} defaultOpen={true}>
-															<ReactMarkdown
-																remarkPlugins={[remarkMath]}
-																rehypePlugins={[rehypeKatex, rehypeRaw]}
-																components={{
-																	span: MarkdownSpan,
-																	h3: ({ children }) => <MarkdownH3 showLabel={false}>{children}</MarkdownH3>,
-																}}
-															>
-																{sec.content}
-															</ReactMarkdown>
-														</CustomAccordion>
+									{isLatestTurn &&
+										(() => {
+											const info = getStatusInfo(
+												turn.pages.find(
+													(p) => p.pageIndex === selectedPageIndex,
+												)?.messages.model[1]?.status || "pending",
+											);
+											const Icon = info.Icon;
 
-														{index !== array.length - 1 && (
-															<div className="absolute bottom-0 left-6 right-6 h-px rounded-full bg-l5 dark:bg-d5" />
-														)}
-													</div>
-												))}
-											</div>
+											return (
+												<div className="flex flex-row w-full justify-start items-center px-4 gap-2">
+													{info.isActivity ? (
+														<ActivityIndicator
+															className={`${info.color} colors`}
+														/>
+													) : (
+														Icon && <Icon className={`${info.color} colors`} />
+													)}
+													<span
+														className={`text-left text-base font-bold colors ${info.color}`}
+													>
+														{info.text}
+													</span>
+												</div>
+											);
+										})()}
+
+									<div className="flex w-full justify-center items-center px-2">
+										<div className="colors flex w-full flex-col select-text bg-l2 dark:bg-d2 rounded-3xl shadow-lg overflow-hidden">
+											{(() => {
+												const parsedSections = parseSections(
+													selectedItem.answerContent || "",
+												);
+												const REQUIRED_SECTIONS = [
+													"要約",
+													"指針",
+													"解説",
+													"解答",
+												];
+
+												const combinedSections = REQUIRED_SECTIONS.map(
+													(reqTitle) => {
+														const found = parsedSections.find(
+															(s) => s.title === reqTitle,
+														);
+														return {
+															title: reqTitle,
+															content: found ? found.content : "",
+															isLoading: !found || found.content.trim() === "",
+														};
+													},
+												);
+
+												parsedSections.forEach((ps) => {
+													if (!REQUIRED_SECTIONS.includes(ps.title)) {
+														combinedSections.push({
+															title: ps.title,
+															content: ps.content,
+															isLoading: false,
+														});
+													}
+												});
+
+												return combinedSections.map((sec, index, array) => {
+													const sectionKey = `${selectedPageIndex}-${sec.title}`;
+
+													return (
+														<div key={sectionKey} className="relative">
+															<CustomAccordion
+																title={sec.title}
+																isOpen={!!openSections[sectionKey]}
+																onToggle={() =>
+																	toggleSection(
+																		selectedPageIndex as number,
+																		sec.title,
+																	)
+																}
+																isLoading={sec.isLoading}
+															>
+																<ReactMarkdown
+																	remarkPlugins={[remarkMath]}
+																	rehypePlugins={[rehypeKatex, rehypeRaw]}
+																	components={{
+																		span: MarkdownSpan,
+																		h3: ({ children }) => (
+																			<MarkdownH3 showLabel={false}>
+																				{children}
+																			</MarkdownH3>
+																		),
+																	}}
+																>
+																	{sec.content}
+																</ReactMarkdown>
+															</CustomAccordion>
+
+															{index !== array.length - 1 && (
+																<div className="absolute bottom-0 left-6 right-6 h-px rounded-full bg-l5 dark:bg-d5" />
+															)}
+														</div>
+													);
+												});
+											})()}
 										</div>
-									) : (
-										<div className="flex w-[calc(100%-1rem)] justify-center items-center p-8 mt-4 rounded-3xl bg-l2 dark:bg-d2 shadow-lg colors">
-											<span className="animate-pulse text-blue font-bold text-lg">解答を生成中...</span>
-										</div>
-									)}
+									</div>
 								</div>
 							);
 						})()}
 					</motion.div>
 				)}
 
-				{/* ========================================================= */}
-				{/* 問題リストモード: まだ問題が選択されていない場合 */}
-				{/* ========================================================= */}
 				{selectedPageIndex === null &&
 					problemItems.map((item) => {
 						const isError = item.content.trim().startsWith("# Error");
@@ -655,7 +850,11 @@ const TurnItem = React.memo(
 								<motion.div
 									key={item.id}
 									layout
-									initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+									initial={
+										isLatestTurn
+											? { y: 16, opacity: 0, filter: "blur(1rem)" }
+											: false
+									}
 									animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 									transition={{ duration: 0.5, ease: "backOut" }}
 									className="flex w-full justify-center items-center p-2"
@@ -672,7 +871,11 @@ const TurnItem = React.memo(
 						return (
 							<motion.div
 								key={item.id}
-								initial={isLatestTurn ? { y: 16, opacity: 0, filter: "blur(1rem)" } : false}
+								initial={
+									isLatestTurn
+										? { y: 16, opacity: 0, filter: "blur(1rem)" }
+										: false
+								}
 								animate={{ y: 0, opacity: 1, filter: "blur(0)" }}
 								transition={{ duration: 0.5, ease: "backOut" }}
 								className="flex w-full items-center justify-center p-2"
@@ -690,9 +893,15 @@ const TurnItem = React.memo(
 										remarkPlugins={[remarkMath]}
 										rehypePlugins={[rehypeKatex, rehypeRaw]}
 										components={{
-											h1: ({ children }) => <MarkdownH1 problemIndex={item.index + 1}>{children}</MarkdownH1>,
+											h1: ({ children }) => (
+												<MarkdownH1 problemIndex={item.index + 1}>
+													{children}
+												</MarkdownH1>
+											),
 											p: ({ children }) => <MarkdownP>{children}</MarkdownP>,
-											h3: ({ children }) => <MarkdownH3 showLabel={true}>{children}</MarkdownH3>,
+											h3: ({ children }) => (
+												<MarkdownH3 showLabel={true}>{children}</MarkdownH3>
+											),
 											span: MarkdownSpan,
 										}}
 									>
@@ -719,6 +928,29 @@ export default function Chat() {
 	const {
 		states: { chat },
 	} = useAppView();
+
+	const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
+
+	const handleModelChange = (model: keyof typeof MODEL_MAP) => {
+		actions.setSelectedModel(model);
+		if (
+			model === "gemini-3.1-pro-preview" &&
+			states.selectedLevel === "minimal"
+		) {
+			actions.setSelectedLevel("low");
+		}
+		setIsModelSelectOpen(false);
+	};
+
+	const handleLevelChange = (level: keyof typeof LEVEL_MAP) => {
+		if (
+			states.selectedModel === "gemini-3.1-pro-preview" &&
+			level === "minimal"
+		) {
+			return;
+		}
+		actions.setSelectedLevel(level);
+	};
 
 	const params = useParams();
 	const lang = (params?.language as string) || "en-US";
@@ -753,7 +985,6 @@ export default function Chat() {
 			<AnimatePresence>
 				{states.dragInfo && (
 					<motion.div
-						layout
 						initial={{
 							opacity: 0,
 							filter: "blur(1rem)",
@@ -780,6 +1011,33 @@ export default function Chat() {
 							</span>
 						</div>
 					</motion.div>
+				)}
+			</AnimatePresence>
+
+			<AnimatePresence>
+				{isModelSelectOpen && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						onClick={() => setIsModelSelectOpen(false)}
+						className="fixed inset-0 z-20 size-full cursor-pointer"
+					/>
+				)}
+			</AnimatePresence>
+
+			<AnimatePresence>
+				{isThinkModeMenuOpen && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						onClick={() => {
+							setIsThinkModeMenuOpen(false);
+							setIsModelSelectOpen(false);
+						}}
+						className="fixed inset-0 z-10 size-full cursor-pointer"
+					/>
 				)}
 			</AnimatePresence>
 
@@ -860,41 +1118,34 @@ export default function Chat() {
 
 									<div className="w-full mask-x-from-99% to-transparent">
 										<div className="flex w-full px-2 py-4 overflow-x-auto gap-2 scrollbar-hide">
-											{[
-												"国語",
-												"地理歴史",
-												"公民",
-												"数学",
-												"理科",
-												"外国語",
-												"情報",
-											].map((text) => (
-												<Button
-													key={text}
-													onClick={() => {
-														actions.setInterimText("");
-														actions.setInputText((prev) => ({
-															...prev,
-															inputText: text,
-														}));
-													}}
-													className="flex justify-center items-center flex-none bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 hover:-translate-y-2 focus-visible:-translate-y-2 active:scale-90 focus-visible:bg-l3 dark:focus-visible:bg-d3 rounded-2xl px-8 py-4 shadow-lg all"
-												>
-													<div className="scale-100! flex flex-col gap-2 justify-center items-start">
-														<span className="colors text-left font-medium text-sm text-d2 dark:text-l2">
-															{text}
-														</span>
-
-														<div className="flex flex-row justify-start items-center gap-1">
-															<MousePointerClick className="colors size-4 text-d5 dark:text-l5" />
-
-															<span className="colors text-left font-medium text-xs text-d5 dark:text-l5">
-																選択して生成
+											{Object.entries(SUBJECT_QUESTIONS).map(
+												([subject, question]) => (
+													<Button
+														key={subject}
+														onClick={() => {
+															actions.setInterimText("");
+															actions.setInputText((prev) => ({
+																...prev,
+																inputText: question,
+															}));
+														}}
+														className="flex justify-center items-center flex-none bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 hover:-translate-y-2 focus-visible:-translate-y-2 active:scale-90 focus-visible:bg-l3 dark:focus-visible:bg-d3 rounded-2xl px-8 py-4 shadow-lg all"
+													>
+														<div className="scale-100! flex flex-col gap-2 justify-center items-start">
+															<span className="colors text-left font-medium text-sm text-d2 dark:text-l2">
+																{subject}
 															</span>
+
+															<div className="flex flex-row justify-start items-center gap-1">
+																<MousePointerClick className="colors size-4 text-d5 dark:text-l5" />
+																<span className="colors text-left font-medium text-xs text-d5 dark:text-l5">
+																	選択して生成
+																</span>
+															</div>
 														</div>
-													</div>
-												</Button>
-											))}
+													</Button>
+												),
+											)}
 										</div>
 									</div>
 								</div>
@@ -1066,9 +1317,10 @@ export default function Chat() {
 														<Button
 															onClick={() => actions.toggleContent("upload")}
 															className={`colors flex size-10 items-center justify-center rounded-full
-																${states.activeContent === "upload"
-																	? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
-																	: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																${
+																	states.activeContent === "upload"
+																		? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
+																		: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 																}`}
 														>
 															<Plus className="text-d1 dark:text-l1 all" />
@@ -1078,115 +1330,220 @@ export default function Chat() {
 											</div>
 
 											<div className="colors flex w-full flex-row items-center justify-end gap-1">
-												<AnimatePresence mode="popLayout">
-													<motion.div
-														layout
-														initial={{ opacity: 0 }}
-														animate={{ opacity: 1 }}
-														exit={{ opacity: 0 }}
-														transition={{ duration: 0.5, ease: "backOut" }}
-														className="relative"
+												<div className="relative">
+													<Button
+														onClick={() =>
+															setIsThinkModeMenuOpen(!isThinkModeMenuOpen)
+														}
+														className={`colors flex size-10 items-center justify-center rounded-full
+																		${
+																			isThinkModeMenuOpen
+																				? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
+																				: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																		}`}
 													>
-														<Button
-															onClick={() =>
-																setIsThinkModeMenuOpen(!isThinkModeMenuOpen)
-															}
-															className={`colors flex size-10 items-center justify-center rounded-full
-																	${isThinkModeMenuOpen
-																	? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
-																	: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-																}`}
-														>
-															{states.thinkMode === "fast" && (
-																<Zap className="all text-blue" />
-															)}
-															{states.thinkMode === "standard" && (
-																<Sparkles className="all text-blue" />
-															)}
-															{states.thinkMode === "think" && (
-																<Brain className="all text-blue" />
-															)}
-														</Button>
+														{states.selectedLevel === "minimal" && (
+															<Zap className="all text-blue" />
+														)}
+														{states.selectedLevel === "low" && (
+															<Sparkle className="all text-blue" />
+														)}
+														{states.selectedLevel === "medium" && (
+															<Sparkles className="all text-blue" />
+														)}
+														{states.selectedLevel === "high" && (
+															<Snowflake className="all text-blue" />
+														)}
+													</Button>
 
-														<AnimatePresence mode="popLayout">
-															{isThinkModeMenuOpen && (
-																<motion.div
-																	initial={{
-																		opacity: 0,
-																		filter: "blur(1rem)",
-																		scale: 0.5,
-																	}}
-																	animate={{
-																		opacity: 1,
-																		filter: "blur(0)",
-																		scale: 1,
-																	}}
-																	exit={{
-																		opacity: 0,
-																		filter: "blur(1rem)",
-																		scale: 0.5,
-																	}}
-																	transition={{
-																		duration: 0.5,
-																		ease: "backOut",
-																	}}
-																	style={{ originX: 1, originY: 1 }}
-																	className="absolute bottom-[calc(100%+1rem)] right-0 z-10 flex flex-col gap-1 rounded-4xl border border-l5 bg-l1/50 p-2 shadow-lg backdrop-blur-lg dark:border-d5 dark:bg-d1/50 colors"
-																>
+													<AnimatePresence mode="popLayout">
+														{isThinkModeMenuOpen && (
+															<motion.div
+																initial={{
+																	opacity: 0,
+																	filter: "blur(1rem)",
+																	scale: 0.5,
+																}}
+																animate={{
+																	opacity: 1,
+																	filter: "blur(0)",
+																	scale: 1,
+																}}
+																exit={{
+																	opacity: 0,
+																	filter: "blur(1rem)",
+																	scale: 0.5,
+																}}
+																transition={{ duration: 0.5, ease: "backOut" }}
+																style={{ originX: 1, originY: 1 }}
+																className="absolute bottom-[calc(100%+1rem)] right-0 z-30 flex min-w-64 flex-col gap-2 rounded-4xl border border-l5 bg-l1 p-3 shadow-lg dark:border-d5 dark:bg-d1 colors"
+															>
+																<div className="relative w-full flex justify-center items-center">
+																	<Button
+																		onClick={() =>
+																			setIsModelSelectOpen(!isModelSelectOpen)
+																		}
+																		className="relative z-20 flex w-full h-10 items-center justify-between rounded-2xl px-4 py-2 bg-blue colors"
+																	>
+																		<span className="whitespace-nowrap text-base font-medium text-center text-l1 all">
+																			{states.selectedModel ===
+																				"gemini-3.1-flash-lite-preview" &&
+																				"Gemini 3.1 Flash-Lite"}
+																			{states.selectedModel ===
+																				"gemini-3-flash-preview" &&
+																				"Gemini 3 Flash"}
+																			{states.selectedModel ===
+																				"gemini-3.1-pro-preview" &&
+																				"Gemini 3.1 Pro"}
+																		</span>
+
+																		<motion.div
+																			animate={{
+																				rotate: isModelSelectOpen ? 180 : 0,
+																			}}
+																			transition={{
+																				duration: 0.5,
+																				ease: "backOut",
+																			}}
+																		>
+																			<ChevronDown className="text-l1 colors" />
+																		</motion.div>
+																	</Button>
+
+																	<AnimatePresence>
+																		{isModelSelectOpen && (
+																			<motion.div
+																				initial={{ opacity: 0, y: -16 }}
+																				animate={{ opacity: 1, y: 0 }}
+																				exit={{ opacity: 0, y: -16 }}
+																				transition={{
+																					duration: 0.5,
+																					ease: "backOut",
+																				}}
+																				className="absolute left-0 top-[calc(100%+0.5rem)] z-40 flex w-full flex-col gap-1 rounded-2xl border border-l5 bg-l2 p-1 shadow-lg dark:border-d5 dark:bg-d2 colors"
+																			>
+																				{(
+																					Object.keys(
+																						MODEL_MAP,
+																					) as (keyof typeof MODEL_MAP)[]
+																				).map((m) => (
+																					<Button
+																						key={m}
+																						onClick={() => handleModelChange(m)}
+																						className={`flex w-full items-center justify-start rounded-xl px-4 py-2 colors ${
+																							states.selectedModel === m
+																								? "bg-blue"
+																								: "hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3"
+																						}`}
+																					>
+																						<span
+																							className={`whitespace-nowrap text-base font-medium text-left all ${states.selectedModel === m ? "text-l1" : "text-d1 dark:text-l1"}`}
+																						>
+																							{m ===
+																								"gemini-3.1-flash-lite-preview" &&
+																								"Gemini 3.1 Flash-Lite"}
+																							{m === "gemini-3-flash-preview" &&
+																								"Gemini 3 Flash"}
+																							{m === "gemini-3.1-pro-preview" &&
+																								"Gemini 3.1 Pro"}
+																						</span>
+																					</Button>
+																				))}
+																			</motion.div>
+																		)}
+																	</AnimatePresence>
+																</div>
+
+																<div className="flex w-full flex-col gap-1">
 																	{[
-																		{ id: "fast", label: "高速", icon: Zap },
 																		{
-																			id: "standard",
-																			label: "標準",
+																			id: "minimal",
+																			label: "Minimal",
+																			icon: Zap,
+																		},
+																		{ id: "low", label: "Low", icon: Sparkle },
+																		{
+																			id: "medium",
+																			label: "Medium",
 																			icon: Sparkles,
 																		},
-																		{ id: "think", label: "思考", icon: Brain },
-																	].map((mode) => (
-																		<Label
-																			key={mode.id}
-																			className={`colors flex items-center w-full justify-center rounded-full px-4 py-2
-																				${states.thinkMode === mode.id
-																					? "bg-l5/50 dark:bg-d5/50"
-																					: "hover:bg-l2/50 dark:hover:bg-d2/50"
-																				}`}
-																		>
-																			<Input
-																				type="radio"
-																				name="model"
-																				value={mode.id}
-																				checked={states.thinkMode === mode.id}
-																				visibility={false}
-																				onChange={() => {
-																					actions.updateThinkMode(
-																						mode.id as
-																						| "fast"
-																						| "standard"
-																						| "think",
-																					);
-																					setIsThinkModeMenuOpen(false);
-																				}}
-																			/>
+																		{
+																			id: "high",
+																			label: "High",
+																			icon: Snowflake,
+																		},
+																	].map((lvl) => {
+																		const isDisabled =
+																			states.selectedModel ===
+																				"gemini-3.1-pro-preview" &&
+																			lvl.id === "minimal";
+																		const isSelected =
+																			states.selectedLevel === lvl.id &&
+																			!isDisabled;
 
-																			<div className="w-full flex flex-row gap-2 justify-start items-center">
-																				<mode.icon
-																					className={
-																						states.thinkMode === mode.id
-																							? "text-blue colors"
-																							: "text-l5 dark:text-d5 colors"
+																		return (
+																			<Label
+																				key={lvl.id}
+																				className={`colors flex w-full items-center justify-center rounded-2xl px-4 py-2
+																					${
+																						isDisabled
+																							? "cursor-not-allowed"
+																							: isSelected
+																								? "bg-l2 dark:bg-d2"
+																								: "hover:bg-l2 dark:hover:bg-d2 focus-visible:bg-l2 dark:focus-visible:bg-d2"
+																					}`}
+																			>
+																				<Input
+																					type="radio"
+																					name="level"
+																					value={lvl.id}
+																					checked={
+																						states.selectedLevel === lvl.id
 																					}
+																					disabled={isDisabled}
+																					visibility={false}
+																					onChange={() => {
+																						if (!isDisabled) {
+																							handleLevelChange(
+																								lvl.id as keyof typeof LEVEL_MAP,
+																							);
+																						}
+																					}}
 																				/>
 
-																				<span className="whitespace-nowrap font-medium text-left text-base text-d1 dark:text-l1 colors">
-																					{mode.label}
-																				</span>
-																			</div>
-																		</Label>
-																	))}
-																</motion.div>
-															)}
-														</AnimatePresence>
-													</motion.div>
-												</AnimatePresence>
+																				<div className="flex w-full flex-row items-center justify-start gap-2">
+																					<lvl.icon
+																						className={`colors
+																							${
+																								isSelected
+																									? "text-blue"
+																									: isDisabled
+																										? "text-l5 dark:text-d5"
+																										: "text-d1 dark:text-l1"
+																							}`}
+																					/>
+
+																					<span
+																						className={`whitespace-nowrap font-medium text-left text-base colors
+																						${
+																							isSelected
+																								? "text-blue"
+																								: isDisabled
+																									? "text-l5 dark:text-d5"
+																									: "text-d1 dark:text-l1"
+																						}`}
+																					>
+																						{lvl.label}
+																					</span>
+																				</div>
+																			</Label>
+																		);
+																	})}
+																</div>
+															</motion.div>
+														)}
+													</AnimatePresence>
+												</div>
 
 												<AnimatePresence mode="popLayout">
 													<motion.div
@@ -1206,8 +1563,27 @@ export default function Chat() {
 												</AnimatePresence>
 
 												<AnimatePresence mode="popLayout">
-													{(!states.inputText.inputText.trim() &&
-														states.inputMedia.length === 0) ||
+													{states.isGenerating ? (
+														<motion.div
+															key="cancel"
+															layout
+															initial={{ opacity: 0 }}
+															animate={{ opacity: 1 }}
+															exit={{ opacity: 0 }}
+															transition={{ duration: 0.5, ease: "backOut" }}
+														>
+															<Button
+																onClick={actions.handleCancel}
+																className="flex size-10 items-center justify-center rounded-full bg-red colors hover:bg-red/80"
+															>
+																<Square
+																	fill="currentColor"
+																	className="text-l1 all"
+																/>
+															</Button>
+														</motion.div>
+													) : (!states.inputText.inputText.trim() &&
+															states.inputMedia.length === 0) ||
 														states.isUploading ? (
 														<motion.div
 															key="audio"
@@ -1234,7 +1610,7 @@ export default function Chat() {
 																onClick={() => {
 																	actions.handleSend();
 																}}
-																className="flex size-10 items-center justify-center rounded-full bg-blue colors"
+																className="flex size-10 items-center justify-center rounded-full bg-blue colors hover:bg-blue/80"
 															>
 																<SendHorizontal className="text-l1 all" />
 															</Button>
@@ -1346,7 +1722,7 @@ export default function Chat() {
 																					media={media}
 																					progress={
 																						states.uploadProgress[
-																						media.mediumId
+																							media.mediumId
 																						]
 																					}
 																				/>

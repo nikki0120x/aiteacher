@@ -1,4 +1,8 @@
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import {
+	type GenerateContentConfig,
+	GoogleGenAI,
+	ThinkingLevel,
+} from "@google/genai";
 import { NextResponse } from "next/server";
 import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 
@@ -29,14 +33,14 @@ const ai = new GoogleGenAI({
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
-		const { text, media, mode, action } = body;
+		const { text, media, model, level, action } = body;
 
 		let targetModel = "gemini-3.1-flash-lite-preview";
 		let promptParts = [];
-		let temperature = 0;
-		let thinkLevel: ThinkingLevel = ThinkingLevel.LOW;
 
+		const config: GenerateContentConfig = { temperature: 0 };
 		const mediaParts = [];
+
 		if (media?.length > 0) {
 			const urlPattern = new RegExp(
 				`https://storage.googleapis.com/${bucketName}/(.+)`,
@@ -56,15 +60,28 @@ export async function POST(request: Request) {
 		}
 
 		if (action === "solve") {
-			targetModel = "gemini-3.1-pro-preview";
-			temperature = 0;
+			targetModel = model || "gemini-3.1-flash-lite-preview";
 
-			if (mode === "fast") {
-				thinkLevel = ThinkingLevel.LOW;
-			} else if (mode === "standard") {
-				thinkLevel = ThinkingLevel.MEDIUM;
-			} else if (mode === "think") {
-				thinkLevel = ThinkingLevel.HIGH;
+			if (level === "minimal") {
+				config.thinkingConfig = {
+					includeThoughts: true,
+					thinkingLevel: ThinkingLevel.MINIMAL,
+				};
+			} else if (level === "low") {
+				config.thinkingConfig = {
+					includeThoughts: true,
+					thinkingLevel: ThinkingLevel.LOW,
+				};
+			} else if (level === "medium") {
+				config.thinkingConfig = {
+					includeThoughts: true,
+					thinkingLevel: ThinkingLevel.MEDIUM,
+				};
+			} else if (level === "high") {
+				config.thinkingConfig = {
+					includeThoughts: true,
+					thinkingLevel: ThinkingLevel.HIGH,
+				};
 			}
 
 			promptParts = [
@@ -94,7 +111,10 @@ export async function POST(request: Request) {
 			];
 		} else {
 			targetModel = "gemini-3.1-flash-lite-preview";
-			temperature = 0;
+			config.thinkingConfig = {
+				includeThoughts: false,
+				thinkingLevel: ThinkingLevel.MINIMAL,
+			};
 
 			promptParts = [
 				...mediaParts,
@@ -116,13 +136,7 @@ export async function POST(request: Request) {
 		const responseStream = await ai.models.generateContentStream({
 			model: targetModel,
 			contents: [{ role: "user", parts: promptParts }],
-			config: {
-				temperature: temperature,
-				thinkingConfig: {
-					includeThoughts: false,
-					thinkingLevel: thinkLevel,
-				},
-			},
+			config: config,
 		});
 
 		const stream = new ReadableStream({

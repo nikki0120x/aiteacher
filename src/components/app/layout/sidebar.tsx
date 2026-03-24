@@ -2,6 +2,7 @@
 import {
 	BellRing,
 	BrickWallShield,
+	ChevronLeft,
 	ChevronRight,
 	CircleUserRound,
 	Info,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, type HTMLMotionProps, motion } from "motion/react";
 import Image from "next/image";
+import { useState } from "react";
 import { useAppView } from "@/app/[language]/[location]/views/viewApp";
 import { Icons } from "@/components/parts/icons";
 import { Button, Input, Label } from "@/components/ui";
@@ -37,6 +39,31 @@ import {
 export default function Sidebar() {
 	const { states, actions } = useAppView();
 	const { data: session } = useSession();
+
+	const [selectedNotificationType, setSelectedNotificationType] = useState<
+		string | null
+	>(null);
+	const NOTIFICATION_TABS = Array.from(
+		new Set([...Object.keys(APP_NOTIFICATION_MAP), "type"]),
+	);
+
+	const getStatusUI = (status: string) => {
+		switch (status) {
+			case "thinking":
+				return { text: "思考中", color: "text-indigo" };
+			case "streaming":
+				return { text: "生成中", color: "text-violet" };
+			case "completed":
+				return { text: "完了", color: "text-green" };
+			case "failed":
+			case "aborted":
+				return { text: "失敗", color: "text-red" };
+			case "canceled":
+				return { text: "中断", color: "text-orange" };
+			default:
+				return { text: "待機中", color: "text-l5 dark:text-d5" };
+		}
+	};
 
 	return (
 		<div className="flex select-none items-center justify-center">
@@ -275,13 +302,9 @@ export default function Sidebar() {
 									className="flex size-full min-h-0 items-center justify-start p-2 lg:flex-col"
 								>
 									{states.activeMenu === "notifications" && (
-										<div className="flex size-full min-w-3xs flex-col items-center justify-center gap-2 overflow-y-auto p-2">
+										<div className="flex size-full min-w-3xs  flex-col items-center justify-center gap-2 overflow-y-auto p-2">
 											<div className="colors relative flex w-full items-center justify-center gap-1 overflow-hidden rounded-full bg-l2/50 p-1 dark:bg-d2/50">
-												{(
-													Object.keys(
-														APP_NOTIFICATION_MAP,
-													) as (keyof typeof APP_NOTIFICATION_MAP)[]
-												).map((tabId) => (
+												{NOTIFICATION_TABS.map((tabId) => (
 													<Label
 														key={tabId}
 														className="overflow-visible! colors group relative flex size-full flex-1 items-center justify-center rounded-full py-2 hover:bg-l3/50 lg:px-8 hover:dark:bg-d3/50"
@@ -292,9 +315,11 @@ export default function Sidebar() {
 															value={tabId}
 															visibility={false}
 															checked={states.activeNotificationTab === tabId}
-															onChange={() =>
-																actions.setActiveNotificationTab(tabId)
-															}
+															onChange={() => {
+																actions.setActiveNotificationTab(tabId);
+																if (tabId !== "type")
+																	setSelectedNotificationType(null); // 他のタブ移動時にリセット
+															}}
 														/>
 
 														{states.activeNotificationTab === tabId && (
@@ -315,15 +340,17 @@ export default function Sidebar() {
 																	: "text-l5 group-hover:text-d1 dark:text-d5 dark:group-hover:text-l1"
 															}`}
 														>
-															{states.app(
-																`options.${APP_NOTIFICATION_MAP[tabId]}`,
-															)}
+															{tabId === "type"
+																? "種類"
+																: states.app(
+																		`options.${APP_NOTIFICATION_MAP[tabId as keyof typeof APP_NOTIFICATION_MAP]}`,
+																	)}
 														</span>
 													</Label>
 												))}
 											</div>
 
-											<div className="relative size-full flex-1 lg:min-h-40">
+											<div className="relative size-full flex-1 lg:min-h-60">
 												<AnimatePresence mode="wait">
 													<motion.div
 														key={states.activeNotificationTab}
@@ -336,24 +363,6 @@ export default function Sidebar() {
 														{states.activeNotificationTab === "all" && (
 															<div className="p-2 text-d1 dark:text-l1">
 																全部の通知リスト...
-																<div className="p-2 text-d1 dark:text-l1">
-																	全部の通知リスト...
-																</div>
-																<div className="p-2 text-d1 dark:text-l1">
-																	全部の通知リスト...
-																</div>
-																<div className="p-2 text-d1 dark:text-l1">
-																	全部の通知リスト...
-																</div>
-																<div className="p-2 text-d1 dark:text-l1">
-																	全部の通知リスト...
-																</div>
-																<div className="p-2 text-d1 dark:text-l1">
-																	全部の通知リスト...
-																</div>
-																<div className="p-2 text-d1 dark:text-l1">
-																	全部の通知リスト...
-																</div>
 															</div>
 														)}
 														{states.activeNotificationTab === "unread" && (
@@ -364,6 +373,128 @@ export default function Sidebar() {
 														{states.activeNotificationTab === "read" && (
 															<div className="p-2 text-d1 dark:text-l1">
 																既読の通知リスト...
+															</div>
+														)}
+
+														{states.activeNotificationTab === "type" && (
+															<div className="relative size-full overflow-hidden p-1">
+																<AnimatePresence mode="wait">
+																	{!selectedNotificationType ? (
+																		<motion.div
+																			key="type-selection"
+																			initial={{ opacity: 0, x: -16 }}
+																			animate={{ opacity: 1, x: 0 }}
+																			exit={{ opacity: 0, x: -16 }}
+																			transition={{
+																				duration: 0.5,
+																				ease: "backOut",
+																			}}
+																			className="flex w-full flex-col justify-center items-start gap-2"
+																		>
+																			<Button
+																				onClick={() =>
+																					setSelectedNotificationType("chat")
+																				}
+																				className="colors flex w-full items-center justify-between rounded-2xl bg-l2 dark:bg-d2 p-4 shadow-sm hover:bg-l3 dark:hover:bg-d3 transition-all"
+																			>
+																				<div className="flex justify-center items-center gap-2 all">
+																					<MessageCircleMore className="text-blue colors" />
+
+																					<span className="text-center font-bold text-blue text-lg colors">
+																						質問
+																					</span>
+																				</div>
+
+																				<ChevronRight className="text-d1 dark:text-l1 scale-100!" />
+																			</Button>
+																		</motion.div>
+																	) : selectedNotificationType === "chat" ? (
+																		<motion.div
+																			key="chat-inbox"
+																			initial={{ opacity: 0, x: 16 }}
+																			animate={{ opacity: 1, x: 0 }}
+																			exit={{ opacity: 0, x: 16 }}
+																			transition={{
+																				duration: 0.3,
+																				ease: "backOut",
+																			}}
+																			className="flex size-full flex-col gap-2"
+																		>
+																			<div className="flex w-full items-center justify-start pb-2">
+																				<Button
+																					onClick={() =>
+																						setSelectedNotificationType(null)
+																					}
+																					className="colors flex items-center gap-2 rounded-full p-2 hover:bg-l2 dark:hover:bg-d2"
+																				>
+																					<ChevronLeft className="text-d1 dark:text-l1 scale-100!" />
+
+																					<span className="text-center font-medium text-base text-d1 dark:text-l1 all">
+																						戻る
+																					</span>
+																				</Button>
+																			</div>
+
+																			<div className="flex w-full flex-col gap-2 overflow-y-auto">
+																				{!states.chatNotifications ||
+																				states.chatNotifications.length ===
+																					0 ? (
+																					<div className="text-center p-4 text-d5 dark:text-l5 text-base font-medium">
+																						受信した通知はありません
+																					</div>
+																				) : (
+																					states.chatNotifications.map(
+																						(notif: any) => {
+																							const statusUI = getStatusUI(
+																								notif.status,
+																							);
+																							const timeString = new Date(
+																								notif.updatedAt,
+																							).toLocaleTimeString("ja-JP", {
+																								hour12: false,
+																							});
+
+																							return (
+																								<Button
+																									key={notif.id}
+																									onClick={() =>
+																										actions.markChatNotificationAsRead(
+																											notif.id,
+																										)
+																									}
+																									className={`relative flex flex-col items-start w-full p-3 rounded-2xl border ${
+																										notif.isRead
+																											? "bg-transparent border-l4 dark:border-d4 opacity-70"
+																											: "bg-l2 dark:bg-d2 border-blue shadow-sm"
+																									} colors hover:opacity-100 transition-opacity`}
+																								>
+																									{!notif.isRead && (
+																										<div className="absolute top-3 right-3 size-2.5 rounded-full bg-blue animate-pulse" />
+																									)}
+
+																									<span className="font-bold text-d1 dark:text-l1 text-left line-clamp-1 pr-4">
+																										{notif.title}
+																									</span>
+
+																									<div className="flex justify-between items-center w-full mt-2">
+																										<span
+																											className={`text-sm font-bold ${statusUI.color}`}
+																										>
+																											{statusUI.text}
+																										</span>
+																										<span className="text-xs font-medium text-d5 dark:text-l5 bg-l3 dark:bg-d3 px-2 py-1 rounded-lg">
+																											{timeString}
+																										</span>
+																									</div>
+																								</Button>
+																							);
+																						},
+																					)
+																				)}
+																			</div>
+																		</motion.div>
+																	) : null}
+																</AnimatePresence>
 															</div>
 														)}
 													</motion.div>

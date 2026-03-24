@@ -11,11 +11,19 @@ export const ROLE_MAP = {
 	model: "role.model",
 } as const;
 
-//  モデル
+//	モデル
 export const MODEL_MAP = {
-	fast: "model.fast",
-	standard: "model.standard",
-	think: "model.think",
+	"gemini-3.1-flash-lite-preview": "model.gemini-3.1-flash-lite-preview",
+	"gemini-3-flash-preview": "model.gemini-3-flash-preview",
+	"gemini-3.1-pro-preview": "model.gemini-3.1-pro-preview",
+} as const;
+
+//  レベル
+export const LEVEL_MAP = {
+	minimal: "level.minimal",
+	low: "level.low",
+	medium: "level.medium",
+	high: "level.high",
 } as const;
 
 //  ユーザー状態
@@ -32,9 +40,10 @@ export const USER_STATUS_MAP = {
 //  モデル状態
 export const MODEL_STATUS_MAP = {
 	pending: "status.model.pending",
+	sending: "status.user.sending",
 	thinking: "status.model.thinking",
 	streaming: "status.model.streaming",
-	sent: "status.model.sent",
+	sent: "status.user.sent",
 	completed: "status.model.completed",
 	canceled: "status.model.canceled",
 	aborted: "status.model.aborted",
@@ -92,13 +101,15 @@ export const PostPayloadSchema = withDefault(
 	z
 		.object({
 			model: z.enum(asZodEnum(MODEL_MAP)).readonly(),
+			level: z.enum(asZodEnum(LEVEL_MAP)).readonly(),
 			prompt: ContentSchema.readonly(),
 			mediaUrls: z.array(z.string()).optional().readonly(),
 			history: z.array(ContentSchema).optional().readonly(),
 		})
 		.readonly(),
 	() => ({
-		model: "fast" as const,
+		model: "gemini-3.1-flash-lite-preview" as const,
+		level: "minimal" as const,
 		prompt: ContentSchema.createDefault(),
 		mediaUrls: [],
 	}),
@@ -284,6 +295,7 @@ export const ModelMessageSchema = withDefault(
 			modelMessageId: z.uuid(),
 			blocks: z.lazy(() => BlockListSchema).readonly(),
 			model: z.enum(asZodEnum(MODEL_MAP)),
+			level: z.enum(asZodEnum(LEVEL_MAP)),
 			role: z.enum(asZodEnum(ROLE_MAP)),
 			status: z.enum(asZodEnum(MODEL_STATUS_MAP)),
 			size: z.number(),
@@ -294,7 +306,8 @@ export const ModelMessageSchema = withDefault(
 	() => ({
 		modelMessageId: gen.id(),
 		blocks: BlockListSchema.createDefault(),
-		model: "fast" as const,
+		model: "gemini-3.1-flash-lite-preview" as const,
+		level: "minimal" as const,
 		role: "model" as const,
 		status: "pending" as const,
 		size: 0,

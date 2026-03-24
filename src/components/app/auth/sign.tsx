@@ -631,15 +631,17 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 									disabled={isSigninInvalid}
 									type="submit"
 									className={`colors flex-none flex h-15 w-full items-center justify-center rounded-full bg-blue p-2
-                                        ${isSigninInvalid &&
-										"bg-l5 dark:bg-d5 cursor-not-allowed"
-										}`}
+                                        ${
+																					isSigninInvalid &&
+																					"bg-l5 dark:bg-d5 cursor-not-allowed"
+																				}`}
 								>
 									<span
 										className={`all whitespace-nowrap text-center font-bold text-xl text-l1
-                                        ${isSigninInvalid &&
-											"text-d5 dark:text-l5 scale-100!"
-											}`}
+                                        ${
+																					isSigninInvalid &&
+																					"text-d5 dark:text-l5 scale-100!"
+																				}`}
 									>
 										{lockouts.signin > 0
 											? `ロック中 (${formatTime(lockouts.signin)})`
@@ -764,12 +766,13 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 													lockouts.otp > 0
 												}
 												className={`colors flex-none flex h-10 items-center justify-center rounded-full p-2 bg-blue
-                                                    ${(isEmailInvalid ||
-														countdown > 0 ||
-														lockouts.otp > 0 ||
-														isSendingCode) &&
-													"bg-l5 dark:bg-d5 cursor-not-allowed"
-													}`}
+                                                    ${
+																											(isEmailInvalid ||
+																												countdown > 0 ||
+																												lockouts.otp > 0 ||
+																												isSendingCode) &&
+																											"bg-l5 dark:bg-d5 cursor-not-allowed"
+																										}`}
 											>
 												<AnimatePresence mode="wait">
 													{isSendingCode ? (
@@ -927,15 +930,17 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 									disabled={isSignupInvalid}
 									type="submit"
 									className={`colors flex-none flex h-15 w-full items-center justify-center rounded-full bg-blue p-2
-                                        ${isSignupInvalid &&
-										"bg-l5 dark:bg-d5 cursor-not-allowed"
-										}`}
+                                        ${
+																					isSignupInvalid &&
+																					"bg-l5 dark:bg-d5 cursor-not-allowed"
+																				}`}
 								>
 									<span
 										className={`all whitespace-nowrap text-center font-bold text-d1 text-xl dark:text-l1
-                                        ${isSignupInvalid &&
-											"text-d5 dark:text-l5 scale-100!"
-											}`}
+                                        ${
+																					isSignupInvalid &&
+																					"text-d5 dark:text-l5 scale-100!"
+																				}`}
 									>
 										{lockouts.signup > 0
 											? `ロック中 (${formatTime(lockouts.signup)})`
