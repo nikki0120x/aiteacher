@@ -891,45 +891,57 @@ export const useChat = (
 	}, [inputText, inputMedia, isUploading, thinkMode, setActiveContent]);
 
 	const handleSolve = useCallback(
-		async (problemText: string, turnId: string) => {
+		async (problemText: string, turnId: string, pageIndex: number) => {
+			const targetTurn = chatFlow.turns.find((t) => t.turnId === turnId);
+			if (!targetTurn) return;
+
+			// すでに解答が存在（または生成中）の場合はスキップ
+			const targetPage = targetTurn.pages.find((p) => p.pageIndex === pageIndex);
+			if (targetPage && targetPage.messages.model.length > 1) {
+				return;
+			}
+
 			setUserStatus("sending");
 			setModelStatus("thinking");
 
-			// 元のターンから画像（media）を取得する
-			const targetTurn = chatFlow.turns.find((t) => t.turnId === turnId);
-			const originalMedia = targetTurn?.pages[0]?.messages.user?.media || [];
+			const originalMedia = targetTurn.pages[0]?.messages.user?.media || [];
 			const mediaToSend = originalMedia.map((m) => ({
 				url: m.src,
 				mimeType: m.mimeType,
 			}));
 
-			// 新しいターンとしてチャットを追加
-			const initialUserMessage = {
-				...UserMessageSchema.createDefault(),
-				blocks: [{ type: "text" as const, content: problemText }], // ユーザーの入力は選択した問題文
-				media: originalMedia, // UI表示用に画像も引き継ぐ
-				status: "completed" as const,
-				timestampAt: Date.now(),
-			};
-
-			const newTurn = {
-				...TurnSchema.createDefault(),
-				title: "solve_request", // 解答ターンの目印
-				pages: [
-					{
-						...PageSchema.createDefault(),
-						pageIndex: 0,
-						messages: { user: initialUserMessage, model: [] },
-						timestampAt: Date.now(),
-					},
-				],
-			};
-
+			// 初期解答枠（model[1]）をセット
 			setChatFlow((prev) => ({
 				...prev,
-				turns: [...prev.turns, newTurn],
-				activeTurnId: newTurn.turnId,
-				modifiedAt: Date.now(),
+				turns: prev.turns.map((turn) => {
+					if (turn.turnId === turnId) {
+						return {
+							...turn,
+							pages: turn.pages.map((page) => {
+								if (page.pageIndex === pageIndex) {
+									return {
+										...page,
+										messages: {
+											...page.messages,
+											model: [
+												page.messages.model[0], // 問題文
+												{
+													...ModelMessageSchema.createDefault(),
+													blocks: [{ type: "text" as const, content: "" }],
+													status: "thinking" as const,
+													timestampAt: Date.now(),
+												},
+											],
+										},
+									};
+								}
+								return page;
+							}),
+							modifiedAt: Date.now(),
+						};
+					}
+					return turn;
+				}),
 			}));
 
 			if (setActiveContent) setActiveContent("none");
@@ -941,9 +953,9 @@ export const useChat = (
 					body: JSON.stringify({
 						mode: thinkMode,
 						text: problemText,
-						media: mediaToSend, // ここで元の画像をAPIに送る！
+						media: mediaToSend,
 						action: "solve",
-						turnId: newTurn.turnId,
+						turnId: turnId,
 					}),
 				});
 
@@ -958,40 +970,40 @@ export const useChat = (
 					if (value) {
 						accumulatedText += decoder.decode(value, { stream: true });
 
-						// 解答は分割せず、そのまま1つのテキストブロックとしてストリーミング
-						setChatFlow((prev) => {
-							const updatedTurns = prev.turns.map((turn) => {
-								if (turn.turnId === newTurn.turnId) {
+						setChatFlow((prev) => ({
+							...prev,
+							turns: prev.turns.map((turn) => {
+								if (turn.turnId === turnId) {
 									return {
 										...turn,
-										pages: [
-											{
-												...turn.pages[0],
-												messages: {
-													...turn.pages[0].messages,
-													model: [
-														{
-															...ModelMessageSchema.createDefault(),
-															blocks: [
-																{
-																	type: "text" as const,
-																	content: accumulatedText,
-																},
-															],
-															status: "completed" as const,
-															timestampAt: Date.now(),
-														},
-													],
-												},
-											},
-										],
+										pages: turn.pages.map((page) => {
+											if (page.pageIndex === pageIndex) {
+												return {
+													...page,
+													messages: {
+														...page.messages,
+														model: [
+															page.messages.model[0],
+															{
+																...page.messages.model[1],
+																blocks: [
+																	{ type: "text" as const, content: accumulatedText },
+																],
+																status: done ? ("completed" as const) : ("thinking" as const),
+																timestampAt: Date.now(),
+															},
+														],
+													},
+												};
+											}
+											return page;
+										}),
 										modifiedAt: Date.now(),
 									};
 								}
 								return turn;
-							});
-							return { ...prev, turns: updatedTurns, modifiedAt: Date.now() };
-						});
+							}),
+						}));
 					}
 					if (done) break;
 				}
