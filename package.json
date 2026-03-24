@@ -41,7 +41,7 @@
 		"framer-motion": "^12.38.0",
 		"gsap": "^3.14.2",
 		"immer": "^11.1.4",
-		"katex": "^0.16.40",
+		"katex": "^0.16.42",
 		"ky": "^1.14.3",
 		"lottie-react": "^2.4.1",
 		"lucide-react": "^0.575.0",

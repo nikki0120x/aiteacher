@@ -14,8 +14,6 @@ export const ROLE_MAP = {
 //	モデル
 export const MODEL_MAP = {
 	"gemini-3.1-flash-lite-preview": "model.gemini-3.1-flash-lite-preview",
-	"gemini-3-flash-preview": "model.gemini-3-flash-preview",
-	"gemini-3.1-pro-preview": "model.gemini-3.1-pro-preview",
 } as const;
 
 //  レベル

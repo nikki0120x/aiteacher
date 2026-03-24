@@ -24,9 +24,12 @@ import {
 	Square,
 	Trash2,
 	Zap,
+	LogIn,
+	MessageSquare,
+	X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation"; // useSearchParams を追加
 import React, { useEffect, useRef, useState } from "react";
 import type { ExtraProps } from "react-markdown";
 import ReactMarkdown from "react-markdown";
@@ -43,6 +46,8 @@ import { Logos } from "@/components/parts/logos";
 import { ActivityIndicator, Button, Input, Label } from "@/components/ui";
 import type { Medium, Turn } from "@/models/modelChat";
 import { type LEVEL_MAP, MODEL_MAP } from "@/models/modelChat";
+import { Link } from "@/i18n/routing";
+import { useSession } from "@/lib/auth-client";
 
 const ICON_MAP: Record<string, React.ElementType> = {
 	要約: ScrollText,
@@ -672,11 +677,10 @@ const TurnItem = React.memo(
 											handleSolve(item.content, turn.turnId, item.index);
 										}
 									}}
-									className={`flex-none flex items-center justify-center rounded-2xl size-10 shadow-lg colors ${
-										selectedPageIndex === item.index
+									className={`flex-none flex items-center justify-center rounded-2xl size-10 shadow-lg colors ${selectedPageIndex === item.index
 											? "bg-blue text-l1"
 											: "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 text-d1 dark:text-l1"
-									}`}
+										}`}
 								>
 									<span className="font-bold text-lg text-center whitespace-nowrap all">
 										{item.index + 1}
@@ -926,8 +930,31 @@ const TurnItem = React.memo(
 export default function Chat() {
 	const { refs, states, actions } = useChatView();
 	const {
-		states: { chat },
+		states: { chat, isHistoryOpen },
+		actions: { setHistoryOpen, triggerChatReset, router }
 	} = useAppView();
+
+	const { data: session } = useSession();
+
+	// URLパラメータの取得用
+	const searchParams = useSearchParams();
+	const chatId = searchParams.get("id");
+
+	// 履歴一覧を保持するState
+	const [historyList, setHistoryList] = useState<{ id: string, title: string }[]>([]);
+
+	// 履歴一覧の取得
+	useEffect(() => {
+		if (session && isHistoryOpen) {
+			fetch("/api/chat/history")
+				.then(res => res.json())
+				.then(data => {
+					if (Array.isArray(data)) setHistoryList(data);
+				})
+				.catch(console.error);
+		}
+	}, [session, isHistoryOpen]);
+
 
 	const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
 
@@ -982,6 +1009,94 @@ export default function Chat() {
 			onDrop={actions.handleDrop}
 			className="colors relative inset-0 flex w-full h-[calc(100dvh-3.75rem)] select-none items-center justify-center bg-l1 dark:bg-d1"
 		>
+			<AnimatePresence>
+				{isHistoryOpen && (
+					<>
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							transition={{ duration: 0.5, ease: "backOut" }}
+							onClick={setHistoryOpen}
+							className="absolute inset-0 z-100 bg-l1/50 backdrop-blur-sm lg:bg-transparent dark:bg-d1/50"
+						/>
+
+						<motion.aside
+							initial={{ x: "-100%" }}
+							animate={{ x: 0 }}
+							exit={{ x: "-100%" }}
+							transition={{ duration: 0.5, ease: "backOut" }}
+							className="absolute left-0 top-0 z-100 flex h-full w-80 flex-col border-r border-l5 bg-l1 shadow-2xl dark:border-d5 dark:bg-d1"
+						>
+							<div className="flex items-center justify-between p-4 border-b border-l5 dark:border-d5">
+								<span className="font-bold text-lg text-blue">会話履歴</span>
+								<Button onClick={setHistoryOpen} className="size-8 rounded-full hover:bg-l2 dark:hover:bg-d2 flex items-center justify-center colors">
+									<X size={18} className="text-d1 dark:text-l1" />
+								</Button>
+							</div>
+
+							<div className="flex flex-col gap-4 p-4 size-full overflow-hidden">
+								<Button
+									onClick={() => {
+										router.push("/chat"); // 新規チャット時はクエリパラメータを消す
+										triggerChatReset();
+										setHistoryOpen();
+									}}
+									className="flex w-full items-center justify-start gap-2 rounded-2xl bg-blue p-4 text-l1 shadow-lg hover:opacity-90 colors"
+								>
+									<Plus size={20} />
+									<span className="font-bold">新しいチャット</span>
+								</Button>
+
+								<div className="flex-1 overflow-y-auto scrollbar-hide">
+									{!session ? (
+										<div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+											<div className="p-4 rounded-full bg-l2 dark:bg-d2">
+												<MessageSquare className="text-d5 dark:text-l5" size={32} />
+											</div>
+											<p className="text-sm font-medium text-d1 dark:text-l1 px-4">
+												ログインすると過去の回答を保存し、いつでも確認できるようになります。
+											</p>
+											<Link href="/sign?mode=signin" className="w-full px-4">
+												<Button className="w-full gap-2 bg-blue text-l1 h-12 rounded-full">
+													<LogIn size={18} />
+													<span className="font-bold">ログインして同期</span>
+												</Button>
+											</Link>
+										</div>
+									) : (
+										<div className="flex flex-col gap-2">
+											{historyList.length > 0 ? (
+												historyList.map((item) => (
+													<Button
+														key={item.id}
+														onClick={() => {
+															router.push(`/chat?id=${item.id}`);
+															setHistoryOpen();
+														}}
+														className={`flex w-full items-center justify-start gap-3 rounded-xl p-3 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors ${chatId === item.id ? "bg-l2 dark:bg-d2 border border-blue/30" : ""
+															}`}
+													>
+														<MessageSquare size={16} className="text-blue flex-none" />
+														<span className="truncate text-sm font-medium text-d1 dark:text-l1">
+															{item.title}
+														</span>
+													</Button>
+												))
+											) : (
+												<p className="text-center text-xs text-d5 dark:text-l5 py-10">
+													保存された会話がありません
+												</p>
+											)}
+										</div>
+									)}
+								</div>
+							</div>
+						</motion.aside>
+					</>
+				)}
+			</AnimatePresence>
+
 			<AnimatePresence>
 				{states.dragInfo && (
 					<motion.div
@@ -1317,10 +1432,9 @@ export default function Chat() {
 														<Button
 															onClick={() => actions.toggleContent("upload")}
 															className={`colors flex size-10 items-center justify-center rounded-full
-																${
-																	states.activeContent === "upload"
-																		? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
-																		: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																${states.activeContent === "upload"
+																	? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
+																	: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 																}`}
 														>
 															<Plus className="text-d1 dark:text-l1 all" />
@@ -1336,11 +1450,10 @@ export default function Chat() {
 															setIsThinkModeMenuOpen(!isThinkModeMenuOpen)
 														}
 														className={`colors flex size-10 items-center justify-center rounded-full
-																		${
-																			isThinkModeMenuOpen
-																				? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
-																				: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-																		}`}
+																		${isThinkModeMenuOpen
+																? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
+																: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+															}`}
 													>
 														{states.selectedLevel === "minimal" && (
 															<Zap className="all text-blue" />
@@ -1430,11 +1543,10 @@ export default function Chat() {
 																					<Button
 																						key={m}
 																						onClick={() => handleModelChange(m)}
-																						className={`flex w-full items-center justify-start rounded-xl px-4 py-2 colors ${
-																							states.selectedModel === m
+																						className={`flex w-full items-center justify-start rounded-xl px-4 py-2 colors ${states.selectedModel === m
 																								? "bg-blue"
 																								: "hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3"
-																						}`}
+																							}`}
 																					>
 																						<span
 																							className={`whitespace-nowrap text-base font-medium text-left all ${states.selectedModel === m ? "text-l1" : "text-d1 dark:text-l1"}`}
@@ -1475,7 +1587,7 @@ export default function Chat() {
 																	].map((lvl) => {
 																		const isDisabled =
 																			states.selectedModel ===
-																				"gemini-3.1-pro-preview" &&
+																			"gemini-3.1-pro-preview" &&
 																			lvl.id === "minimal";
 																		const isSelected =
 																			states.selectedLevel === lvl.id &&
@@ -1485,12 +1597,11 @@ export default function Chat() {
 																			<Label
 																				key={lvl.id}
 																				className={`colors flex w-full items-center justify-center rounded-2xl px-4 py-2
-																					${
-																						isDisabled
-																							? "cursor-not-allowed"
-																							: isSelected
-																								? "bg-l2 dark:bg-d2"
-																								: "hover:bg-l2 dark:hover:bg-d2 focus-visible:bg-l2 dark:focus-visible:bg-d2"
+																					${isDisabled
+																						? "cursor-not-allowed"
+																						: isSelected
+																							? "bg-l2 dark:bg-d2"
+																							: "hover:bg-l2 dark:hover:bg-d2 focus-visible:bg-l2 dark:focus-visible:bg-d2"
 																					}`}
 																			>
 																				<Input
@@ -1514,24 +1625,22 @@ export default function Chat() {
 																				<div className="flex w-full flex-row items-center justify-start gap-2">
 																					<lvl.icon
 																						className={`colors
-																							${
-																								isSelected
-																									? "text-blue"
-																									: isDisabled
-																										? "text-l5 dark:text-d5"
-																										: "text-d1 dark:text-l1"
+																							${isSelected
+																								? "text-blue"
+																								: isDisabled
+																									? "text-l5 dark:text-d5"
+																									: "text-d1 dark:text-l1"
 																							}`}
 																					/>
 
 																					<span
 																						className={`whitespace-nowrap font-medium text-left text-base colors
-																						${
-																							isSelected
+																						${isSelected
 																								? "text-blue"
 																								: isDisabled
 																									? "text-l5 dark:text-d5"
 																									: "text-d1 dark:text-l1"
-																						}`}
+																							}`}
 																					>
 																						{lvl.label}
 																					</span>
@@ -1583,7 +1692,7 @@ export default function Chat() {
 															</Button>
 														</motion.div>
 													) : (!states.inputText.inputText.trim() &&
-															states.inputMedia.length === 0) ||
+														states.inputMedia.length === 0) ||
 														states.isUploading ? (
 														<motion.div
 															key="audio"
@@ -1722,7 +1831,7 @@ export default function Chat() {
 																					media={media}
 																					progress={
 																						states.uploadProgress[
-																							media.mediumId
+																						media.mediumId
 																						]
 																					}
 																				/>

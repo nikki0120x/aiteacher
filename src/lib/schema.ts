@@ -6,6 +6,7 @@ import {
 	text,
 	timestamp,
 	unique,
+	jsonb,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -153,4 +154,15 @@ export const rateLimit = pgTable("rate_limit", {
 	lockoutUntil: timestamp("lockoutUntil"),
 	createdAt: timestamp("createdAt").defaultNow(),
 	updatedAt: timestamp("updatedAt").defaultNow(),
+});
+
+export const chatSession = pgTable("chat_session", {
+	id: text("id").primaryKey(),
+	userId: text("userId")
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	title: text("title").notNull().default("新しい会話"),
+	flowData: jsonb("flowData").notNull(),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

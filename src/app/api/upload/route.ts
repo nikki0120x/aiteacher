@@ -1,6 +1,8 @@
 import { Storage } from "@google-cloud/storage";
 import { NextResponse } from "next/server";
 import { v7 as uuidv7 } from "uuid";
+import { auth } from "@/lib/auth"; // authをインポート
+import { headers } from "next/headers"; // headersをインポート
 
 const project = process.env.GOOGLE_CLOUD_PROJECT || "aiteacher-0120";
 const bucketName = process.env.GCS_BUCKET_NAME || "aiteacher-media";
@@ -29,13 +31,23 @@ export async function POST(request: Request): Promise<NextResponse> {
 	const { searchParams } = new URL(request.url);
 	const originalFilename = searchParams.get("filename") || "file";
 
-	// UUIDを追加してファイル名の重複を防ぐ
-	const filename = `${uuidv7()}-${originalFilename}`;
-
 	if (!request.body)
 		return NextResponse.json({ error: "No body" }, { status: 400 });
 
 	try {
+		// 1. ログイン状態の確認
+		const session = await auth.api.getSession({ headers: await headers() });
+
+		// 2. 保存先フォルダの決定
+		let folderPath = "guests";
+		if (session) {
+			// ログイン済みの場合はユーザーIDのフォルダに入れる
+			folderPath = `users/${session.user.id}`;
+		}
+
+		// 3. フォルダパスを含めたファイル名を生成
+		const filename = `${folderPath}/${uuidv7()}-${originalFilename}`;
+
 		const file = bucket.file(filename);
 		const buffer = Buffer.from(await request.arrayBuffer());
 		const contentType =
@@ -71,7 +83,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
 	}
 
 	try {
-		// 公開URLからファイル名を抽出して削除
+		// 公開URLからファイル名を抽出して削除 (フォルダ構造もマッチします)
 		const urlPattern = new RegExp(
 			`https://storage.googleapis.com/${bucketName}/(.+)`,
 		);

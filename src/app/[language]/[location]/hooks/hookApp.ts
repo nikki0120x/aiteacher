@@ -29,6 +29,8 @@ export const useHeader = () => {
 		menuDirection,
 		setActiveMenu,
 		triggerChatReset,
+		isHistoryOpen,
+		setHistoryOpen,
 	} = useAppStore();
 
 	const router = useRouter();
@@ -67,8 +69,9 @@ export const useHeader = () => {
 			setActiveMenu,
 			handleMenuToggle,
 			triggerChatReset,
+			setHistoryOpen,
 		}),
-		[router, setSidebarOpen, setActiveMenu, handleMenuToggle, triggerChatReset],
+		[router, setSidebarOpen, setActiveMenu, handleMenuToggle, triggerChatReset, setHistoryOpen],
 	);
 
 	return {
@@ -76,6 +79,7 @@ export const useHeader = () => {
 			isSidebarOpen,
 			activeMenu,
 			menuDirection,
+			isHistoryOpen,
 		},
 		actions,
 	};

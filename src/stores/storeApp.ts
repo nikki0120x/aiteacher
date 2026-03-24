@@ -26,6 +26,9 @@ interface AppState {
 		notification: Omit<ChatNotification, "isRead">,
 	) => void;
 	markChatNotificationAsRead: (id: string) => void;
+
+	isHistoryOpen: boolean;
+	setHistoryOpen: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -70,4 +73,8 @@ export const useAppStore = create<AppState>((set) => ({
 				n.id === id ? { ...n, isRead: true } : n,
 			),
 		})),
+
+	isHistoryOpen: false,
+	setHistoryOpen: () =>
+		set((state) => ({ isHistoryOpen: !state.isHistoryOpen })),
 }));

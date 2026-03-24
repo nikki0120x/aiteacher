@@ -9,12 +9,13 @@ export const useAppView = () => {
 	//  ================================================================
 
 	const {
-		states: { activeMenu, isSidebarOpen, menuDirection },
+		states: { activeMenu, isSidebarOpen, menuDirection, isHistoryOpen },
 		actions: {
 			setSidebarOpen,
 			setActiveMenu,
 			handleMenuToggle,
 			triggerChatReset,
+			setHistoryOpen,
 		},
 	} = useHeader();
 
@@ -50,6 +51,7 @@ export const useAppView = () => {
 			activeMenu,
 			isSidebarOpen,
 			menuDirection,
+			isHistoryOpen,
 			activeNotificationTab,
 			theme,
 			app,
@@ -63,6 +65,7 @@ export const useAppView = () => {
 			setActiveMenu,
 			handleMenuToggle,
 			triggerChatReset,
+			setHistoryOpen,
 			router,
 			pathname,
 			handleSidebarLinkClick,

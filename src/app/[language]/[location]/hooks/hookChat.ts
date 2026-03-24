@@ -1,4 +1,6 @@
+// hookChat.ts
 import { useLocale } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import {
 	useCallback,
 	useEffect,
@@ -157,7 +159,7 @@ export const useDragAndDrop = (
 				}
 			}
 		},
-		[onDropCallback],
+		[onDropCallback, setActiveMenu],
 	);
 
 	useEffect(() => {
@@ -415,7 +417,7 @@ export const useTextarea = (
 
 			setTextareaHeight(finalHeight);
 		}
-	}, [displayText, isFullTextarea]);
+	}, [displayText, isFullTextarea, singleLineHeight]);
 
 	//	質問欄の高さ
 	const containerHeight = useMemo(() => {
@@ -564,6 +566,38 @@ export const useChat = (
 		(state) => state.upsertChatNotification,
 	);
 
+	const searchParams = useSearchParams();
+	const chatId = searchParams.get("id");
+
+	const [userStatus, setUserStatus] =
+		useState<keyof typeof USER_STATUS_MAP>("pending");
+	const [modelStatus, setModelStatus] =
+		useState<keyof typeof MODEL_STATUS_MAP>("pending");
+
+	const [chatFlow, setChatFlow] = useState<ChatFlow>(
+		ChatFlowSchema.createDefault(),
+	);
+
+	// URLから履歴を読み込む処理
+	useEffect(() => {
+		const loadHistory = async () => {
+			if (!chatId) return;
+			try {
+				const res = await fetch(`/api/chat/history?id=${chatId}`);
+				if (!res.ok) return;
+				const data = await res.json();
+				if (data && data.flowData) {
+					setChatFlow(data.flowData);
+					setUserStatus("completed");
+					setModelStatus("completed");
+				}
+			} catch (e) {
+				console.error("履歴の読み込みに失敗しました", e);
+			}
+		};
+		loadHistory();
+	}, [chatId]);
+
 	useEffect(() => {
 		if (chatResetSignal > 0) {
 			setChatFlow(ChatFlowSchema.createDefault());
@@ -577,15 +611,6 @@ export const useChat = (
 			}
 		}
 	}, [chatResetSignal, setActiveContent]);
-
-	const [userStatus, setUserStatus] =
-		useState<keyof typeof USER_STATUS_MAP>("pending");
-	const [modelStatus, setModelStatus] =
-		useState<keyof typeof MODEL_STATUS_MAP>("pending");
-
-	const [chatFlow, setChatFlow] = useState<ChatFlow>(
-		ChatFlowSchema.createDefault(),
-	);
 
 	const [inputText, setInputText] = useState<InputText>(
 		InputTextSchema.createDefault(),
@@ -744,6 +769,25 @@ export const useChat = (
 		}
 	}, []);
 
+	const saveHistory = useCallback(async (updatedFlow: ChatFlow, targetTurnId: string) => {
+		try {
+			const targetTurn = updatedFlow.turns.find((t) => t.turnId === targetTurnId);
+			if (!targetTurn) return;
+
+			await fetch("/api/chat/history", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					id: updatedFlow.fileId || targetTurnId,
+					title: targetTurn.title || "新しい会話",
+					flowData: updatedFlow,
+				}),
+			});
+		} catch (e) {
+			console.error("履歴の保存に失敗しました", e);
+		}
+	}, []);
+
 	// 送信
 	const handleSend = useCallback(async () => {
 		if (!inputText.inputText && inputMedia.length === 0) return;
@@ -876,46 +920,46 @@ export const useChat = (
 					const newPages =
 						completedTexts.length === 0
 							? [
-									{
-										...PageSchema.createDefault(),
-										pageIndex: 0,
-										messages: {
-											user: initialUserMessage,
-											model: [
-												{
-													...ModelMessageSchema.createDefault(),
-													status: done
-														? ("completed" as const)
-														: ("streaming" as const),
-													blocks: [],
-												},
-											],
-										},
-										timestampAt: Date.now(),
+								{
+									...PageSchema.createDefault(),
+									pageIndex: 0,
+									messages: {
+										user: initialUserMessage,
+										model: [
+											{
+												...ModelMessageSchema.createDefault(),
+												status: done
+													? ("completed" as const)
+													: ("streaming" as const),
+												blocks: [],
+											},
+										],
 									},
-								]
+									timestampAt: Date.now(),
+								},
+							]
 							: completedTexts.map((text, index) => {
-									return {
-										...PageSchema.createDefault(),
-										pageIndex: index,
-										messages: {
-											user: initialUserMessage,
-											model: [
-												{
-													...ModelMessageSchema.createDefault(),
-													blocks: [
-														{ type: "text" as const, content: text.trim() },
-													],
-													status: done
-														? ("completed" as const)
-														: ("streaming" as const),
-													timestampAt: Date.now(),
-												},
-											],
-										},
-										timestampAt: Date.now(),
-									};
-								});
+								return {
+									...PageSchema.createDefault(),
+									pageIndex: index,
+									messages: {
+										user: initialUserMessage,
+										model: [
+											{
+												...ModelMessageSchema.createDefault(),
+												blocks: [
+													{ type: "text" as const, content: text.trim() },
+												],
+												status: done
+													? ("completed" as const)
+													: ("streaming" as const),
+												timestampAt: Date.now(),
+											},
+										],
+									},
+									timestampAt: Date.now(),
+								};
+							});
 
 					setChatFlow((prev) => {
 						const updatedTurns = prev.turns.map((turn) => {
@@ -949,6 +993,11 @@ export const useChat = (
 				title: currentText.slice(0, 20) || "新しい会話",
 				status: "completed",
 				updatedAt: Date.now(),
+			});
+
+			setChatFlow((latestFlow) => {
+				saveHistory(latestFlow, newTurn.turnId);
+				return latestFlow;
 			});
 		} catch (error: unknown) {
 			const finalStatus =
@@ -985,6 +1034,7 @@ export const useChat = (
 		selectedLevel,
 		setActiveContent,
 		upsertChatNotification,
+		saveHistory,
 	]);
 
 	const handleSolve = useCallback(
@@ -1126,43 +1176,48 @@ export const useChat = (
 					if (done) break;
 				}
 
-				setChatFlow((prev) => ({
-					...prev,
-					turns: prev.turns.map((turn) => {
-						if (turn.turnId === turnId) {
-							return {
-								...turn,
-								pages: turn.pages.map((page) => {
-									if (page.pageIndex === pageIndex) {
-										return {
-											...page,
-											messages: {
-												...page.messages,
-												model: [
-													page.messages.model[0],
-													{
-														...page.messages.model[1],
-														blocks: [
-															{
-																type: "text" as const,
-																content: accumulatedText,
-															},
-														],
-														status: "completed" as const,
-														timestampAt: Date.now(),
-													},
-												],
-											},
-										};
-									}
-									return page;
-								}),
-								modifiedAt: Date.now(),
-							};
-						}
-						return turn;
-					}),
-				}));
+				setChatFlow((prev) => {
+					const updatedFlow = {
+						...prev,
+						turns: prev.turns.map((turn) => {
+							if (turn.turnId === turnId) {
+								return {
+									...turn,
+									pages: turn.pages.map((page) => {
+										if (page.pageIndex === pageIndex) {
+											return {
+												...page,
+												messages: {
+													...page.messages,
+													model: [
+														page.messages.model[0],
+														{
+															...page.messages.model[1],
+															blocks: [
+																{
+																	type: "text" as const,
+																	content: accumulatedText,
+																},
+															],
+															status: "completed" as const,
+															timestampAt: Date.now(),
+														},
+													],
+												},
+											};
+										}
+										return page;
+									}),
+									modifiedAt: Date.now(),
+								};
+							}
+							return turn;
+						}),
+					};
+
+					saveHistory(updatedFlow, turnId);
+					return updatedFlow;
+				});
 
 				setModelStatus("completed");
 				setUserStatus("completed");
@@ -1238,6 +1293,7 @@ export const useChat = (
 			selectedLevel,
 			setActiveContent,
 			upsertChatNotification,
+			saveHistory,
 		],
 	);
 
