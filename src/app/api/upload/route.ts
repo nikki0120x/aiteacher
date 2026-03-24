@@ -1,8 +1,8 @@
 import { Storage } from "@google-cloud/storage";
 import { NextResponse } from "next/server";
 import { v7 as uuidv7 } from "uuid";
-import { auth } from "@/lib/auth"; // authをインポート
-import { headers } from "next/headers"; // headersをインポート
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 const project = process.env.GOOGLE_CLOUD_PROJECT || "aiteacher-0120";
 const bucketName = process.env.GCS_BUCKET_NAME || "aiteacher-media";

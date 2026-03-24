@@ -961,17 +961,17 @@ export default function Chat() {
 	const handleModelChange = (model: keyof typeof MODEL_MAP) => {
 		actions.setSelectedModel(model);
 		if (
-			model === "gemini-3.1-pro-preview" &&
+			model === "gemini-3.1-flash-lite-preview" &&
 			states.selectedLevel === "minimal"
 		) {
-			actions.setSelectedLevel("low");
+			actions.setSelectedLevel("minimal");
 		}
 		setIsModelSelectOpen(false);
 	};
 
 	const handleLevelChange = (level: keyof typeof LEVEL_MAP) => {
 		if (
-			states.selectedModel === "gemini-3.1-pro-preview" &&
+			states.selectedModel === "gemini-3.1-flash-lite-preview" &&
 			level === "minimal"
 		) {
 			return;
@@ -1038,7 +1038,7 @@ export default function Chat() {
 							<div className="flex flex-col gap-4 p-4 size-full overflow-hidden">
 								<Button
 									onClick={() => {
-										router.push("/chat"); // 新規チャット時はクエリパラメータを消す
+										router.push("/chat");
 										triggerChatReset();
 										setHistoryOpen();
 									}}
@@ -1502,12 +1502,6 @@ export default function Chat() {
 																			{states.selectedModel ===
 																				"gemini-3.1-flash-lite-preview" &&
 																				"Gemini 3.1 Flash-Lite"}
-																			{states.selectedModel ===
-																				"gemini-3-flash-preview" &&
-																				"Gemini 3 Flash"}
-																			{states.selectedModel ===
-																				"gemini-3.1-pro-preview" &&
-																				"Gemini 3.1 Pro"}
 																		</span>
 
 																		<motion.div
@@ -1554,10 +1548,6 @@ export default function Chat() {
 																							{m ===
 																								"gemini-3.1-flash-lite-preview" &&
 																								"Gemini 3.1 Flash-Lite"}
-																							{m === "gemini-3-flash-preview" &&
-																								"Gemini 3 Flash"}
-																							{m === "gemini-3.1-pro-preview" &&
-																								"Gemini 3.1 Pro"}
 																						</span>
 																					</Button>
 																				))}
@@ -1587,8 +1577,8 @@ export default function Chat() {
 																	].map((lvl) => {
 																		const isDisabled =
 																			states.selectedModel ===
-																			"gemini-3.1-pro-preview" &&
-																			lvl.id === "minimal";
+																			"gemini-3.1-flash-lite-preview" &&
+																			lvl.id === "high";
 																		const isSelected =
 																			states.selectedLevel === lvl.id &&
 																			!isDisabled;
