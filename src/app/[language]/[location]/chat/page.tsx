@@ -26,11 +26,13 @@ import {
 	Zap,
 	LogIn,
 	MessageSquare,
+	Folder,
+	FolderOpen,
 	X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useParams, useSearchParams } from "next/navigation"; // useSearchParams を追加
-import React, { useEffect, useRef, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import type { ExtraProps } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import type { VirtuosoHandle } from "react-virtuoso";
@@ -678,8 +680,8 @@ const TurnItem = React.memo(
 										}
 									}}
 									className={`flex-none flex items-center justify-center rounded-2xl size-10 shadow-lg colors ${selectedPageIndex === item.index
-											? "bg-blue text-l1"
-											: "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 text-d1 dark:text-l1"
+										? "bg-blue text-l1"
+										: "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 text-d1 dark:text-l1"
 										}`}
 								>
 									<span className="font-bold text-lg text-center whitespace-nowrap all">
@@ -941,9 +943,16 @@ export default function Chat() {
 	const chatId = searchParams.get("id");
 
 	// 履歴一覧を保持するState
-	const [historyList, setHistoryList] = useState<{ id: string, title: string }[]>([]);
+	const [historyList, setHistoryList] = useState<{ id: string, title: string, curriculum: string }[]>([]);
 
-	// 履歴一覧の取得
+	// フォルダ開閉状態を管理するステートを追加
+	const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
+
+	const toggleFolder = (path: string) => {
+		setOpenFolders((prev) => ({ ...prev, [path]: !prev[path] }));
+	};
+
+	// 履歴一覧の取得 (変更なし)
 	useEffect(() => {
 		if (session && isHistoryOpen) {
 			fetch("/api/chat/history")
@@ -954,6 +963,85 @@ export default function Chat() {
 				.catch(console.error);
 		}
 	}, [session, isHistoryOpen]);
+
+	// 履歴を「教科/科目/単元」のツリー構造に変換するロジックを追加
+	const historyTree = useMemo(() => {
+		const root: any = {};
+		historyList.forEach((item) => {
+			const parts = item.curriculum && item.curriculum.includes("/")
+				? item.curriculum.split("/")
+				: ["未分類"];
+
+			let current = root;
+			parts.forEach((part, index) => {
+				if (!current[part]) {
+					current[part] = { _items: [] };
+				}
+				if (index === parts.length - 1) {
+					current[part]._items.push(item);
+				} else {
+					current = current[part];
+				}
+			});
+		});
+		return root;
+	}, [historyList]);
+
+	// ツリー構造を再帰的にレンダリングする関数を追加
+	const renderTree = (node: any, path: string = "", level: number = 0) => {
+		const keys = Object.keys(node).filter(k => k !== "_items");
+		const items = node._items || [];
+
+		return (
+			<div className="flex flex-col gap-1 w-full" style={{ paddingLeft: level === 0 ? 0 : '1rem' }}>
+				{keys.map(key => {
+					const currentPath = path ? `${path}/${key}` : key;
+					const isOpen = openFolders[currentPath];
+					return (
+						<div key={currentPath} className="flex flex-col gap-1 w-full">
+							<Button
+								onClick={() => toggleFolder(currentPath)}
+								className="flex w-full items-center justify-start gap-3 rounded-xl p-2 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors"
+							>
+								{isOpen ? <FolderOpen size={16} className="text-blue flex-none" /> : <Folder size={16} className="text-blue flex-none" />}
+								<span className="truncate text-sm font-bold text-d1 dark:text-l1">
+									{key}
+								</span>
+							</Button>
+							<AnimatePresence>
+								{isOpen && (
+									<motion.div
+										initial={{ height: 0, opacity: 0 }}
+										animate={{ height: "auto", opacity: 1 }}
+										exit={{ height: 0, opacity: 0 }}
+										className="overflow-hidden flex flex-col gap-1"
+									>
+										{renderTree(node[key], currentPath, level + 1)}
+									</motion.div>
+								)}
+							</AnimatePresence>
+						</div>
+					);
+				})}
+				{items.map((item: any) => (
+					<Button
+						key={item.id}
+						onClick={() => {
+							router.push(`/chat?id=${item.id}`);
+							setHistoryOpen();
+						}}
+						className={`flex w-full items-center justify-start gap-3 rounded-xl p-2 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors ${chatId === item.id ? "bg-l2 dark:bg-d2 border border-blue/30" : ""
+							}`}
+					>
+						<MessageSquare size={14} className="text-blue/70 flex-none ml-2" />
+						<span className="truncate text-sm font-medium text-d1 dark:text-l1">
+							{item.title}
+						</span>
+					</Button>
+				))}
+			</div>
+		);
+	};
 
 
 	const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
@@ -1067,22 +1155,37 @@ export default function Chat() {
 									) : (
 										<div className="flex flex-col gap-2">
 											{historyList.length > 0 ? (
-												historyList.map((item) => (
-													<Button
-														key={item.id}
-														onClick={() => {
-															router.push(`/chat?id=${item.id}`);
-															setHistoryOpen();
-														}}
-														className={`flex w-full items-center justify-start gap-3 rounded-xl p-3 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors ${chatId === item.id ? "bg-l2 dark:bg-d2 border border-blue/30" : ""
-															}`}
-													>
-														<MessageSquare size={16} className="text-blue flex-none" />
-														<span className="truncate text-sm font-medium text-d1 dark:text-l1">
-															{item.title}
-														</span>
-													</Button>
-												))
+												<>
+													{/* ▼ フォルダ（ツリー）表示部分 ▼ */}
+													<div className="flex flex-col gap-1 mb-2">
+														<span className="text-xs font-bold text-d5 dark:text-l5 px-2 pb-1 block">カテゴリ別</span>
+														{renderTree(historyTree)}
+													</div>
+
+													{/* 区切り線 */}
+													<div className="w-full h-px bg-l5 dark:bg-d5 my-2" />
+
+													{/* ▼ すべての履歴（フラットリスト）表示部分 ▼ */}
+													<div className="flex flex-col gap-1">
+														<span className="text-xs font-bold text-d5 dark:text-l5 px-2 pb-1 block">すべての履歴</span>
+														{historyList.map((item) => (
+															<Button
+																key={`flat-${item.id}`} // ツリー側とkeyが重複しないようにプレフィックスを追加
+																onClick={() => {
+																	router.push(`/chat?id=${item.id}`);
+																	setHistoryOpen();
+																}}
+																className={`flex w-full items-center justify-start gap-3 rounded-xl p-3 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors ${chatId === item.id ? "bg-l2 dark:bg-d2 border border-blue/30" : ""
+																	}`}
+															>
+																<MessageSquare size={16} className="text-blue flex-none" />
+																<span className="truncate text-sm font-medium text-d1 dark:text-l1">
+																	{item.title}
+																</span>
+															</Button>
+														))}
+													</div>
+												</>
 											) : (
 												<p className="text-center text-xs text-d5 dark:text-l5 py-10">
 													保存された会話がありません
@@ -1538,8 +1641,8 @@ export default function Chat() {
 																						key={m}
 																						onClick={() => handleModelChange(m)}
 																						className={`flex w-full items-center justify-start rounded-xl px-4 py-2 colors ${states.selectedModel === m
-																								? "bg-blue"
-																								: "hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3"
+																							? "bg-blue"
+																							: "hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3"
 																							}`}
 																					>
 																						<span

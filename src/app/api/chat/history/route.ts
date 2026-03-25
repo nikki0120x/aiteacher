@@ -56,7 +56,6 @@ export async function GET(req: NextRequest) {
 
         const id = req.nextUrl.searchParams.get("id");
 
-        // IDが指定されている場合は個別データを返す（チャット復元用）
         if (id) {
             const data = await db.query.chatSession.findFirst({
                 where: and(
@@ -67,18 +66,44 @@ export async function GET(req: NextRequest) {
             return Response.json(data || { error: "Not Found" });
         }
 
-        // IDがない場合は一覧を返す（サイドバーリスト用）
+        // flowDataも取得するように追加
         const list = await db
             .select({
                 id: chatSession.id,
                 title: chatSession.title,
                 updatedAt: chatSession.updatedAt,
+                flowData: chatSession.flowData,
             })
             .from(chatSession)
             .where(eq(chatSession.userId, session.user.id))
             .orderBy(desc(chatSession.updatedAt));
 
-        return Response.json(list);
+        // flowDataからカリキュラムのパスを抽出
+        const mappedList = list.map((item) => {
+            let curriculum = "未分類";
+            try {
+                const flow = item.flowData as any;
+                // 問題判別された最初のメッセージを確認
+                if (flow?.turns?.[0]?.pages?.[0]?.messages?.model?.[0]?.blocks?.[0]?.content) {
+                    const content = flow.turns[0].pages[0].messages.model[0].blocks[0].content;
+                    // "Curriculum: 教科/科目/単元" を抽出する正規表現
+                    const match = content.match(/Curriculum:\s*"?([^"\n]+)"?/);
+                    if (match && match[1].includes("/")) {
+                        curriculum = match[1].trim();
+                    }
+                }
+            } catch (e) {
+                console.error("Parse error:", e);
+            }
+
+            return {
+                id: item.id,
+                title: item.title,
+                curriculum, // 追加
+            };
+        });
+
+        return Response.json(mappedList);
     } catch (error) {
         console.error("History fetching error:", error);
         return new Response("Internal Server Error", { status: 500 });
