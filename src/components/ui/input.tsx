@@ -48,6 +48,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
 		useImperativeHandle(ref, () => innerRef.current as HTMLInputElement);
 
+		const [isFocused, setIsFocused] = useState(false);
 		const [hasValue, setHasValue] = useState(!!value);
 		const [showPassword, setShowPassword] = useState(false);
 
@@ -59,14 +60,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 		const currentType = isPasswordType && showPassword ? "text" : type;
 		const isFloatingType = ["text", "email", "password"].includes(type);
 
-		//	入力変化
+		const handleAutoFill = (e: React.AnimationEvent<HTMLInputElement>) => {
+			if (e.animationName === "onAutoFillStart") {
+				setHasValue(true);
+			}
+		};
+		
 		const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 			setHasValue(e.target.value.length > 0);
 
 			if (onChange) onChange(e);
 		};
 
-		//	入力削除
 		const handleInputClear = () => {
 			if (innerRef.current) {
 				const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -120,8 +125,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 								type={currentType}
 								name={name}
 								value={value}
-								placeholder=""
+								placeholder=" "
 								onChange={handleInputChange}
+								onAnimationStart={handleAutoFill}
+								onFocus={(e) => {
+									setIsFocused(true);
+									props.onFocus?.(e);
+								}}
+								onBlur={(e) => {
+									setIsFocused(false);
+									props.onBlur?.(e);
+								}}
 								className={cn(
 									"peer size-full bg-transparent pt-2 text-left font-medium text-base text-d1 caret-blue outline-none placeholder:text-l5 dark:text-l1 dark:placeholder:text-d5",
 									props.disabled && "cursor-not-allowed",
@@ -134,6 +148,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 									"all pointer-events-none absolute left-0 origin-left text-l5 dark:text-d5",
 									"peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:text-blue!",
 									"peer-[:not(:placeholder-shown)]:-translate-y-4 peer-[:not(:placeholder-shown)]:scale-75",
+									(isFocused || hasValue) && "-translate-y-4 scale-75 text-blue!",
 								)}
 							>
 								{label || placeholder}

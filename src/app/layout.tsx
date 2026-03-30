@@ -1,21 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import Client from "@/app/client";
 import Server from "@/app/server";
 import "@/app/globals.css";
 import { Providers } from "@/app/provider";
-
-const titleFont = localFont({
-	src: "../../public/fonts/nagino.otf",
-	variable: "--font-title",
-});
-
-const subtitleFont = localFont({
-	src: "../../public/fonts/nagino.otf",
-	variable: "--font-subtitle",
-});
 
 export const viewport: Viewport = {
 	width: "device-width",
@@ -49,7 +38,6 @@ export default async function RootLayout({
 			lang={locale}
 			data-scroll-behavior="smooth"
 			suppressHydrationWarning
-			className={`${titleFont.variable} ${subtitleFont.variable}`}
 		>
 			<head>
 				<Server />

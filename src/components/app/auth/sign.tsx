@@ -13,7 +13,7 @@ import {
 	sendOtpCode,
 	verifyOtpCode,
 } from "@/app/actions/auth";
-import { ActivityIndicator, Button } from "@/components/ui/index";
+import { ActivityIndicator, Button, DotsIndicator } from "@/components/ui/index";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "@/i18n/routing";
@@ -145,7 +145,6 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 
 	const [signinIdentifier, setSigninIdentifier] = useState("");
 	const [signinPassword, setSigninPassword] = useState("");
-
 	const [signupName, setSignupName] = useState("");
 	const [signupEmail, setSignupEmail] = useState("");
 	const [signupCode, setSignupCode] = useState("");
@@ -562,7 +561,7 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 						<div className="flex w-full flex-row items-center justify-center gap-4">
 							<div className="colors h-px w-full rounded-full bg-blue" />
 
-							<span className="colors whitespace-nowrap text-center font-medium text-blue text-base">
+							<span className="colors whitespace-nowrap text-center font-bold text-blue text-lg">
 								アカウント接続
 							</span>
 
@@ -584,7 +583,7 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 									type="text"
 									name="identifier"
 									value={signinIdentifier}
-									label="メールアドレス／ユーザーネーム"
+									label="メールアドレス"
 									error={errors.identifier}
 									onChange={(e) =>
 										handleSigninChange("identifier", e.target.value)
@@ -631,24 +630,38 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 									disabled={isSigninInvalid}
 									type="submit"
 									className={`colors flex-none flex h-15 w-full items-center justify-center rounded-full bg-blue p-2
-                                        ${
-																					isSigninInvalid &&
-																					"bg-l5 dark:bg-d5 cursor-not-allowed"
-																				}`}
+                                        ${isSigninInvalid &&
+										"bg-l5 dark:bg-d5 cursor-not-allowed"
+										}`}
 								>
-									<span
-										className={`all whitespace-nowrap text-center font-bold text-xl text-l1
-                                        ${
-																					isSigninInvalid &&
-																					"text-d5 dark:text-l5 scale-100!"
-																				}`}
-									>
-										{lockouts.signin > 0
-											? `ロック中 (${formatTime(lockouts.signin)})`
-											: isLoading
-												? "接続中..."
-												: "接続"}
-									</span>
+									<AnimatePresence mode="popLayout">
+										{isLoading ? (
+											<motion.div
+												key="loading"
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												transition={{ duration: 0.5, ease: "backOut" }}
+												className="scale-100! flex justify-center items-center"
+											>
+												<DotsIndicator className="size-2 text-d5 dark:text-l5 colors" />
+											</motion.div>
+										) : (
+											<motion.span
+												key="text"
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												transition={{ duration: 0.5, ease: "backOut" }}
+												className={`all whitespace-nowrap text-center font-bold text-lg text-l1
+                                                    ${isSigninInvalid && "text-d5 dark:text-l5 scale-100!"}`}
+											>
+												{lockouts.signin > 0
+													? `(${formatTime(lockouts.signin)})`
+													: "接続"}
+											</motion.span>
+										)}
+									</AnimatePresence>
 								</Button>
 
 								<div className="flex w-full flex-row items-center justify-between px-2">
@@ -766,13 +779,12 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 													lockouts.otp > 0
 												}
 												className={`colors flex-none flex h-10 items-center justify-center rounded-full p-2 bg-blue
-                                                    ${
-																											(isEmailInvalid ||
-																												countdown > 0 ||
-																												lockouts.otp > 0 ||
-																												isSendingCode) &&
-																											"bg-l5 dark:bg-d5 cursor-not-allowed"
-																										}`}
+                                                    ${(isEmailInvalid ||
+														countdown > 0 ||
+														lockouts.otp > 0 ||
+														isSendingCode) &&
+													"bg-l5 dark:bg-d5 cursor-not-allowed"
+													}`}
 											>
 												<AnimatePresence mode="wait">
 													{isSendingCode ? (
@@ -930,24 +942,38 @@ export function Sign({ onSuccess }: { onSuccess?: () => void }) {
 									disabled={isSignupInvalid}
 									type="submit"
 									className={`colors flex-none flex h-15 w-full items-center justify-center rounded-full bg-blue p-2
-                                        ${
-																					isSignupInvalid &&
-																					"bg-l5 dark:bg-d5 cursor-not-allowed"
-																				}`}
+                                        ${isSignupInvalid &&
+										"bg-l5 dark:bg-d5 cursor-not-allowed"
+										}`}
 								>
-									<span
-										className={`all whitespace-nowrap text-center font-bold text-d1 text-xl dark:text-l1
-                                        ${
-																					isSignupInvalid &&
-																					"text-d5 dark:text-l5 scale-100!"
-																				}`}
-									>
-										{lockouts.signup > 0
-											? `ロック中 (${formatTime(lockouts.signup)})`
-											: isLoading
-												? "登録中..."
-												: "登録"}
-									</span>
+									<AnimatePresence mode="popLayout">
+										{isLoading ? (
+											<motion.div
+												key="loading"
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												transition={{ duration: 0.5, ease: "backOut" }}
+												className="scale-100! flex justify-center items-center"
+											>
+												<DotsIndicator className="size-2 text-d5 dark:text-l5 colors" />
+											</motion.div>
+										) : (
+											<motion.span
+												key="text"
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												transition={{ duration: 0.5, ease: "backOut" }}
+												className={`all whitespace-nowrap text-center font-bold text-lg text-l1
+                                                    ${isSignupInvalid && "text-d5 dark:text-l5 scale-100!"}`}
+											>
+												{lockouts.signup > 0
+													? `(${formatTime(lockouts.signup)})`
+													: "登録"}
+											</motion.span>
+										)}
+									</AnimatePresence>
 								</Button>
 
 								<div className="flex w-full flex-row items-center justify-center px-2">

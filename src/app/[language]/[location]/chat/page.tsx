@@ -1329,7 +1329,7 @@ export default function Chat() {
 								<div className="colors flex w-full gap-2 flex-col items-center justify-center">
 									<span
 										ref={refs.pageTitleTextRef}
-										className="colors font-subtitle text-center font-medium text-base text-d5 italic dark:text-l5"
+										className="colors text-center font-medium text-base text-d5 italic dark:text-l5"
 									>
 										{chat("question.message")}
 									</span>

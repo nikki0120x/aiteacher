@@ -57,7 +57,7 @@ export default function SignModal() {
 										width={120}
 										height={40}
 										priority
-										className="object-contain"
+										className="w-30 h-10 object-contain"
 									/>
 
 									<Button
