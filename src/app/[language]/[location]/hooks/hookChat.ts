@@ -973,7 +973,6 @@ export const useChat = (
 					}));
 				}
 
-				// 通常モード（抽出）の場合のみセクション分割ロジックを適用
 				if (!isInteractiveMode && (value || done)) {
 					const splitTexts = accumulatedText.split(/(?=# Problem|# Error)/g);
 					let validTexts = splitTexts.filter(
@@ -992,21 +991,26 @@ export const useChat = (
 							turns: prev.turns.map((turn) => {
 								if (turn.turnId === newTurn.turnId) {
 									const newPages = completedTexts.length === 0
-										? page.pages // fallback
-										: completedTexts.map((text, index) => ({
-											...PageSchema.createDefault(),
-											pageIndex: index,
-											messages: {
-												user: initialUserMessage,
-												model: [{
-													...ModelMessageSchema.createDefault(),
-													blocks: [{ type: "text" as const, content: text.trim() }],
-													status: done ? "completed" : "streaming",
-													timestampAt: Date.now(),
-												}]
-											},
-											timestampAt: Date.now(),
-										}));
+										? turn.pages
+										: completedTexts.map((text, index) => {
+											const newPage = PageSchema.createDefault();
+											const modelMsg = ModelMessageSchema.createDefault();
+
+											return {
+												...newPage,
+												pageIndex: index,
+												messages: {
+													user: initialUserMessage,
+													model: [{
+														...modelMsg,
+														status: (done ? "completed" : "streaming") as "completed" | "streaming",
+														blocks: [{ type: "text" as const, content: text.trim() }],
+														timestampAt: Date.now(),
+													}]
+												},
+												timestampAt: Date.now(),
+											};
+										});
 									return { ...turn, pages: newPages };
 								}
 								return turn;
