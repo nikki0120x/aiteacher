@@ -346,7 +346,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 								</span>
 
 								{props.required && (
-									<span className="font-mono whitespace-nowrap font-black text-xl text-red text-center">
+									<span className="font-mono whitespace-nowrap font-medium text-base text-red text-center">
 										*
 									</span>
 								)}
