@@ -1,0 +1,45 @@
+{
+	"title": {
+		"sign-in": "Sign In",
+		"sign-up": "Sign Up",
+		"sign-out": "Sign Out",
+		"submitting": "Submitting…",
+		"authenticating": "Authenticating…"
+	},
+	"sign-in": {
+		"title": "Account | Sign In",
+		"email": "Email Address",
+		"password": "Password",
+		"sign-in": "Sign In",
+		"reset-password": "Reset Password",
+		"create-account": "Create Account",
+		"continue-with-external-account": "Continue with External Account",
+		"google": "Google",
+		"apple": "Apple",
+		"microsoft": "Microsoft",
+		"X": "X",
+		"instagram": "Instagram",
+		"facebook": "Facebook",
+		"github": "GitHub"
+	},
+	"sign-up": {
+		"title": "Account | Sign Up",
+		"name": "Name",
+		"email": "Email Address",
+		"submit": "Submit",
+		"verification-code": "Verification Code",
+		"password": "Password",
+		"confirm-password": "Confirm Password",
+		"sign-up": "Sign Up",
+		"already-have-an-account:": "Already have an Account:",
+		"sign-in": "Sign In",
+		"continue-with-external-account": "Continue with External Account",
+		"google": "Google",
+		"apple": "Apple",
+		"microsoft": "Microsoft",
+		"X": "X",
+		"instagram": "Instagram",
+		"facebook": "Facebook",
+		"github": "GitHub"
+	}
+}

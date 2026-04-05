@@ -71,7 +71,14 @@ export const useHeader = () => {
 			triggerChatReset,
 			setHistoryOpen,
 		}),
-		[router, setSidebarOpen, setActiveMenu, handleMenuToggle, triggerChatReset, setHistoryOpen],
+		[
+			router,
+			setSidebarOpen,
+			setActiveMenu,
+			handleMenuToggle,
+			triggerChatReset,
+			setHistoryOpen,
+		],
 	);
 
 	return {

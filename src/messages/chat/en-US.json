@@ -1,4 +1,7 @@
 {
+	"title": {
+		"chat": "Question"
+	},
 	"question": {
 		"message": "Got a question? Just ask!"
 	},

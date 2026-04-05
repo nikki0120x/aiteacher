@@ -1,3 +1,5 @@
+import Script from "next/script";
+
 export default function Server() {
 	const schemaMarkup = {
 		"@context": "https://schema.org",
@@ -10,12 +12,13 @@ export default function Server() {
 	return (
 		<>
 			<title>AITeacher</title>
-			<script
+			<Script
+				id="ld-json"
 				type="application/ld+json"
-				dangerouslySetInnerHTML={{
-					__html: JSON.stringify(schemaMarkup),
-				}}
-			/>
+				strategy="afterInteractive"
+			>
+				{JSON.stringify(schemaMarkup)}
+			</Script>
 			<meta name="description" content="勉強に、浪漫と好奇心を。" />
 			<meta charSet="UTF-8" />
 			<meta property="og:site_name" content="AITeacher" />
@@ -23,20 +26,18 @@ export default function Server() {
 			<meta property="og:url" content="https://www.aiteacher.focalrina.com/" />
 			<meta property="og:type" content="website" />
 			<meta property="og:description" content="勉強に、浪漫と好奇心を。" />
-			<script
-				async
+			<Script
 				src="https://www.googletagmanager.com/gtag/js?id=G-P7BN0KQ1YQ"
-			></script>
-			<script
-				dangerouslySetInnerHTML={{
-					__html: `
+				strategy="afterInteractive"
+			/>
+			<Script id="google-analytics" strategy="afterInteractive">
+				{`
 					window.dataLayer = window.dataLayer || [];
 					function gtag(){dataLayer.push(arguments);}
 					gtag('js', new Date());
 					gtag('config', 'G-P7BN0KQ1YQ');
-					`,
-				}}
-			/>
+				`}
+			</Script>
 			<link rel="preconnect" href="https://fonts.googleapis.com" />
 			<link
 				rel="preconnect"

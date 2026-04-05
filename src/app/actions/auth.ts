@@ -113,7 +113,7 @@ export async function resetRateLimit(action: "signin" | "signup" | "otp") {
 }
 
 export async function sendOtpCode(email: string) {
-	if (!email || !email.includes("@"))
+	if (!email?.includes("@"))
 		return { error: "有効なメールアドレスを入力してください。" };
 
 	const existingUser = await db.query.user.findFirst({

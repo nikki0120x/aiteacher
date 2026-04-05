@@ -617,8 +617,8 @@ export default function Sidebar() {
 									)}
 
 									{states.activeMenu === "settings" && (
-										<div className="flex size-full min-w-3xs flex-col items-center justify-start gap-2 overflow-y-auto">
-											<div className="flex size-full flex-col items-center justify-start gap-2 overflow-y-auto p-2">
+										<div className="flex size-full min-w-3xs flex-col items-center justify-start gap-2 overflow-y-auto scrollbar-hide">
+											<div className="flex size-full flex-col items-center justify-start gap-2 overflow-y-auto scrollbar-hide p-2">
 												<div className="flex w-full flex-none flex-row items-center justify-start gap-4 py-2">
 													<div className="colors h-7 w-1 flex-none rounded-full bg-blue" />
 
@@ -757,7 +757,7 @@ export default function Sidebar() {
 															className="flex w-full flex-none flex-row items-center justify-center gap-2"
 														>
 															<Link
-																href="/sign?mode=signout"
+																href="/auth?mode=signout"
 																className="contents"
 															>
 																<Button className="colors flex w-full h-15 items-center justify-center rounded-full px-4 bg-red">
@@ -786,7 +786,7 @@ export default function Sidebar() {
 															className="flex w-full flex-none flex-row items-center justify-center gap-2"
 														>
 															<Link
-																href="/sign?mode=signin"
+																href="/auth?mode=signin"
 																className="contents"
 															>
 																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full px-4 hover:bg-l2/50 dark:hover:bg-d2/50">
@@ -801,7 +801,7 @@ export default function Sidebar() {
 															</Link>
 
 															<Link
-																href="/sign?mode=signup"
+																href="/auth?mode=signup"
 																className="contents"
 															>
 																<Button className="colors flex w-full h-15 flex-1 items-center justify-center rounded-full bg-blue px-4">

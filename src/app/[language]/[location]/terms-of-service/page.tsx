@@ -3,14 +3,15 @@
 export default function TermsOfService() {
 	return (
 		<div className="colors relative inset-0 flex w-full h-[calc(100dvh-3.75rem)] items-center justify-center bg-l1 p-4 dark:bg-d1">
-			<div className="overflow-y-auto gap-16 size-full max-w-3xl flex flex-col items-center justify-start">
+			<div className="overflow-y-auto prose dark:prose-invert gap-16 size-full max-w-3xl flex flex-col items-center justify-start">
 				<div className="flex flex-row justify-between items-center size-full">
 					<h1>利用規約</h1>
 
-					<div>
-						<p>発行日：2026年03月03日</p>
-						<p>更新日：2026年03月03日</p>
-					</div>
+					<p>
+						発行日：2026年03月03日
+						<br />
+						更新日：2026年03月03日
+					</p>
 				</div>
 
 				<div className="space-y-8 leading-relaxed">

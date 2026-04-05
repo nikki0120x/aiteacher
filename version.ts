@@ -1,17 +1,23 @@
-import {$, file, write } from "bun";
+import { $, file, write } from "bun";
 
 const type = Bun.argv[2];
 
 if (!type) {
-    console.error("❌ エラー: 'major', 'minor', 'patch', または直接バージョン(例: 1.0.0) を指定してください。");
+    console.error("エラー: 'major', 'minor', 'patch', またはバージョンを指定してください。");
     process.exit(1);
+}
+
+try {
+    await $`bun run sort`;
+} catch {
+    console.error("ソート中にエラーが発生しました。");
 }
 
 const pkgPath = "package.json";
 const pkgFile = file(pkgPath);
 
 if (!(await pkgFile.exists())) {
-    console.error("❌ エラー: package.json が見つかりません。");
+    console.error("エラー: package.json が見つかりません。");
     process.exit(1);
 }
 
@@ -39,14 +45,11 @@ await write(pkgPath, `${content}\n`);
 console.log(`✅ バージョンを ${currentVersion} から v${newVersion} に更新しました`);
 
 try {
-    await $`git add package.json`;
-
-    await $`git commit -m "v${newVersion}"`;
-
+    await $`git add .`;
+    await $`git commit -m "${newVersion}"`;
     await $`git tag v${newVersion}`;
-
-    console.log(`🏷️  Gitコミットとタグ v${newVersion} を作成しました`);
-} catch {
-    console.error("⚠️ Gitコマンドの実行中にエラーが発生しました。Gitリポジトリか確認してください。");
+    await $`git push origin main --tags`;
+} catch (error) {
+    console.error(error);
     process.exit(1);
 }

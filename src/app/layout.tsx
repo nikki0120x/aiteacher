@@ -34,11 +34,7 @@ export default async function RootLayout({
 	const messages = await getMessages();
 
 	return (
-		<html
-			lang={locale}
-			data-scroll-behavior="smooth"
-			suppressHydrationWarning
-		>
+		<html lang={locale} data-scroll-behavior="smooth" suppressHydrationWarning>
 			<head>
 				<Server />
 			</head>

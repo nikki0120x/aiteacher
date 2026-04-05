@@ -1,0 +1,69 @@
+{
+	"title": {
+		"sign-in": "接続",
+		"sign-up": "登録",
+		"sign-out": "切断",
+		"submitting": "送信中…",
+		"authenticating": "認証中…"
+	},
+	"sign-in": {
+		"title": "アカウント | 接続",
+		"email": "メールアドレス",
+		"password": "パスワード",
+		"sign-in": "接続",
+		"reset-password": "パスワード再設定",
+		"create-account": "新規登録",
+		"continue-with-external-account": "外部アカウントで続行",
+		"google": "Google",
+		"apple": "Apple",
+		"microsoft": "Microsoft",
+		"X": "X",
+		"instagram": "Instagram",
+		"facebook": "Facebook",
+		"github": "GitHub",
+		"patterns": {
+			"email": "有効なメールアドレスを入力してください",
+			"password": "パスワードは8文字以上で、少なくとも1つの大文字、1つの小文字、1つの数字を含む必要があります"
+		},
+		"errors": {
+			"invalid-credentials": "無効な資格情報",
+			"account-not-found": "アカウントが見つかりません",
+			"email-not-verified": "メールが確認されていません",
+			"too-many-requests": "リクエストが多すぎます。後でもう一度お試しください。",
+			"unknown-error": "不明なエラーが発生しました。後でもう一度お試しください。"
+		}
+	},
+	"sign-up": {
+		"title": "アカウント | 登録",
+		"name": "名前",
+		"email": "メールアドレス",
+		"submit": "送信",
+		"verification-code": "認証コード",
+		"password": "パスワード",
+		"confirm-password": "パスワード確認",
+		"sign-up": "登録",
+		"already-have-an-account:": "アカウントを登録済:",
+		"sign-in": "接続",
+		"continue-with-external-account": "外部アカウントで続行",
+		"google": "Google",
+		"apple": "Apple",
+		"microsoft": "Microsoft",
+		"X": "X",
+		"instagram": "Instagram",
+		"facebook": "Facebook",
+		"github": "GitHub",
+		"patterns": {
+			"name": "有効な名前を入力してください",
+			"email": "有効なメールアドレスを入力してください",
+			"password": "パスワードは8文字以上で、少なくとも1つの大文字、1つの小文字、1つの数字を含む必要があります",
+			"confirm-password": "パスワードが一致しません"
+		},
+		"errors": {
+			"email-already-in-use": "このメールアドレスは既に使用されています",
+			"invalid-email": "無効なメールアドレス",
+			"operation-not-allowed": "この操作は許可されていません",
+			"weak-password": "パスワードが弱すぎます",
+			"unknown-error": "不明なエラーが発生しました。後でもう一度お試しください。"
+		}
+	}
+}

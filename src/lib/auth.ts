@@ -16,8 +16,8 @@ export const auth = betterAuth({
 	}),
 
 	pages: {
-		signIn: "/sign?mode=signin",
-		newUser: "/sign?mode=signup",
+		signIn: "/auth?mode=signin",
+		newUser: "/auth?mode=signup",
 	},
 
 	emailAndPassword: {

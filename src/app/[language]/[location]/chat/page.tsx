@@ -10,7 +10,11 @@ import {
 	CheckCircle2,
 	ChevronDown,
 	Clock,
+	Folder,
+	FolderOpen,
+	LogIn,
 	Maximize2,
+	MessageSquare,
 	Mic,
 	Minimize2,
 	MousePointerClick,
@@ -23,16 +27,12 @@ import {
 	Sparkles,
 	Square,
 	Trash2,
-	Zap,
-	LogIn,
-	MessageSquare,
-	Folder,
-	FolderOpen,
 	X,
+	Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useParams, useSearchParams } from "next/navigation";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { ExtraProps } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import type { VirtuosoHandle } from "react-virtuoso";
@@ -46,10 +46,10 @@ import curriculumData from "@/assets/curriculum/JP/high-school/vol-1.json";
 import { VoiceVisualizer } from "@/components/dedicated/voiceVisualizer";
 import { Logos } from "@/components/parts/logos";
 import { ActivityIndicator, Button, Input, Label } from "@/components/ui";
-import type { Medium, Turn } from "@/models/modelChat";
-import { type LEVEL_MAP, MODEL_MAP } from "@/models/modelChat";
 import { Link } from "@/i18n/routing";
 import { useSession } from "@/lib/auth-client";
+import type { Medium, Turn } from "@/models/modelChat";
+import { type LEVEL_MAP, MODEL_MAP } from "@/models/modelChat";
 
 const ICON_MAP: Record<string, React.ElementType> = {
 	要約: ScrollText,
@@ -679,10 +679,11 @@ const TurnItem = React.memo(
 											handleSolve(item.content, turn.turnId, item.index);
 										}
 									}}
-									className={`flex-none flex items-center justify-center rounded-2xl size-10 shadow-lg colors ${selectedPageIndex === item.index
-										? "bg-blue text-l1"
-										: "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 text-d1 dark:text-l1"
-										}`}
+									className={`flex-none flex items-center justify-center rounded-2xl size-10 shadow-lg colors ${
+										selectedPageIndex === item.index
+											? "bg-blue text-l1"
+											: "bg-l2 dark:bg-d2 hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3 text-d1 dark:text-l1"
+									}`}
 								>
 									<span className="font-bold text-lg text-center whitespace-nowrap all">
 										{item.index + 1}
@@ -933,7 +934,7 @@ export default function Chat() {
 	const { refs, states, actions } = useChatView();
 	const {
 		states: { chat, isHistoryOpen },
-		actions: { setHistoryOpen, triggerChatReset, router }
+		actions: { setHistoryOpen, triggerChatReset, router },
 	} = useAppView();
 
 	const { data: session } = useSession();
@@ -943,7 +944,9 @@ export default function Chat() {
 	const chatId = searchParams.get("id");
 
 	// 履歴一覧を保持するState
-	const [historyList, setHistoryList] = useState<{ id: string, title: string, curriculum: string }[]>([]);
+	const [historyList, setHistoryList] = useState<
+		{ id: string; title: string; curriculum: string }[]
+	>([]);
 
 	// フォルダ開閉状態を管理するステートを追加
 	const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
@@ -956,8 +959,8 @@ export default function Chat() {
 	useEffect(() => {
 		if (session && isHistoryOpen) {
 			fetch("/api/chat/history")
-				.then(res => res.json())
-				.then(data => {
+				.then((res) => res.json())
+				.then((data) => {
 					if (Array.isArray(data)) setHistoryList(data);
 				})
 				.catch(console.error);
@@ -968,7 +971,7 @@ export default function Chat() {
 	const historyTree = useMemo(() => {
 		const root: any = {};
 		historyList.forEach((item) => {
-			const parts = item.curriculum && item.curriculum.includes("/")
+			const parts = item.curriculum?.includes("/")
 				? item.curriculum.split("/")
 				: ["未分類"];
 
@@ -989,12 +992,15 @@ export default function Chat() {
 
 	// ツリー構造を再帰的にレンダリングする関数を追加
 	const renderTree = (node: any, path: string = "", level: number = 0) => {
-		const keys = Object.keys(node).filter(k => k !== "_items");
+		const keys = Object.keys(node).filter((k) => k !== "_items");
 		const items = node._items || [];
 
 		return (
-			<div className="flex flex-col gap-1 w-full" style={{ paddingLeft: level === 0 ? 0 : '1rem' }}>
-				{keys.map(key => {
+			<div
+				className="flex flex-col gap-1 w-full"
+				style={{ paddingLeft: level === 0 ? 0 : "1rem" }}
+			>
+				{keys.map((key) => {
 					const currentPath = path ? `${path}/${key}` : key;
 					const isOpen = openFolders[currentPath];
 					return (
@@ -1003,7 +1009,11 @@ export default function Chat() {
 								onClick={() => toggleFolder(currentPath)}
 								className="flex w-full items-center justify-start gap-3 rounded-xl p-2 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors"
 							>
-								{isOpen ? <FolderOpen size={16} className="text-blue flex-none" /> : <Folder size={16} className="text-blue flex-none" />}
+								{isOpen ? (
+									<FolderOpen size={16} className="text-blue flex-none" />
+								) : (
+									<Folder size={16} className="text-blue flex-none" />
+								)}
 								<span className="truncate text-sm font-bold text-d1 dark:text-l1">
 									{key}
 								</span>
@@ -1030,8 +1040,9 @@ export default function Chat() {
 							router.push(`/chat?id=${item.id}`);
 							setHistoryOpen();
 						}}
-						className={`flex w-full items-center justify-start gap-3 rounded-xl p-2 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors ${chatId === item.id ? "bg-l2 dark:bg-d2 border border-blue/30" : ""
-							}`}
+						className={`flex w-full items-center justify-start gap-3 rounded-xl p-2 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors ${
+							chatId === item.id ? "bg-l2 dark:bg-d2 border border-blue/30" : ""
+						}`}
 					>
 						<MessageSquare size={14} className="text-blue/70 flex-none ml-2" />
 						<span className="truncate text-sm font-medium text-d1 dark:text-l1">
@@ -1042,7 +1053,6 @@ export default function Chat() {
 			</div>
 		);
 	};
-
 
 	const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
 
@@ -1118,7 +1128,10 @@ export default function Chat() {
 						>
 							<div className="flex items-center justify-between p-4 border-b border-l5 dark:border-d5">
 								<span className="font-bold text-lg text-blue">会話履歴</span>
-								<Button onClick={setHistoryOpen} className="size-8 rounded-full hover:bg-l2 dark:hover:bg-d2 flex items-center justify-center colors">
+								<Button
+									onClick={setHistoryOpen}
+									className="size-8 rounded-full hover:bg-l2 dark:hover:bg-d2 flex items-center justify-center colors"
+								>
 									<X size={18} className="text-d1 dark:text-l1" />
 								</Button>
 							</div>
@@ -1140,7 +1153,10 @@ export default function Chat() {
 									{!session ? (
 										<div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
 											<div className="p-4 rounded-full bg-l2 dark:bg-d2">
-												<MessageSquare className="text-d5 dark:text-l5" size={32} />
+												<MessageSquare
+													className="text-d5 dark:text-l5"
+													size={32}
+												/>
 											</div>
 											<p className="text-sm font-medium text-d1 dark:text-l1 px-4">
 												ログインすると過去の回答を保存し、いつでも確認できるようになります。
@@ -1158,7 +1174,9 @@ export default function Chat() {
 												<>
 													{/* ▼ フォルダ（ツリー）表示部分 ▼ */}
 													<div className="flex flex-col gap-1 mb-2">
-														<span className="text-xs font-bold text-d5 dark:text-l5 px-2 pb-1 block">カテゴリ別</span>
+														<span className="text-xs font-bold text-d5 dark:text-l5 px-2 pb-1 block">
+															カテゴリ別
+														</span>
 														{renderTree(historyTree)}
 													</div>
 
@@ -1167,7 +1185,9 @@ export default function Chat() {
 
 													{/* ▼ すべての履歴（フラットリスト）表示部分 ▼ */}
 													<div className="flex flex-col gap-1">
-														<span className="text-xs font-bold text-d5 dark:text-l5 px-2 pb-1 block">すべての履歴</span>
+														<span className="text-xs font-bold text-d5 dark:text-l5 px-2 pb-1 block">
+															すべての履歴
+														</span>
 														{historyList.map((item) => (
 															<Button
 																key={`flat-${item.id}`} // ツリー側とkeyが重複しないようにプレフィックスを追加
@@ -1175,10 +1195,16 @@ export default function Chat() {
 																	router.push(`/chat?id=${item.id}`);
 																	setHistoryOpen();
 																}}
-																className={`flex w-full items-center justify-start gap-3 rounded-xl p-3 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors ${chatId === item.id ? "bg-l2 dark:bg-d2 border border-blue/30" : ""
-																	}`}
+																className={`flex w-full items-center justify-start gap-3 rounded-xl p-3 text-left hover:bg-l2 dark:hover:bg-d2 truncate colors ${
+																	chatId === item.id
+																		? "bg-l2 dark:bg-d2 border border-blue/30"
+																		: ""
+																}`}
 															>
-																<MessageSquare size={16} className="text-blue flex-none" />
+																<MessageSquare
+																	size={16}
+																	className="text-blue flex-none"
+																/>
 																<span className="truncate text-sm font-medium text-d1 dark:text-l1">
 																	{item.title}
 																</span>
@@ -1329,7 +1355,7 @@ export default function Chat() {
 								<div className="colors flex w-full gap-2 flex-col items-center justify-center">
 									<span
 										ref={refs.pageTitleTextRef}
-										className="colors text-center font-medium text-base text-d5 italic dark:text-l5"
+										className="colors font-subtitle text-center font-medium text-base text-d5 italic dark:text-l5"
 									>
 										{chat("question.message")}
 									</span>
@@ -1535,9 +1561,10 @@ export default function Chat() {
 														<Button
 															onClick={() => actions.toggleContent("upload")}
 															className={`colors flex size-10 items-center justify-center rounded-full
-																${states.activeContent === "upload"
-																	? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
-																	: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																${
+																	states.activeContent === "upload"
+																		? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
+																		: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
 																}`}
 														>
 															<Plus className="text-d1 dark:text-l1 all" />
@@ -1553,10 +1580,11 @@ export default function Chat() {
 															setIsThinkModeMenuOpen(!isThinkModeMenuOpen)
 														}
 														className={`colors flex size-10 items-center justify-center rounded-full
-																		${isThinkModeMenuOpen
-																? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
-																: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
-															}`}
+																		${
+																			isThinkModeMenuOpen
+																				? "bg-l2 dark:bg-d2 hover:bg-l3 focus-visible:bg-l3 dark:focus-visible:bg-d3 dark:hover:bg-d3"
+																				: "hover:bg-l2 focus-visible:bg-l2 dark:focus-visible:bg-d2 dark:hover:bg-d2"
+																		}`}
 													>
 														{states.selectedLevel === "minimal" && (
 															<Zap className="all text-blue" />
@@ -1640,10 +1668,11 @@ export default function Chat() {
 																					<Button
 																						key={m}
 																						onClick={() => handleModelChange(m)}
-																						className={`flex w-full items-center justify-start rounded-xl px-4 py-2 colors ${states.selectedModel === m
-																							? "bg-blue"
-																							: "hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3"
-																							}`}
+																						className={`flex w-full items-center justify-start rounded-xl px-4 py-2 colors ${
+																							states.selectedModel === m
+																								? "bg-blue"
+																								: "hover:bg-l3 dark:hover:bg-d3 focus-visible:bg-l3 dark:focus-visible:bg-d3"
+																						}`}
 																					>
 																						<span
 																							className={`whitespace-nowrap text-base font-medium text-left all ${states.selectedModel === m ? "text-l1" : "text-d1 dark:text-l1"}`}
@@ -1680,7 +1709,7 @@ export default function Chat() {
 																	].map((lvl) => {
 																		const isDisabled =
 																			states.selectedModel ===
-																			"gemini-3.1-flash-lite-preview" &&
+																				"gemini-3.1-flash-lite-preview" &&
 																			lvl.id === "high";
 																		const isSelected =
 																			states.selectedLevel === lvl.id &&
@@ -1690,11 +1719,12 @@ export default function Chat() {
 																			<Label
 																				key={lvl.id}
 																				className={`colors flex w-full items-center justify-center rounded-2xl px-4 py-2
-																					${isDisabled
-																						? "cursor-not-allowed"
-																						: isSelected
-																							? "bg-l2 dark:bg-d2"
-																							: "hover:bg-l2 dark:hover:bg-d2 focus-visible:bg-l2 dark:focus-visible:bg-d2"
+																					${
+																						isDisabled
+																							? "cursor-not-allowed"
+																							: isSelected
+																								? "bg-l2 dark:bg-d2"
+																								: "hover:bg-l2 dark:hover:bg-d2 focus-visible:bg-l2 dark:focus-visible:bg-d2"
 																					}`}
 																			>
 																				<Input
@@ -1718,22 +1748,24 @@ export default function Chat() {
 																				<div className="flex w-full flex-row items-center justify-start gap-2">
 																					<lvl.icon
 																						className={`colors
-																							${isSelected
-																								? "text-blue"
-																								: isDisabled
-																									? "text-l5 dark:text-d5"
-																									: "text-d1 dark:text-l1"
+																							${
+																								isSelected
+																									? "text-blue"
+																									: isDisabled
+																										? "text-l5 dark:text-d5"
+																										: "text-d1 dark:text-l1"
 																							}`}
 																					/>
 
 																					<span
 																						className={`whitespace-nowrap font-medium text-left text-base colors
-																						${isSelected
+																						${
+																							isSelected
 																								? "text-blue"
 																								: isDisabled
 																									? "text-l5 dark:text-d5"
 																									: "text-d1 dark:text-l1"
-																							}`}
+																						}`}
 																					>
 																						{lvl.label}
 																					</span>
@@ -1785,7 +1817,7 @@ export default function Chat() {
 															</Button>
 														</motion.div>
 													) : (!states.inputText.inputText.trim() &&
-														states.inputMedia.length === 0) ||
+															states.inputMedia.length === 0) ||
 														states.isUploading ? (
 														<motion.div
 															key="audio"
@@ -1924,7 +1956,7 @@ export default function Chat() {
 																					media={media}
 																					progress={
 																						states.uploadProgress[
-																						media.mediumId
+																							media.mediumId
 																						]
 																					}
 																				/>
